@@ -48,7 +48,7 @@ export default function Counter() {
       >
         <Image
           className="mx-auto mt-2"
-          src="/assets/images/arcjet-light.svg"
+          src=""
           alt="Arcjet"
           width={128}
           height={38}

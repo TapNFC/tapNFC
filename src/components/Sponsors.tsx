@@ -5,22 +5,13 @@ export const Sponsors = () => (
   <table className="border-collapse">
     <tbody>
       <tr className="h-56">
+        {/* Removed Clerk sponsor cell */}
         <td className="border-2 border-gray-300 p-3">
           <a
-            href="https://clerk.com?utm_source=github&utm_medium=sponsorship&utm_campaign=nextjs-boilerplate"
+            href="https://l.crowdin.com/next-js"
             target="_blank"
             rel="noopener"
           >
-            <Image
-              src="/assets/images/clerk-logo-dark.png"
-              alt="Clerk – Authentication & User Management for Next.js"
-              width={260}
-              height={224}
-            />
-          </a>
-        </td>
-        <td className="border-2 border-gray-300 p-3">
-          <a href="https://l.crowdin.com/next-js" target="_blank" rel="noopener">
             <Image
               src="/assets/images/crowdin-dark.png"
               alt="Crowdin"
@@ -48,7 +39,7 @@ export const Sponsors = () => (
         <td className="border-2 border-gray-300 p-3">
           <a href="https://launch.arcjet.com/Q6eLbRE">
             <Image
-              src="/assets/images/arcjet-light.svg"
+              src="/assets/images/better-stack-dark.png"
               alt="Arcjet"
               width={260}
               height={224}

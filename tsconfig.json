@@ -55,7 +55,7 @@
   },
   "exclude": [
     "./out/**/*",
-    "./node_modules/**/*",
+    ".vscode/node_modules/**/*",
     "**/*.spec.ts",
     "**/*.e2e.ts"
   ],

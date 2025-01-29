@@ -1,6 +1,5 @@
+/* eslint-disable unused-imports/no-unused-vars */
 import { routing } from '@/libs/i18nNavigation';
-import { enUS, frFR } from '@clerk/localizations';
-import { ClerkProvider } from '@clerk/nextjs';
 import { setRequestLocale } from 'next-intl/server';
 
 export default async function AuthLayout(props: {
@@ -8,17 +7,17 @@ export default async function AuthLayout(props: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await props.params;
+
+  // Set the request locale for next-intl (i18n)
   setRequestLocale(locale);
-  let clerkLocale = enUS;
+
+  // If you want to keep the logic for signInUrl, signUpUrl, etc. for future use:
   let signInUrl = '/sign-in';
   let signUpUrl = '/sign-up';
   let dashboardUrl = '/dashboard';
   let afterSignOutUrl = '/';
 
-  if (locale === 'fr') {
-    clerkLocale = frFR;
-  }
-
+  // Adjust URLs when locale != default, so e.g. "/fr/sign-in"
   if (locale !== routing.defaultLocale) {
     signInUrl = `/${locale}${signInUrl}`;
     signUpUrl = `/${locale}${signUpUrl}`;
@@ -27,15 +26,8 @@ export default async function AuthLayout(props: {
   }
 
   return (
-    <ClerkProvider
-      localization={clerkLocale}
-      signInUrl={signInUrl}
-      signUpUrl={signUpUrl}
-      signInFallbackRedirectUrl={dashboardUrl}
-      signUpFallbackRedirectUrl={dashboardUrl}
-      afterSignOutUrl={afterSignOutUrl}
-    >
+    <>
       {props.children}
-    </ClerkProvider>
+    </>
   );
 }
