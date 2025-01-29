@@ -1,55 +1,33 @@
-import type { NextFetchEvent, NextRequest } from 'next/server';
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import createMiddleware from 'next-intl/middleware';
+import type { NextRequest } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './libs/i18nNavigation';
 
-const intlMiddleware = createMiddleware(routing);
+const intlMiddleware = createIntlMiddleware(routing);
 
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/:locale/dashboard(.*)',
-]);
+const publicPaths = ['/', '/sign-in', '/sign-up'];
 
-const isAuthPage = createRouteMatcher([
-  '/sign-in(.*)',
-  '/:locale/sign-in(.*)',
-  '/sign-up(.*)',
-  '/:locale/sign-up(.*)',
-]);
+export default async function middleware(req: NextRequest) {
+  const publicPathnameRegex = new RegExp(`^(/(${routing.locales.join('|')}))?(${publicPaths.join('|')})?/?$`, 'i');
+  const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
 
-export default function middleware(
-  request: NextRequest,
-  event: NextFetchEvent,
-) {
-  // Run Clerk middleware only when it's necessary
-  if (
-    isAuthPage(request) || isProtectedRoute(request)
-  ) {
-    return clerkMiddleware(async (auth, req) => {
-      if (isProtectedRoute(req)) {
-        const locale
-          = req.nextUrl.pathname.match(/(\/.*)\/dashboard/)?.at(1) ?? '';
-
-        const signInUrl = new URL(`${locale}/sign-in`, req.url);
-
-        await auth.protect({
-          // `unauthenticatedUrl` is needed to avoid error: "Unable to find `next-intl` locale because the middleware didn't run on this request"
-          unauthenticatedUrl: signInUrl.toString(),
-        });
-      }
-
-      return intlMiddleware(req);
-    })(request, event);
+  if (isPublicPage) {
+    return intlMiddleware(req);
   }
 
-  return intlMiddleware(request);
+  // Handle unauthenticated requests
+  /* if (!session) {
+    const locale = req.nextUrl.pathname.split("/")[1] || ""
+    const signInUrl = new URL(`/${locale}/sign-in`, req.url)
+    signInUrl.searchParams.set("callbackUrl", req.url)
+    return NextResponse.redirect(signInUrl)
+  } */
+
+  // Apply intl middleware for authenticated requests
+  return intlMiddleware(req);
 }
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|monitoring|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|assets/images).*)',
   ],
 };

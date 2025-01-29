@@ -1,8 +1,5 @@
-import { db } from '@/libs/DB';
 import { logger } from '@/libs/Logger';
-import { counterSchema } from '@/models/Schema';
 import { CounterValidation } from '@/validations/CounterValidation';
-import { sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -18,18 +15,13 @@ export const PUT = async (request: Request) => {
   // The default value is 0 when there is no `x-e2e-random-id` header
   const id = Number((await headers()).get('x-e2e-random-id')) ?? 0;
 
-  const count = await db
-    .insert(counterSchema)
-    .values({ id, count: parse.data.increment })
-    .onConflictDoUpdate({
-      target: counterSchema.id,
-      set: { count: sql`${counterSchema.count} + ${parse.data.increment}` },
-    })
-    .returning();
+  // Simulated counter increment (remove this if no logic is needed)
+  const increment = parse.data.increment;
+  const simulatedCount = id + increment; // Example logic, replace as needed
 
-  logger.info('Counter has been incremented');
+  logger.info('Counter has been incremented (simulated)');
 
   return NextResponse.json({
-    count: count[0]?.count,
+    count: simulatedCount,
   });
 };

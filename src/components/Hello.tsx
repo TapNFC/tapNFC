@@ -1,16 +1,22 @@
-import { currentUser } from '@clerk/nextjs/server';
+import { auth } from 'auth';
 import { getTranslations } from 'next-intl/server';
 import { Sponsors } from './Sponsors';
 
 export const Hello = async () => {
+  // Fetch translations
   const t = await getTranslations('Dashboard');
-  const user = await currentUser();
+
+  // Fetch the session using auth()
+  const session = await auth();
+
+  // Default email if the user is not logged in
+  const userEmail = session?.user?.email || 'anonymous@example.com';
 
   return (
     <>
       <p>
         {`👋 `}
-        {t('hello_message', { email: user?.emailAddresses[0]?.emailAddress })}
+        {t('hello_message', { email: userEmail })}
       </p>
       <p>
         {t.rich('alternative_message', {
@@ -24,6 +30,19 @@ export const Hello = async () => {
           ),
         })}
       </p>
+      {/* Optionally render more user details */}
+      {session?.user && (
+        <div>
+          <p>
+            Name:
+            {session.user.name}
+          </p>
+          <p>
+            Email:
+            {session.user.email}
+          </p>
+        </div>
+      )}
       <Sponsors />
     </>
   );
