@@ -275,3 +275,4 @@ Pro tips: if you need a project wide-type checking with TypeScript, you can run 
 ### Contributions
 
 Everyone is welcome to contribute to this project. Feel free to open an issue if you have any questions or find a bug. Totally open to suggestions and improvements.
+# DGM-TRADERS
