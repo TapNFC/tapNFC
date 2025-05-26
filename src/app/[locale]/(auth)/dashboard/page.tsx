@@ -1,4 +1,3 @@
-import { Hello } from '@/components/Hello';
 import { getTranslations } from 'next-intl/server';
 
 export async function generateMetadata(props: {
@@ -18,7 +17,7 @@ export async function generateMetadata(props: {
 export default async function Dashboard() {
   return (
     <div className="py-5 [&_p]:my-6">
-      <Hello />
+      <h1>Dashboard</h1>
     </div>
   );
 }

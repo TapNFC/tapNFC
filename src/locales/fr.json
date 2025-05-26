@@ -8,12 +8,12 @@
     "sign_up_link": "S'inscrire"
   },
   "BaseTemplate": {
-    "description": "Code de démarrage pour Next.js avec Tailwind CSS",
+    "description": "Boilerplate Next.js moderne avec TypeScript, Tailwind CSS et authentification créé par CodeHuddle",
     "made_with": "Fait avec <author></author>."
   },
   "Index": {
-    "meta_title": "Présentation de Next.js Boilerplate",
-    "meta_description": "Next js Boilerplate est le code de démarrage parfait pour votre projet. Construisez votre application React avec le framework Next.js.",
+    "meta_title": "CodeHuddle - Boilerplate de Développement Web Moderne",
+    "meta_description": "Un boilerplate Next.js moderne avec TypeScript, Tailwind CSS et authentification créé par CodeHuddle.",
     "sponsors_title": "Partenaires"
   },
   "Counter": {
@@ -53,19 +53,19 @@
   },
   "SignIn": {
     "meta_title": "Se connecter",
-    "meta_description": "Connectez-vous à votre compte avec facilité."
+    "meta_description": "Connectez-vous facilement à votre compte grâce à notre processus de connexion convivial."
   },
   "SignUp": {
     "meta_title": "S'inscrire",
-    "meta_description": "Créez un compte facilement grâce à notre processus d'inscription intuitif."
+    "meta_description": "Créez facilement un compte grâce à notre processus d'inscription intuitif."
   },
   "Dashboard": {
     "meta_title": "Tableau de bord",
     "hello_message": "Bonjour {email}!",
-    "alternative_message": "Vous voulez créer votre SaaS plus rapidement en utilisant la même stack ? Essayez <url></url>."
+    "alternative_message": "Bienvenue sur votre tableau de bord ! Commencez à créer des applications incroyables avec CodeHuddle."
   },
   "UserProfile": {
-    "meta_title": "Profil de l'utilisateur"
+    "meta_title": "Profil utilisateur"
   },
   "DashboardLayout": {
     "dashboard_link": "Tableau de bord",

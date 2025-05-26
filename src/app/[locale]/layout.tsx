@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import { DemoBadge } from '@/components/DemoBadge';
-import arcjet, { detectBot, request } from '@/libs/Arcjet';
-import { Env } from '@/libs/Env';
-import { routing } from '@/libs/i18nNavigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import arcjet, { detectBot, request } from '@/libs/Arcjet';
+import { Env } from '@/libs/Env';
+import { routing } from '@/libs/i18nNavigation';
 import '@/styles/global.css';
 
 export const metadata: Metadata = {
@@ -94,7 +93,6 @@ export default async function RootLayout(props: {
         >
           {props.children}
 
-          <DemoBadge />
         </NextIntlClientProvider>
       </body>
     </html>
