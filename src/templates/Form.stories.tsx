@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
+// Import types for Storybook metadata and story objects.
+import { useForm } from 'react-hook-form';
 // Import custom UI components for building forms, such as form container, controls, labels, and error messages.
 import {
   Form,
@@ -8,8 +10,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-// Import types for Storybook metadata and story objects.
-import { useForm } from 'react-hook-form';
 
 /**
  * Defines the structure of form data with username and email fields.

@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Button } from '@/components/ui/button';
+import { CreditCard, Settings, User } from 'lucide-react';
 
+import React, { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,9 +16,6 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-import { CreditCard, Settings, User } from 'lucide-react';
-import React, { useState } from 'react';
 
 type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
@@ -57,8 +57,8 @@ const DropdownMenuDemo: React.FC<DropdownMenuDemoProps> = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={triggerVariant}
-          size={triggerSize}
+          variant={triggerVariant as any}
+          size={triggerSize as any}
           className={triggerClassName}
         >
           {triggerText}
@@ -108,8 +108,8 @@ const CheckboxDropdownDemo: React.FC<DropdownMenuDemoProps> = (props) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={props.triggerVariant}
-          size={props.triggerSize}
+          variant={props.triggerVariant as any}
+          size={props.triggerSize as any}
           className={props.triggerClassName}
         >
           {props.triggerText || 'Preferences'}
@@ -150,8 +150,8 @@ const RadioDropdownDemo: React.FC<DropdownMenuDemoProps> = (props) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={props.triggerVariant}
-          size={props.triggerSize}
+          variant={props.triggerVariant as any}
+          size={props.triggerSize as any}
           className={props.triggerClassName}
         >
           {props.triggerText || 'Select Position'}

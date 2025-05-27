@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
-import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 
 type IIndexProps = {
   params: Promise<{ locale: string }>;
@@ -55,7 +54,6 @@ export default async function Index(props: IIndexProps) {
           >
             {t('sign_up_link')}
           </Link>
-          <LocaleSwitcher />
         </div>
       </nav>
 

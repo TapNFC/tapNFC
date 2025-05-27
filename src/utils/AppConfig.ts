@@ -17,7 +17,7 @@ export const AppConfig = {
   twitterHandle: '@harisahmed',
 
   // Internationalization settings
-  locales: ['en', 'fr', 'es', 'de'],
+  locales: ['en'],
   defaultLocale: 'en',
   localePrefix,
 

@@ -1,5 +1,11 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { signIn } from 'next-auth/react'; // Import NextAuth's signIn function
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 // shadcn components
 import {
@@ -11,12 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react'; // Import NextAuth's signIn function
-
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 
 // 1) Define a schema for sign-in credentials
 const signInSchema = z.object({
@@ -114,7 +114,7 @@ export function SignInForm() {
           {/* Submit Button */}
           <Button
             type="submit"
-            variant="default"
+            variant="primary"
             className="mt-4 w-full rounded-lg bg-blue-600 py-3 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
           >
             Sign In

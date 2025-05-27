@@ -1,6 +1,6 @@
 /* eslint-disable unused-imports/no-unused-vars */
-import { routing } from '@/libs/i18nNavigation';
 import { setRequestLocale } from 'next-intl/server';
+import { routing } from '@/libs/i18nNavigation';
 
 export default async function AuthLayout(props: {
   children: React.ReactNode;

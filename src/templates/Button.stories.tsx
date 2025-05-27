@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Button } from '@/components/ui/button';
 import { Loader2, Mail, Plus } from 'lucide-react';
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 /**
  * The Button component is a fundamental UI element that follows the shadcn design system.

@@ -1,5 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 // shadcn components
 import {
@@ -11,11 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 
 // Basic sign-up schema
 const signUpSchema = z
@@ -100,7 +100,7 @@ export function SignUpForm() {
           />
 
           {/* Submit Button */}
-          <Button type="submit" variant="default" className="w-full">
+          <Button type="submit" variant="primary" className="w-full">
             Sign Up
           </Button>
         </form>

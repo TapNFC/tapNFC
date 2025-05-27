@@ -1,11 +1,19 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import { Poppins } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import arcjet, { detectBot, request } from '@/libs/Arcjet';
 import { Env } from '@/libs/Env';
 import { routing } from '@/libs/i18nNavigation';
 import '@/styles/global.css';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   icons: [
@@ -85,7 +93,7 @@ export default async function RootLayout(props: {
   // which dynamically adds a `style` attribute to the body tag.
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={poppins.variable}>
       <body suppressHydrationWarning>
         <NextIntlClientProvider
           locale={locale}
