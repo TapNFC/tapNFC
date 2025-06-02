@@ -1,277 +1,279 @@
-# Code-huddle | Boilerplate and Starter for Next.js 15+, Tailwind CSS 3.4, and TypeScript.
+# QR Profile Management System
 
-🚀 Boilerplate and Starter for Next.js with App Router, Tailwind CSS, and TypeScript ⚡️ Prioritizing developer experience first: Next.js, TypeScript, ESLint, Prettier, Husky, Lint-Staged, Vitest (replacing Jest), Testing Library, Playwright, Commitlint, VSCode, Tailwind CSS, Error Monitoring with [Sentry](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy25q1-nextjs&utm_content=github-banner-nextjsboilerplate-logo), Logging with Pino.js and Log Management, Monitoring as Code, Storybook, Multi-language (i18n), Secure with [Arcjet](https://launch.arcjet.com/Q6eLbRE) (Bot detection, Rate limiting, Attack protection, etc.) and more.
+🚀 A modern, full-featured QR Profile Management System built with Next.js 15, TypeScript, and Tailwind CSS. Create, manage, and track QR codes for digital profiles, business cards, and customer engagement.
 
-Clone this project and use it to create your own Next.js project.
+## ✨ Features
 
-### Demo
+### 🎯 Core QR Management
+- **Dynamic QR Code Generation** - Create custom QR codes with various data types
+- **Profile Templates** - Pre-built templates for business cards, social profiles, and more
+- **Real-time Analytics** - Track scans, locations, and engagement metrics
+- **Customer Management** - Organize and manage customer profiles and QR assignments
+- **Bulk Operations** - Import/export customer data and generate QR codes in bulk
 
-| Sign Up | Sign In |
-| --- | --- |
-| [![Next.js Boilerplate SaaS Sign Up](public/assets/images/nextjs-boilerplate-sign-in.png)](https://demo.nextjs-boilerplate.com/sign-up) | [![Next.js Boilerplate SaaS Sign In](public/assets/images/nextjs-boilerplate-sign-in.png)](https://demo.nextjs-boilerplate.com/sign-in) |
+### 🛠️ Technical Excellence
+- ⚡ **Next.js 15** with App Router and React 19
+- 🔥 **TypeScript** for type safety and better developer experience
+- 💎 **Tailwind CSS** with custom design system and dark mode
+- 🔐 **NextAuth.js v5** with multiple authentication providers
+- 🌐 **Internationalization** (i18n) with next-intl
+- 📱 **Responsive Design** optimized for all devices
+- 🎨 **Modern UI Components** with Radix UI and custom animations
 
-### Features
+### 🔧 Developer Experience
+- 📏 **ESLint** with Antfu configuration
+- 💖 **Prettier** for consistent code formatting
+- 🦊 **Husky** for Git hooks and pre-commit validation
+- 🚓 **Commitlint** for conventional commit messages
+- 🦺 **Vitest** for unit testing with React Testing Library
+- 🧪 **Playwright** for E2E testing
+- 📚 **Storybook** for component development
+- 🚨 **Sentry** for error monitoring and performance tracking
 
-Developer experience first, extremely flexible code structure and only keep what you need:
+### 🚀 Production Ready
+- ☂️ **Code Coverage** with Codecov integration
+- 📝 **Logging** with Pino.js and structured logging
+- 🖥️ **Monitoring** with Checkly for uptime and performance
+- 🔐 **Security** with Arcjet for bot protection and rate limiting
+- 🎁 **Automated Releases** with semantic versioning
+- 🗺️ **SEO Optimized** with metadata, sitemap, and robots.txt
 
-- ⚡ [Next.js](https://nextjs.org) with App Router support
-- 🔥 Type checking [TypeScript](https://www.typescriptlang.org)
-- 💎 Integrate with [Tailwind CSS](https://tailwindcss.com)
-- ✅ Strict Mode for TypeScript and React 19
-- 👤 Passwordless Authentication with, Social Auth (Google , GitHub), Passwordless login with Passkeys, User Impersonation
-- 💽 Offline and local development database with PGlite
-- 🌐 Multi-language (i18n) with [next-intl](https://next-intl-docs.vercel.app/) and [Crowdin](https://l.crowdin.com/next-js)
-- ♻️ Type-safe environment variables with T3 Env
-- ⌨️ Form handling with React Hook Form
-- 🔴 Validation library with Zod
-- 📏 Linter with [ESLint](https://eslint.org) (default Next.js, Next.js Core Web Vitals, Tailwind CSS and Antfu configuration)
-- 💖 Code Formatter with [Prettier](https://prettier.io)
-- 🦊 Husky for Git Hooks
-- 🚫 Lint-staged for running linters on Git staged files
-- 🚓 Lint git commit with Commitlint
-- 📓 Write standard compliant commit messages with Commitizen
-- 🦺 Unit Testing with Vitest and React Testing Library
-- 🧪 Integration and E2E Testing with Playwright
-- 👷 Run tests on pull request with GitHub Actions
-- 🎉 Storybook for UI development
-- 🚨 Error Monitoring with [Sentry](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy25q1-nextjs&utm_content=github-banner-nextjsboilerplate-logo)
-- ☂️ Code coverage with [Codecov](https://about.codecov.io/codecov-free-trial/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy25q1-nextjs&utm_content=github-banner-nextjsboilerplate-logo)
-- 📝 Logging with Pino.js and Log Management with [Better Stack](https://betterstack.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate)
-- 🖥️ Monitoring as Code with [Checkly](https://www.checklyhq.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate)
-- 🔐 Security and bot protection ([Arcjet](https://launch.arcjet.com/Q6eLbRE))
-- 🎁 Automatic changelog generation with Semantic Release
-- 🔍 Visual testing with Percy (Optional)
-- 💡 Absolute Imports using `@` prefix
-- 🗂 VSCode configuration: Debug, Settings, Tasks and Extensions
-- 🤖 SEO metadata, JSON-LD and Open Graph tags
-- 🗺️ Sitemap.xml and robots.txt
-- ⌘ Database exploration with Drizzle Studio and CLI migration tool with Drizzle Kit
-- ⚙️ [Bundler Analyzer](https://www.npmjs.com/package/@next/bundle-analyzer)
-- 🌈 Include a FREE minimalist theme
-- 💯 Maximize lighthouse score
+## 🚀 Quick Start
 
-Built-in feature from Next.js:
-
-- ☕ Minify HTML & CSS
-- 💨 Live reload
-- ✅ Cache busting
-
-### Philosophy
-
-- Nothing is hidden from you, allowing you to make any necessary adjustments to suit your requirements and preferences.
-- Dependencies are regularly updated on a monthly basis
-- Start for free without upfront costs
-- Easy to customize
-- Minimal code
-- Unstyled template
-- SEO-friendly
-- 🚀 Production-ready
-
-### Requirements
-
+### Prerequisites
 - Node.js 20+ and npm
+- Git
 
-### Getting started
+### Installation
 
-Run the following command on your local environment:
+1. **Clone the repository**
+```bash
+git clone https://github.com/your-org/qr-profile-management.git
+cd qr-profile-management
+```
 
-```shell
-git clone --depth=1 https://github.com/Code-Huddle/nextjs-boilerplate-latest.git
-cd my-project-name
+2. **Install dependencies**
+```bash
 npm install
 ```
 
-For your information, all dependencies are updated every month.
+3. **Set up environment variables**
+```bash
+cp .env.example .env.local
+```
 
-Then, you can run the project locally in development mode with live reload by executing:
+Edit `.env.local` with your configuration:
+```env
+# Database
+DATABASE_URL="your-database-url"
 
-```shell
+# Authentication
+NEXTAUTH_SECRET="your-nextauth-secret"
+NEXTAUTH_URL="http://localhost:3000"
+
+# OAuth Providers (optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+
+# Monitoring (optional)
+SENTRY_DSN="your-sentry-dsn"
+```
+
+4. **Run the development server**
+```bash
 npm run dev
 ```
 
-Open http://localhost:3000 with your favorite browser to see your project.
+5. **Open your browser**
+Navigate to [http://localhost:3000](http://localhost:3000)
 
-### Set up authentication
+## 📁 Project Structure
 
-The Auth Version 5 beta is already done. You just have have to change the environment variables in .env.local file and then update the api in the auth.ts file.
-
-### Translation (i18n) setup
-
-For translation, the project uses `next-intl` combined with [Crowdin](https://l.crowdin.com/next-js). As a developer, you only need to take care of the English (or another default language) version. Translations for other languages are automatically generated and handled by Crowdin. You can use Crowdin to collaborate with your translation team or translate the messages yourself with the help of machine translation.
-
-To set up translation (i18n), create an account at [Crowdin.com](https://l.crowdin.com/next-js) and create a new project. In the newly created project, you will be able to find the project ID. You will also need to create a new Personal Access Token by going to Account Settings > API. Then, in your GitHub Actions, you need to define the following environment variables: `CROWDIN_PROJECT_ID` and `CROWDIN_PERSONAL_TOKEN`.
-
-After defining the environment variables in your GitHub Actions, your localization files will be synchronized with Crowdin every time you push a new commit to the `main` branch.
-
-### Project structure
-
-```shell
-.
-├── README.md                       # README file
-├── .github                         # GitHub folder
-├── .husky                          # Husky configuration
-├── .storybook                      # Storybook folder
-├── .vscode                         # VSCode configuration
-├── migrations                      # Database migrations
-├── public                          # Public assets folder
-├── src
-│   ├── app                         # Next JS App (App Router)
-│   ├── components                  # React components
-│   ├── libs                        # 3rd party libraries configuration
-│   ├── locales                     # Locales folder (i18n messages)
-│   ├── models                      # Database models
-│   ├── styles                      # Styles folder
-│   ├── templates                   # Templates folder
-│   ├── types                       # Type definitions
-│   ├── utils                       # Utilities folder
-│   └── validations                 # Validation schemas
-├── tests
-│   ├── e2e                         # E2E tests, also includes Monitoring as Code
-│   └── integration                 # Integration tests
-├── tailwind.config.js              # Tailwind CSS configuration
-└── tsconfig.json                   # TypeScript configuration
+```
+qr-profile-management/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── [locale]/          # Internationalized routes
+│   │   │   ├── (auth)/        # Authentication pages
+│   │   │   └── dashboard/     # Main application
+│   │   │       ├── analytics/ # Analytics dashboard
+│   │   │       ├── customers/ # Customer management
+│   │   │       ├── profile/   # Profile management
+│   │   │       ├── qr-codes/  # QR code management
+│   │   │       ├── settings/  # Application settings
+│   │   │       └── templates/ # Template management
+│   │   └── api/               # API routes
+│   ├── components/            # React components
+│   │   ├── common/           # Shared components
+│   │   ├── customers/        # Customer-specific components
+│   │   ├── dashboard/        # Dashboard components
+│   │   ├── forms/            # Form components
+│   │   ├── layout/           # Layout components
+│   │   ├── qr/               # QR code components
+│   │   ├── template-editor/  # Template editor
+│   │   └── ui/               # UI primitives
+│   ├── hooks/                # Custom React hooks
+│   ├── lib/                  # Utility libraries
+│   ├── stores/               # State management (Zustand)
+│   ├── types/                # TypeScript type definitions
+│   ├── utils/                # Utility functions
+│   └── validations/          # Zod validation schemas
+├── public/                   # Static assets
+├── tests/                    # Test files
+│   ├── e2e/                 # End-to-end tests
+│   └── integration/         # Integration tests
+└── docs/                    # Documentation
 ```
 
-### Customization
+## 🎯 Key Features Guide
 
-You can easily configure Next js Boilerplate by searching the entire project for `FIXME:` to make quick customizations. Here are some of the most important files to customize:
+### QR Code Management
+- Create QR codes for various data types (URLs, text, contact info, WiFi, etc.)
+- Customize QR code appearance with colors, logos, and styles
+- Generate QR codes in bulk from CSV imports
+- Track scan analytics and performance metrics
 
-- `public/apple-touch-icon.png`, `public/favicon.ico`, `public/favicon-16x16.png` and `public/favicon-32x32.png`: your website favicon
-- `src/utils/AppConfig.ts`: configuration file
-- `src/templates/BaseTemplate.tsx`: default theme
-- `next.config.mjs`: Next.js configuration
-- `.env`: default environment variables
+### Profile Templates
+- Pre-built templates for business cards, social profiles, and contact cards
+- Drag-and-drop template editor with real-time preview
+- Custom field mapping and data validation
+- Template sharing and collaboration features
 
-You have full access to the source code for further customization. The provided code is just an example to help you start your project. The sky's the limit 🚀.
+### Customer Management
+- Import customers from CSV files or manual entry
+- Organize customers with tags, groups, and custom fields
+- Assign QR codes to specific customers or campaigns
+- Track customer engagement and scan history
 
-### Commit Message Format
+### Analytics Dashboard
+- Real-time scan tracking and geographic data
+- Performance metrics and conversion rates
+- Export analytics data for reporting
+- Custom date ranges and filtering options
 
-The project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification, meaning all commit messages must be formatted accordingly. To help you write commit messages, the project uses [Commitizen](https://github.com/commitizen/cz-cli), an interactive CLI that guides you through the commit process. To use it, run the following command:
+## 🛠️ Development
 
-```shell
-npm run commit
+### Available Scripts
+
+```bash
+# Development
+npm run dev              # Start development server with Turbo
+npm run build           # Build for production
+npm run start           # Start production server
+
+# Code Quality
+npm run lint            # Run ESLint
+npm run lint:fix        # Fix ESLint issues
+npm run check-types     # TypeScript type checking
+
+# Testing
+npm run test            # Run unit tests
+npm run test:e2e        # Run E2E tests
+
+# Tools
+npm run storybook       # Start Storybook
+npm run commit          # Interactive commit with Commitizen
+npm run generate:component # Generate new component
 ```
 
-One of the benefits of using Conventional Commits is the ability to automatically generate a `CHANGELOG` file. It also allows us to automatically determine the next version number based on the types of commits that are included in a release.
+### Code Style
 
-### Testing
+This project follows strict code quality standards:
 
-All unit tests are located alongside the source code in the same directory, making them easier to find. The project uses Vitest and React Testing Library for unit testing. You can run the tests with the following command:
+- **TypeScript** for type safety
+- **ESLint** with Antfu configuration
+- **Prettier** for code formatting
+- **Conventional Commits** for commit messages
+- **Husky** for pre-commit hooks
 
-```shell
-npm run test
+### Testing Strategy
+
+- **Unit Tests**: Vitest + React Testing Library
+- **Integration Tests**: Playwright
+- **E2E Tests**: Playwright with visual testing
+- **Component Tests**: Storybook with interaction testing
+
+## 🚀 Deployment
+
+### Environment Variables
+
+Required environment variables for production:
+
+```env
+# Database
+DATABASE_URL=
+
+# Authentication
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+
+# Optional: OAuth Providers
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Optional: Monitoring
+SENTRY_DSN=
+SENTRY_ORG=
+SENTRY_PROJECT=
+
+# Optional: Analytics
+NEXT_PUBLIC_GA_ID=
 ```
 
-### Integration & E2E Testing
+### Build and Deploy
 
-The project uses Playwright for integration and end-to-end (E2E) testing. You can run the tests with the following commands:
+```bash
+# Build for production
+npm run build
 
-```shell
-npx playwright install # Only for the first time in a new environment
-npm run test:e2e
+# Start production server
+npm run start
 ```
 
-In the local environment, visual testing is disabled, and the terminal will display the message `[percy] Percy is not running, disabling snapshots.`. By default, visual testing only runs in GitHub Actions.
+### Vercel Deployment
 
-### Enable Edge runtime (optional)
+This project is optimized for Vercel deployment:
 
-The App Router folder is compatible with the Edge runtime. You can enable it by adding the following lines `src/app/layouts.tsx`:
+1. Connect your repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-```tsx
-export const runtime = 'edge';
-```
+## 🤝 Contributing
 
-```tsx
-await migrate(db, { migrationsFolder: './migrations' });
-```
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-After disabling it, you are required to run the migration manually with:
+### Development Workflow
 
-```shell
-npm run db:migrate
-```
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Run the test suite: `npm run test`
+5. Commit using conventional commits: `npm run commit`
+6. Push to your branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-You also require to run the command each time you want to update the database schema(THIS IS ONLY APPLICABLE IF YOU WANT TO INTEGRATE CLOUD SERVICE LIKE SUPABASE ETC).
+## 📄 License
 
-### Deploy to production
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-During the build process, database migrations are automatically executed, so there's no need to run them manually. However, you must define `DATABASE_URL` in your environment variables.
+## 🙏 Acknowledgments
 
-Then, you can generate a production build with:
+- [Next.js](https://nextjs.org/) for the amazing React framework
+- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
+- [Radix UI](https://www.radix-ui.com/) for accessible UI primitives
+- [Vercel](https://vercel.com/) for hosting and deployment platform
 
-```shell
-$ npm run build
-```
+## 📞 Support
 
-It generates an optimized production build of the boilerplate. To test the generated build, run:
+- 📧 Email: support@yourcompany.com
+- 💬 Discord: [Join our community](https://discord.gg/yourserver)
+- 📖 Documentation: [docs.yourcompany.com](https://docs.yourcompany.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/your-org/qr-profile-management/issues)
 
-```shell
-$ npm run start
-```
+---
 
-This command starts a local server using the production build. You can now open http://localhost:3000 in your preferred browser to see the result.
-
-### Error Monitoring
-
-The project uses [Sentry](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy25q1-nextjs&utm_content=github-banner-nextjsboilerplate-logo) to monitor errors. In the development environment, no additional setup is needed: Next.js Boilerplate is pre-configured to use Sentry and Spotlight (Sentry for Development). All errors will automatically be sent to your local Spotlight instance, allowing you to experience Sentry locally.
-
-For production environment, you'll need to create a Sentry account and a new project. Then, in `next.config.mjs`, you need to update the `org` and `project` attributes in `withSentryConfig` function. Additionally, add your Sentry DSN to `sentry.client.config.ts`, `sentry.edge.config.ts` and `sentry.server.config.ts`.
-
-### Code coverage
-
-Next.js Boilerplate relies on [Codecov](https://about.codecov.io/codecov-free-trial/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy25q1-nextjs&utm_content=github-banner-nextjsboilerplate-logo) for code coverage reporting solution. To enable Codecov, create a Codecov account and connect it to your GitHub account. Your repositories should appear on your Codecov dashboard. Select the desired repository and copy the token. In GitHub Actions, define the `CODECOV_TOKEN` environment variable and paste the token.
-
-Make sure to create `CODECOV_TOKEN` as a GitHub Actions secret, do not paste it directly into your source code.
-
-### Logging
-
-The project uses Pino.js for logging. In the development environment, logs are displayed in the console by default.
-
-For production, the project is already integrated with [Better Stack](https://betterstack.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate) to manage and query your logs using SQL. To use Better Stack, you need to create a [Better Stack](https://betterstack.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate) account and create a new source: go to your Better Stack Logs Dashboard > Sources > Connect source. Then, you need to give a name to your source and select Node.js as the platform.
-
-After creating the source, you will be able to view and copy your source token. In your environment variables, paste the token into the `LOGTAIL_SOURCE_TOKEN` variable. Now, all logs will automatically be sent to and ingested by Better Stack.
-
-### Checkly monitoring
-
-The project uses [Checkly](https://www.checklyhq.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate) to ensure that your production environment is always up and running. At regular intervals, Checkly runs the tests ending with `*.check.e2e.ts` extension and notifies you if any of the tests fail. Additionally, you have the flexibility to execute tests from multiple locations to ensure that your application is available worldwide.
-
-To use Checkly, you must first create an account on [their website](https://www.checklyhq.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=next-js-boilerplate). After creating an account, generate a new API key in the Checkly Dashboard and set the `CHECKLY_API_KEY` environment variable in GitHub Actions. Additionally, you will need to define the `CHECKLY_ACCOUNT_ID`, which can also be found in your Checkly Dashboard under User Settings > General.
-
-To complete the setup, update the `checkly.config.ts` file with your own email address and production URL.
-
-### Arcjet security and bot protection
-
-The project uses [Arcjet](https://launch.arcjet.com/Q6eLbRE), a security as code product that includes several features that can be used individually or combined to provide defense in depth for your site.
-
-To set up Arcjet, [create a free account](https://launch.arcjet.com/Q6eLbRE) and get your API key. Then add it to the `ARCJET_KEY` environment variable.
-
-Arcjet is configured with two main features: bot detection and the Arcjet Shield WAF:
-
-- [Bot detection](https://docs.arcjet.com/bot-protection/concepts) is configured to allow search engines, preview link generators e.g. Slack and Twitter previews, and to allow common uptime monitoring services. All other bots, such as scrapers and AI crawlers, will be blocked. You can [configure additional bot types](https://docs.arcjet.com/bot-protection/identifying-bots) to allow or block.
-- [Arcjet Shield WAF](https://docs.arcjet.com/shield/concepts) will detect and block common attacks such as SQL injection, cross-site scripting, and other OWASP Top 10 vulnerabilities.
-
-Arcjet is configured with a central client at `src/libs/Arcjet.ts` that includes the Shield WAF rules. Additional rules are configured in `src/app/[locale]/layout.tsx` based on the page type.
-
-### Useful commands
-
-#### Bundle Analyzer
-
-Next.js Boilerplate includes a built-in bundle analyzer. It can be used to analyze the size of your JavaScript bundles. To begin, run the following command:
-
-```shell
-npm run build-stats
-```
-
-By running the command, it'll automatically open a new browser window with the results.
-
-### VSCode information (optional)
-
-If you are VSCode user, you can have a better integration with VSCode by installing the suggested extension in `.vscode/extension.json`. The starter code comes up with Settings for a seamless integration with VSCode. The Debug configuration is also provided for frontend and backend debugging experience.
-
-With the plugins installed in your VSCode, ESLint and Prettier can automatically fix the code and display errors. The same applies to testing: you can install the VSCode Vitest extension to automatically run your tests, and it also shows the code coverage in context.
-
-Pro tips: if you need a project wide-type checking with TypeScript, you can run a build with <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd> on Mac.
-
-### Contributions
-
-Everyone is welcome to contribute to this project. Feel free to open an issue if you have any questions or find a bug. Totally open to suggestions and improvements.
+Built with ❤️ by [Your Team Name](https://yourcompany.com)

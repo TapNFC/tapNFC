@@ -2,19 +2,20 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  BarChart3,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  Home,
+  HelpCircle,
+  LayoutDashboard,
+  Palette,
   QrCode,
+  Settings,
   Sparkles,
-  User,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -41,20 +42,14 @@ type NavGroup = {
 const navigationGroups: NavGroup[] = [
   {
     id: 'main',
-    label: 'Overview',
+    label: 'Main',
     items: [
       {
         id: 'dashboard',
         label: 'Dashboard',
         href: '/dashboard',
-        icon: <Home className="size-5" />,
+        icon: <LayoutDashboard className="size-5" />,
       },
-    ],
-  },
-  {
-    id: 'content',
-    label: 'Content Management',
-    items: [
       {
         id: 'qr-codes',
         label: 'QR Codes',
@@ -62,10 +57,23 @@ const navigationGroups: NavGroup[] = [
         icon: <QrCode className="size-5" />,
       },
       {
+        id: 'analytics',
+        label: 'Analytics',
+        href: '/dashboard/analytics',
+        icon: <BarChart3 className="size-5" />,
+        badge: '2',
+      },
+    ],
+  },
+  {
+    id: 'design',
+    label: 'Design',
+    items: [
+      {
         id: 'templates',
         label: 'Templates',
         href: '/dashboard/templates',
-        icon: <FileText className="size-5" />,
+        icon: <Palette className="size-5" />,
         isNew: true,
       },
       {
@@ -77,26 +85,24 @@ const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    id: 'account',
-    label: 'Account',
+    id: 'settings',
+    label: 'Settings',
     items: [
       {
-        id: 'profile',
-        label: 'Profile',
-        href: '/dashboard/profile',
-        icon: <User className="size-5" />,
+        id: 'account',
+        label: 'Account',
+        href: '/dashboard/settings',
+        icon: <Settings className="size-5" />,
       },
-
+      {
+        id: 'help',
+        label: 'Help & Support',
+        href: '/help',
+        icon: <HelpCircle className="size-5" />,
+      },
     ],
   },
 ];
-
-const mockUser = {
-  name: 'Alex Johnson',
-  email: 'alex@company.com',
-  avatar: undefined,
-  plan: 'Pro',
-};
 
 export function ModernSidebar({ className }: ModernSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -105,15 +111,6 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   return (
@@ -293,43 +290,6 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
           ))}
         </nav>
 
-        {/* User Profile */}
-        <div className="border-t border-slate-200/60 p-4 dark:border-slate-700/60">
-          <div className={cn(
-            'flex items-center space-x-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 transition-all duration-200',
-            'hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer',
-            isCollapsed && 'justify-center',
-          )}
-          >
-            <Avatar className="size-8 ring-2 ring-primary/20">
-              <AvatarFallback>{getInitials(mockUser.name)}</AvatarFallback>
-              <AvatarImage src={mockUser.avatar ?? ''} alt={mockUser.name} />
-            </Avatar>
-
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="min-w-0 flex-1"
-                >
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-                    {mockUser.name}
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      {mockUser.email}
-                    </p>
-                    <Badge variant="secondary" className="bg-gradient-to-r from-amber-500 to-orange-500 text-xs text-white">
-                      {mockUser.plan}
-                    </Badge>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
       </div>
     </motion.aside>
   );

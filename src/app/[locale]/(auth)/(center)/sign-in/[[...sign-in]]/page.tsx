@@ -12,6 +12,7 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -110,9 +111,9 @@ export default function SignIn() {
 
       {/* Floating particles */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {Array.from({ length: 20 }).map(() => (
           <motion.div
-            key={i}
+            key={nanoid()}
             className="absolute size-1 rounded-full bg-primary/30"
             style={{
               left: `${Math.random() * 100}%`,
@@ -190,12 +191,12 @@ export default function SignIn() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="space-y-4"
           >
-            {features.map((feature, index) => (
+            {features.map(feature => (
               <motion.div
-                key={index}
+                key={nanoid()}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
                 className="flex items-center space-x-3 rounded-xl border border-slate-200/60 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-800/50"
               >
                 <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary-blue-dark/10 p-2 text-primary">
@@ -219,8 +220,8 @@ export default function SignIn() {
               { label: 'Active Users', value: '10K+' },
               { label: 'QR Codes Created', value: '1M+' },
               { label: 'Success Rate', value: '99.9%' },
-            ].map((stat, index) => (
-              <div key={index} className="text-center">
+            ].map(stat => (
+              <div key={nanoid()} className="text-center">
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">
                   {stat.value}
                 </div>

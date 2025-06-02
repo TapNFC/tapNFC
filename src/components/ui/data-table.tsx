@@ -1,6 +1,7 @@
 'use client';
 
 import { MoreHorizontal, Search } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -236,9 +237,9 @@ export function DataTable<T extends Record<string, any>>({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {actions.map((action, actionIndex) => (
+                                {actions.map(action => (
                                   <DropdownMenuItem
-                                    key={actionIndex}
+                                    key={nanoid()}
                                     onClick={() => action.onClick(row)}
                                     className={cn(
                                       action.variant === 'destructive' && 'text-red-600',

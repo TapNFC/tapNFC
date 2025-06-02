@@ -2,15 +2,12 @@
 
 import { motion } from 'framer-motion';
 import {
-  Bell,
   ChevronDown,
   Command,
   LogOut,
-  Moon,
   Plus,
   Search,
   Settings,
-  Sun,
   User,
   Zap,
 } from 'lucide-react';
@@ -36,34 +33,9 @@ type ModernHeaderProps = {
     email: string;
     avatar?: string;
   };
-  notificationCount?: number;
 };
 
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'New QR Code scan',
-    message: 'Your QR code "Product Launch" was scanned 15 times',
-    time: '2 min ago',
-    unread: true,
-  },
-  {
-    id: '2',
-    title: 'Analytics report ready',
-    message: 'Weekly analytics report is now available',
-    time: '1 hour ago',
-    unread: true,
-  },
-  {
-    id: '3',
-    title: 'Template approved',
-    message: 'Your custom template has been approved',
-    time: '3 hours ago',
-    unread: false,
-  },
-];
-
-export function ModernHeader({ className, user, notificationCount = 2 }: ModernHeaderProps) {
+export function ModernHeader({ className, user }: ModernHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -126,93 +98,8 @@ export function ModernHeader({ className, user, notificationCount = 2 }: ModernH
             className="hidden items-center space-x-2 bg-gradient-to-r from-primary to-primary-blue-dark text-white shadow-lg shadow-primary/25 hover:from-primary-blue-dark hover:to-primary sm:flex"
           >
             <Plus className="size-4" />
-            <span>Create</span>
+            <span>Create Template</span>
           </Button>
-
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
-
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative size-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <Bell className="size-4" />
-                {notificationCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-red-600"
-                  >
-                    <span className="text-xs font-medium text-white">
-                      {notificationCount > 9 ? '9+' : notificationCount}
-                    </span>
-                  </motion.div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0">
-              <div className="border-b border-slate-200 p-4 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-900 dark:text-white">
-                    Notifications
-                  </h3>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {notificationCount}
-                    {' '}
-                    new
-                  </Badge>
-                </div>
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {mockNotifications.map(notification => (
-                  <motion.div
-                    key={notification.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      'p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors',
-                      notification.unread && 'bg-primary/5 dark:bg-primary/10',
-                    )}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className={cn(
-                        'w-2 h-2 rounded-full mt-2 flex-shrink-0',
-                        notification.unread ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600',
-                      )}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">
-                          {notification.title}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                          {notification.message}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
-                          {notification.time}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="border-t border-slate-200 p-3 dark:border-slate-700">
-                <Button variant="ghost" size="sm" className="w-full justify-center">
-                  View all notifications
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           {/* User Menu */}
           {user && (

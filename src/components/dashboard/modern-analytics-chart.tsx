@@ -10,6 +10,7 @@ import {
   Share,
   TrendingUp,
 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import {
   Area,
   AreaChart,
@@ -29,6 +30,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
+type TooltipPayload = {
+  color: string;
+  dataKey: string;
+  value: number;
+  payload: any;
+};
+
+type TooltipProps = {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+};
+
 const chartData = [
   { name: 'Jan', scans: 4000, clicks: 2400, conversions: 240 },
   { name: 'Feb', scans: 3000, clicks: 1398, conversions: 210 },
@@ -44,7 +58,7 @@ const chartData = [
   { name: 'Dec', scans: 5800, clicks: 6800, conversions: 520 },
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <motion.div
@@ -55,21 +69,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="mb-2 text-sm font-medium text-slate-900 dark:text-white">
           {label}
         </p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center space-x-2 text-sm">
-            <div
-              className="size-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="capitalize text-slate-600 dark:text-slate-400">
-              {entry.dataKey}
-              :
-            </span>
-            <span className="font-medium text-slate-900 dark:text-white">
-              {entry.value.toLocaleString()}
-            </span>
-          </div>
-        ))}
+        <div className="mt-4 space-y-2">
+          {payload.map((entry: TooltipPayload) => (
+            <div key={nanoid()} className="flex items-center space-x-2 text-sm">
+              <div
+                className={`size-3 rounded-full ${entry.color}`}
+              />
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {entry.dataKey}
+                :
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                {entry.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
       </motion.div>
     );
   }

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { AlertCircle, CheckCircle, Download, FileText, Upload } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import Papa from 'papaparse';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -276,9 +277,8 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                         Validation Errors
                       </h4>
                       <ul className="space-y-1 text-sm text-red-700 dark:text-red-300">
-                        {errors.map((error, index) => (
-                          <li key={index}>
-                            •
+                        {errors.map(error => (
+                          <li key={nanoid()}>
                             {error}
                           </li>
                         ))}
@@ -329,11 +329,11 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                     </tr>
                   </thead>
                   <tbody>
-                    {uploadedData.map((customer, index) => (
-                      <tr key={index} className="border-t">
+                    {uploadedData.map(customer => (
+                      <tr key={nanoid()} className="border-t">
                         <td className="p-3">{customer.name}</td>
                         <td className="p-3">{customer.email}</td>
-                        <td className="p-3">{customer.phone || '-'}</td>
+                        <td className="p-3">{customer.phone}</td>
                         <td className="p-3">{customer.website || '-'}</td>
                         <td className="p-3">
                           <div className="flex items-center space-x-2">

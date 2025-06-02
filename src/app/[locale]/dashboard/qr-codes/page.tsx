@@ -194,7 +194,7 @@ export default function QRCodesPage() {
   const activeQRCodes = mockQRCodes.filter(qr => qr.status === 'Active').length;
 
   return (
-    <div className="min-h-full space-y-8 p-8">
+    <div className="min-h-full space-y-8 p-8 py-2">
       {/* Background decorative elements */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-3xl" />

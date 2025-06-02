@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -50,9 +51,9 @@ export function WelcomeSection({ className, userName = 'Alex' }: WelcomeSectionP
 
       {/* Animated background pattern */}
       <div className="absolute inset-0">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {Array.from({ length: 20 }).map(() => (
           <motion.div
-            key={i}
+            key={nanoid()}
             className="absolute size-1 rounded-full bg-white/20"
             style={{
               left: `${Math.random() * 100}%`,

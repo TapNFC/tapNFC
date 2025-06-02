@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { Suspense } from 'react';
 import { ModernHeader } from '@/components/layout/modern-header';
 import { ModernSidebar } from '@/components/layout/modern-sidebar';
@@ -25,7 +26,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Modern Header */}
           <ModernHeader
             user={mockUser}
-            notificationCount={3}
           />
 
           {/* Page Content */}
@@ -35,8 +35,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="animate-pulse space-y-6">
                   <div className="h-8 w-1/4 rounded bg-slate-200 dark:bg-slate-700"></div>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-700" />
+                    {Array.from({ length: 4 }).map(() => (
+                      <div key={nanoid()} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-700" />
                     ))}
                   </div>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

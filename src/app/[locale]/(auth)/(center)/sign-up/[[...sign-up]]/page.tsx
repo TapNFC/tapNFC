@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
-  Check,
   CheckCircle,
   Eye,
   EyeOff,
@@ -13,9 +12,9 @@ import {
   Shield,
   Sparkles,
   User,
-  X,
   Zap,
 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -150,10 +149,10 @@ export default function SignUp() {
 
       {/* Floating particles */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {Array.from({ length: 15 }).map((_, i) => (
+        {Array.from({ length: 20 }).map(() => (
           <motion.div
-            key={i}
-            className="absolute size-1 rounded-full bg-emerald-500/40"
+            key={nanoid()}
+            className="absolute size-1 rounded-full bg-primary/30"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -161,10 +160,10 @@ export default function SignUp() {
             animate={{
               opacity: [0.3, 0.8, 0.3],
               scale: [1, 1.5, 1],
-              y: [0, -30, 0],
+              y: [0, -20, 0],
             }}
             transition={{
-              duration: 4 + Math.random() * 2,
+              duration: 3 + Math.random() * 2,
               repeat: Infinity,
               delay: Math.random() * 2,
             }}
@@ -230,15 +229,15 @@ export default function SignUp() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="space-y-4"
           >
-            {features.map((feature, index) => (
+            {features.map(feature => (
               <motion.div
-                key={index}
+                key={nanoid()}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
                 className="flex items-center space-x-3 rounded-xl border border-slate-200/60 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-800/50"
               >
-                <div className="rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-600/10 p-2 text-emerald-600">
+                <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary-blue-dark/10 p-2 text-primary">
                   {feature.icon}
                 </div>
                 <span className="font-medium text-slate-700 dark:text-slate-300">
@@ -447,22 +446,11 @@ export default function SignUp() {
                           {/* Password requirements */}
                           {password && (
                             <div className="mt-2 space-y-1">
-                              {passwordRequirements.map((req, index) => (
-                                <div key={index} className="flex items-center space-x-2 text-xs">
-                                  {checkPasswordRequirement(req)
-                                    ? (
-                                        <Check className="size-3 text-emerald-500" />
-                                      )
-                                    : (
-                                        <X className="size-3 text-slate-400" />
-                                      )}
-                                  <span className={cn(
-                                    checkPasswordRequirement(req)
-                                      ? 'text-emerald-600 dark:text-emerald-400'
-                                      : 'text-slate-500 dark:text-slate-400',
-                                  )}
-                                  >
-                                    {req.text}
+                              {passwordRequirements.map(requirement => (
+                                <div key={nanoid()} className="flex items-center space-x-2 text-xs">
+                                  <div className={`size-1.5 rounded-full ${checkPasswordRequirement(requirement) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                  <span className={checkPasswordRequirement(requirement) ? 'text-emerald-600' : 'text-slate-500'}>
+                                    {requirement.text}
                                   </span>
                                 </div>
                               ))}

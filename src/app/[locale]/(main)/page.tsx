@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { nanoid } from 'nanoid';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
 
@@ -119,9 +120,9 @@ export default async function Index(props: IIndexProps) {
               title: 'Developer Tools',
               description: 'ESLint, Prettier, Husky, and comprehensive testing setup for smooth development.',
             },
-          ].map((feature, index) => (
+          ].map(feature => (
             <div
-              key={index}
+              key={nanoid()}
               className="rounded-lg border border-gray-200 p-8 transition-colors hover:border-gray-300"
             >
               <h3 className="mb-4 text-xl font-semibold text-black">
@@ -152,9 +153,9 @@ export default async function Index(props: IIndexProps) {
               'Tailwind',
               'NextAuth',
               'Vitest',
-            ].map((tech, index) => (
+            ].map(tech => (
               <div
-                key={index}
+                key={nanoid()}
                 className="rounded-md border border-gray-200 p-4 text-center font-medium text-black transition-colors hover:border-gray-300"
               >
                 {tech}

@@ -1,5 +1,6 @@
 'use client';
 import { Bell, LogOut, Menu, Search, Settings, User } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import * as React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -258,7 +259,7 @@ const Breadcrumb = ({ ref, className, items, separator = '/', ...props }: Breadc
       {...props}
     >
       {items.map((item, index) => (
-        <React.Fragment key={index}>
+        <React.Fragment key={nanoid()}>
           {index > 0 && (
             <span className="mx-2" aria-hidden="true">
               {separator}

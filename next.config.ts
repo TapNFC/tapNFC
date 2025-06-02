@@ -19,14 +19,17 @@ export default withSentryConfig(
       poweredByHeader: false,
       reactStrictMode: true,
       serverExternalPackages: ['@electric-sql/pglite'],
+      experimental: {
+        optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+      },
     }),
   ),
   {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
-    // FIXME: Add your Sentry organization and project names
-    org: 'nextjs-boilerplate-org',
-    project: 'nextjs-boilerplate',
+    // Update these with your Sentry organization and project names
+    org: process.env.SENTRY_ORG || 'qr-profile-management-org',
+    project: process.env.SENTRY_PROJECT || 'qr-profile-management',
 
     // Only print logs for uploading source maps in CI
     silent: !process.env.CI,
@@ -48,8 +51,6 @@ export default withSentryConfig(
     // side errors will fail.
     tunnelRoute: '/monitoring',
 
-    // Hides source maps from generated client bundles
-    // hideSourceMaps: true,?
     // Automatically tree-shake Sentry logger statements to reduce bundle size
     disableLogger: true,
 

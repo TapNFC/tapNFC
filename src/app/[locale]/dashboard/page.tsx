@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Plus, QrCode, Sparkles, TrendingUp, Users, Zap } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import { Suspense } from 'react';
 
 import { ModernQuickActions } from '@/components/dashboard/modern-quick-actions';
@@ -111,12 +112,12 @@ function ModernOverviewCards() {
       transition={{ duration: 0.5, delay: 0.2 }}
       className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4"
     >
-      {overviewData.map((item, index) => (
+      {overviewData.map(item => (
         <motion.div
-          key={item.title}
+          key={nanoid()}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 * index }}
+          transition={{ duration: 0.3, delay: 0.1 }}
           className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-lg shadow-slate-200/20 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80 dark:shadow-slate-900/20"
         >
           <div className="mb-4 flex items-center justify-between">
@@ -145,7 +146,7 @@ function ModernOverviewCards() {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-full space-y-8 p-8">
+    <div className="min-h-full space-y-8 p-8 py-2">
       {/* Background decorative elements */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-primary/20 to-primary-blue-dark/20 blur-3xl" />

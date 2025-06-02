@@ -81,7 +81,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-full space-y-8 p-8">
+    <div className="min-h-full space-y-8 p-8 py-2">
       {/* Background decorative elements */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-3xl" />
@@ -146,6 +146,7 @@ export default function SettingsPage() {
                 {settingsSections.map(section => (
                   <button
                     key={section.id}
+                    type="button"
                     onClick={() => setActiveSection(section.id as SettingsSection)}
                     className={cn(
                       'flex w-full items-center space-x-3 rounded-lg px-3 py-2 text-left text-sm transition-colors',
@@ -237,6 +238,7 @@ export default function SettingsPage() {
                         ].map(theme => (
                           <button
                             key={theme.id}
+                            type="button"
                             onClick={() => handleSettingChange('theme', theme.id)}
                             className={cn(
                               'flex items-center space-x-2 rounded-lg border px-4 py-2 transition-colors',
