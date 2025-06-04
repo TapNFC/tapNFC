@@ -3,7 +3,7 @@
 import { ArrowLeft, Check, Copy, Download, Eye, Settings, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,13 +19,11 @@ type QrCodeGeneratorProps = {
   locale: string;
 };
 
-export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorProps) {
+export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
   const router = useRouter();
   const [qrUrl, setQrUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // QR Code styling options
@@ -35,18 +33,17 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [includeMargin, setIncludeMargin] = useState(true);
 
-  const handleGenerateQrCode = () => {
-    if (!qrUrl.trim()) {
-      return;
+  // Auto-generate the preview URL on component mount
+  useEffect(() => {
+    if (designId) {
+      // Get the current domain and generate the preview URL
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const previewUrl = `${baseUrl}/${locale}/preview/${designId}`;
+      setQrUrl(() => previewUrl);
+      setTitle(() => `Design Preview - ${designId}`);
+      setDescription(() => 'Scan this QR code to view the design');
     }
-
-    setIsGenerating(true);
-    // Simulate generation delay
-    setTimeout(() => {
-      setQrCodeDataUrl(qrUrl);
-      setIsGenerating(false);
-    }, 1000);
-  };
+  }, [designId, locale]);
 
   const copyToClipboard = async () => {
     if (!qrUrl) {
@@ -56,6 +53,7 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
     try {
       await navigator.clipboard.writeText(qrUrl);
       setCopied(true);
+      toast.success('URL copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for browsers that don't support clipboard API
@@ -66,9 +64,9 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
       try {
         document.execCommand('copy');
         setCopied(true);
+        toast.success('URL copied to clipboard!');
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        // Copy failed
         toast.error('Failed to copy to clipboard');
       }
       document.body.removeChild(textArea);
@@ -76,7 +74,7 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
   };
 
   const downloadQrCode = () => {
-    if (!qrCodeDataUrl) {
+    if (!qrUrl) {
       return;
     }
 
@@ -91,6 +89,7 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
     // Get the SVG element
     const svgElement = document.querySelector('#qr-code-svg') as SVGElement;
     if (!svgElement) {
+      toast.error('QR code not found');
       return;
     }
 
@@ -107,6 +106,7 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
       // Download the canvas as PNG
       canvas.toBlob((blob) => {
         if (!blob) {
+          toast.error('Failed to generate download');
           return;
         }
 
@@ -118,7 +118,12 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        toast.success('QR code downloaded!');
       });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+      toast.error('Failed to process QR code for download');
     };
     img.src = svgUrl;
   };
@@ -126,6 +131,30 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
   const previewDesign = () => {
     if (qrUrl) {
       window.open(qrUrl, '_blank');
+    }
+  };
+
+  const shareDesign = async () => {
+    if (!qrUrl) {
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title || 'Design Preview',
+          text: description || 'Check out this design!',
+          url: qrUrl,
+        });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          // Fallback to copy URL
+          copyToClipboard();
+        }
+      }
+    } else {
+      // Fallback to copy URL
+      copyToClipboard();
     }
   };
 
@@ -143,55 +172,154 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
             <span>Back to Editor</span>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Generate QR Code</h1>
-            <p className="text-gray-600">Create a shareable QR code for your design</p>
+            <h1 className="text-3xl font-bold text-gray-900">QR Code Ready!</h1>
+            <p className="text-gray-600">Your design QR code has been generated and is ready to share</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Settings Panel */}
+        {/* QR Code Preview - Now the main focus */}
         <div className="space-y-6">
-          {/* QR Code URL */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Share2 className="size-5" />
-                <span>QR Code URL</span>
+                <Share2 className="size-5 text-green-600" />
+                <span>Your QR Code</span>
               </CardTitle>
               <CardDescription>
-                Enter the URL you want to encode in the QR code
+                Scan this QR code to view your design or share it with others
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {qrUrl && (
+                <div className="space-y-6">
+                  {/* QR Code Display */}
+                  <div className="flex justify-center">
+                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
+                      <QRCodeSVG
+                        id="qr-code-svg"
+                        value={qrUrl}
+                        size={qrSize}
+                        level={qrLevel}
+                        includeMargin={includeMargin}
+                        fgColor={qrColor}
+                        bgColor={bgColor}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Share URL */}
+                  <div className="space-y-2">
+                    <Label>Preview URL</Label>
+                    <div className="flex space-x-2">
+                      <Input
+                        value={qrUrl}
+                        readOnly
+                        className="flex-1 font-mono text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={copyToClipboard}
+                        className="flex items-center space-x-2"
+                      >
+                        {copied
+                          ? (
+                              <>
+                                <Check className="size-4 text-green-600" />
+                                <span>Copied!</span>
+                              </>
+                            )
+                          : (
+                              <>
+                                <Copy className="size-4" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <Button
+                      onClick={downloadQrCode}
+                      className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Download className="size-4" />
+                      <span>Download PNG</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={previewDesign}
+                      className="flex items-center space-x-2"
+                    >
+                      <Eye className="size-4" />
+                      <span>Preview</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={shareDesign}
+                      className="flex items-center space-x-2"
+                    >
+                      <Share2 className="size-4" />
+                      <span>Share</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Settings Panel */}
+        <div className="space-y-6">
+          {/* Design Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Design Information</CardTitle>
+              <CardDescription>
+                Information about your design
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="qr-url">URL</Label>
-                <Input
-                  id="qr-url"
-                  placeholder="https://example.com"
-                  value={qrUrl}
-                  onChange={e => setQrUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="title">Title (Optional)</Label>
+                <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
-                  placeholder="Give your QR code a title"
+                  placeholder="Give your design a title"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
+                <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  placeholder="Describe your QR code"
+                  placeholder="Describe your design"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                 />
+              </div>
+
+              <div className="rounded-lg bg-blue-50 p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="rounded-full bg-blue-100 p-1">
+                    <Share2 className="size-4 text-blue-600" />
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-900">
+                      Design ID:
+                      {designId}
+                    </p>
+                    <p className="text-blue-700">This QR code will link directly to your design preview page</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -211,6 +339,7 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
               <div className="space-y-2">
                 <Label>
                   Size:
+                  {' '}
                   {qrSize}
                   px
                 </Label>
@@ -271,124 +400,6 @@ export function QrCodeGenerator({ designId, locale: _locale }: QrCodeGeneratorPr
                 />
                 <Label htmlFor="margin">Include margin</Label>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Generate Button */}
-          <Button
-            onClick={handleGenerateQrCode}
-            disabled={isGenerating || !qrUrl.trim()}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            size="lg"
-          >
-            {isGenerating
-              ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    <span>Generating QR Code...</span>
-                  </div>
-                )
-              : (
-                  <span>Generate QR Code</span>
-                )}
-          </Button>
-        </div>
-
-        {/* QR Code Preview */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>QR Code Preview</CardTitle>
-              <CardDescription>
-                {qrCodeDataUrl
-                  ? 'Your QR code is ready! Use the actions below to download or share.'
-                  : 'Generate a QR code to see the preview here'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {qrCodeDataUrl
-                ? (
-                    <div className="space-y-6">
-                      {/* QR Code Display */}
-                      <div className="flex justify-center">
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
-                          <QRCodeSVG
-                            id="qr-code-svg"
-                            value={qrCodeDataUrl}
-                            size={qrSize}
-                            level={qrLevel}
-                            includeMargin={includeMargin}
-                            fgColor={qrColor}
-                            bgColor={bgColor}
-                          />
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Share URL */}
-                      <div className="space-y-2">
-                        <Label>QR Code URL</Label>
-                        <div className="flex space-x-2">
-                          <Input
-                            value={qrUrl}
-                            readOnly
-                            className="flex-1"
-                          />
-                          <Button
-                            variant="outline"
-                            onClick={copyToClipboard}
-                            className="flex items-center space-x-2"
-                          >
-                            {copied
-                              ? (
-                                  <>
-                                    <Check className="size-4 text-green-600" />
-                                    <span>Copied!</span>
-                                  </>
-                                )
-                              : (
-                                  <>
-                                    <Copy className="size-4" />
-                                    <span>Copy</span>
-                                  </>
-                                )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={downloadQrCode}
-                          className="flex items-center space-x-2"
-                        >
-                          <Download className="size-4" />
-                          <span>Download PNG</span>
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          onClick={previewDesign}
-                          className="flex items-center space-x-2"
-                        >
-                          <Eye className="size-4" />
-                          <span>Preview</span>
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                : (
-                    <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-                      <div className="text-center">
-                        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-gray-200">
-                          <Share2 className="size-6 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500">Generate a QR code to see the preview</p>
-                      </div>
-                    </div>
-                  )}
             </CardContent>
           </Card>
         </div>

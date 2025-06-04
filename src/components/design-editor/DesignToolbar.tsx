@@ -1,9 +1,15 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
+import type { DesignData, TemplateData } from '@/lib/indexedDB';
+import {
+  Grid3x3,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { useTemplateStore } from '@/stores/templateStore';
+import { designDB, formatDesignTitle, generateTemplateId } from '@/lib/indexedDB';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { FileMenu } from './components/toolbar/FileMenu';
@@ -29,6 +35,7 @@ type DesignToolbarProps = {
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  guideControls?: any;
 };
 
 export function DesignToolbar({
@@ -48,111 +55,200 @@ export function DesignToolbar({
   onRedo,
   canUndo = false,
   canRedo = false,
+  guideControls,
 }: DesignToolbarProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isGuidesEnabled, setIsGuidesEnabled] = useState(true);
+  const [isExporting] = useState(false);
+  const [currentTemplateName, setCurrentTemplateName] = useState<string>('');
 
-  const {
-    currentTemplate,
-    saveCurrentTemplate,
-    loadTemplate,
-  } = useTemplateStore();
-
-  const handleSaveTemplate = async (templateName: string) => {
+  const handleSaveTemplate = async (templateName: string, category = 'Custom', description?: string) => {
     if (!canvas) {
+      toast.error('Canvas not available');
       return;
     }
 
     try {
       setIsSaving(true);
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData']);
-      saveCurrentTemplate(canvasData, templateName);
-      console.warn('Template saved successfully:', templateName);
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+
+      // Add canvas dimensions and background
+      canvasData.width = canvas.getWidth();
+      canvasData.height = canvas.getHeight();
+      canvasData.background = canvas.backgroundColor || '#ffffff';
+
+      // Save directly to IndexedDB as a template
+      const templateData: TemplateData = {
+        id: generateTemplateId(),
+        name: templateName,
+        description: description || `Template created on ${new Date().toLocaleDateString()}`,
+        category,
+        canvasData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await designDB.saveTemplate(templateData);
+      setCurrentTemplateName(templateName);
+      toast.success('Template saved successfully!');
     } catch (error) {
       console.error('Error saving template:', error);
-      throw error;
+      toast.error('Failed to save template');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleManualSave = async () => {
-    if (onManualSave) {
-      try {
-        setIsSaving(true);
-        await onManualSave();
-      } catch (error) {
-        console.error('Error during manual save:', error);
-      } finally {
-        setIsSaving(false);
-      }
+    if (!canvas || !onManualSave) {
+      return;
+    }
+
+    try {
+      await onManualSave();
+
+      // Also save to IndexedDB for the preview functionality
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      canvasData.width = canvas.getWidth();
+      canvasData.height = canvas.getHeight();
+      canvasData.background = canvas.backgroundColor || '#ffffff';
+
+      const designData: DesignData = {
+        id: designId,
+        canvasData,
+        metadata: {
+          width: canvas.getWidth(),
+          height: canvas.getHeight(),
+          backgroundColor: canvas.backgroundColor || '#ffffff',
+          title: `Design ${designId}`,
+          description: 'Manual save from design editor',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await designDB.saveDesign(designData);
+      toast.success('Design saved successfully!');
+    } catch (error) {
+      console.error('Error in manual save:', error);
+      toast.error('Failed to save design');
     }
   };
 
   const handleLoadTemplate = async (templateId: string) => {
     if (!canvas) {
+      toast.error('Canvas not available');
       return;
     }
 
     try {
-      const template = loadTemplate(templateId);
-      if (template && template.canvasData) {
-        canvas.loadFromJSON(template.canvasData, (loadedCanvas: any, error: any) => {
-          if (error) {
-            console.error('Error loading template in toolbar:', error);
-            throw new Error(`Failed to load template: ${error}`);
-          }
+      // Try to load as template first, then as design
+      const templateData = await designDB.getTemplate(templateId);
+      let designData = null;
+      let dataToLoad = null;
+      let name = '';
 
-          try {
-            // Validate that loadedCanvas exists and has the required methods
-            if (loadedCanvas && typeof loadedCanvas.renderAll === 'function') {
-              loadedCanvas.renderAll();
-            } else {
-              // Fallback to original canvas
-              canvas.renderAll();
-            }
-            console.warn('Template loaded successfully:', template.name);
-          } catch (renderError) {
-            console.error('Error rendering template in toolbar:', renderError);
-            // Try fallback with original canvas
-            try {
-              canvas.renderAll();
-            } catch (fallbackError) {
-              console.error('Fallback render also failed in toolbar:', fallbackError);
-              throw new Error(`Failed to render template: ${renderError}`);
-            }
-          }
+      if (templateData) {
+        dataToLoad = templateData.canvasData;
+        name = templateData.name;
+      } else {
+        designData = await designDB.getDesign(templateId);
+        if (designData) {
+          dataToLoad = designData.canvasData;
+          name = formatDesignTitle(designData.id, designData.metadata.title);
+        }
+      }
+
+      if (!dataToLoad) {
+        toast.error('Template or design not found');
+        return;
+      }
+
+      // Clear canvas first
+      canvas.clear();
+
+      // Set canvas dimensions if available
+      if (dataToLoad.width && dataToLoad.height) {
+        canvas.setDimensions({
+          width: dataToLoad.width,
+          height: dataToLoad.height,
         });
       }
+
+      // Set background color
+      if (dataToLoad.background) {
+        canvas.backgroundColor = dataToLoad.background;
+      }
+
+      // Load template/design data
+      canvas.loadFromJSON(dataToLoad, () => {
+        canvas.renderAll();
+        setCurrentTemplateName(name);
+        toast.success(`${templateData ? 'Template' : 'Design'} "${name}" loaded successfully!`);
+      });
     } catch (error) {
-      console.error('Error loading template:', error);
-      throw error;
+      console.error('Error loading template/design:', error);
+      toast.error('Failed to load template or design');
     }
   };
 
+  // const handleExport = async (format?: string) => {
+  //   if (!canvas) {
+  //     toast.error('Canvas not available');
+  //     return;
+  //   }
+
+  //   setIsExporting(true);
+  //   try {
+  //     const dataURL = canvas.toDataURL({
+  //       format: format || 'png',
+  //       quality: 1,
+  //       multiplier: 2,
+  //     });
+
+  //     const link = document.createElement('a');
+  //     link.download = `design-${designId}.${format || 'png'}`;
+  //     link.href = dataURL;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+
+  //     toast.success(`Design exported as ${format?.toUpperCase() || 'PNG'}`);
+  //   } catch (error) {
+  //     console.error('Error exporting design:', error);
+  //     toast.error('Failed to export design');
+  //   } finally {
+  //     setIsExporting(false);
+  //   }
+  // };
+
   const handleProceedToQrCode = () => {
-    // Save the current canvas data to localStorage before proceeding
-    if (canvas) {
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData']);
-      localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
+    if (!canvas) {
+      toast.error('Canvas not ready');
+      return;
+    }
+
+    // The QrCodeButton component will handle the saving
+    // This is just a backup validation
+    const objects = canvas.getObjects();
+    if (objects.length === 0) {
+      toast.error('Canvas is empty. Add some elements before generating QR code.');
     }
   };
 
   const handlePreview = () => {
-    console.warn('Opening design preview');
-    // Preview functionality is handled by the PreviewButton component
+    // PreviewButton component handles the preview logic
   };
 
   const handleUndo = () => {
-    if (onUndo && canUndo) {
+    if (onUndo) {
       onUndo();
-      console.warn('Undo action performed');
     }
   };
 
   const handleRedo = () => {
-    if (onRedo && canRedo) {
+    if (onRedo) {
       onRedo();
-      console.warn('Redo action performed');
     }
   };
 
@@ -162,7 +258,8 @@ export function DesignToolbar({
     }
     const activeObject = canvas.getActiveObject();
     if (activeObject) {
-      activeObject.rotate(activeObject.angle - 15);
+      const currentAngle = activeObject.angle || 0;
+      activeObject.rotate(currentAngle - 15);
       canvas.renderAll();
     }
   };
@@ -171,10 +268,20 @@ export function DesignToolbar({
     if (!canvas) {
       return;
     }
+
     const activeObject = canvas.getActiveObject();
     if (activeObject) {
-      activeObject.rotate(activeObject.angle + 15);
+      const currentAngle = activeObject.angle || 0;
+      activeObject.set('angle', currentAngle + 90);
       canvas.renderAll();
+    }
+  };
+
+  const toggleAlignmentGuides = () => {
+    if (guideControls) {
+      const newState = !isGuidesEnabled;
+      setIsGuidesEnabled(newState);
+      guideControls.toggleGuidelines(newState);
     }
   };
 
@@ -206,23 +313,42 @@ export function DesignToolbar({
           <FileMenu
             onSaveTemplate={() => setShowSaveDialog?.(true)}
             onLoadTemplate={() => setShowLoadDialog?.(true)}
-            onExport={() => handleProceedToQrCode()}
+            onExport={handleProceedToQrCode}
           />
 
-          <ToolbarActions
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onRotateLeft={handleRotateLeft}
-            onRotateRight={handleRotateRight}
-            canUndo={canUndo}
-            canRedo={canRedo}
-          />
+          {/* Action Tools */}
+          <div className="flex items-center space-x-1">
+            <ToolbarActions
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              onRotateLeft={handleRotateLeft}
+              onRotateRight={handleRotateRight}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+
+            {/* Alignment Guides Toggle */}
+            <Button
+              onClick={toggleAlignmentGuides}
+              variant={isGuidesEnabled ? 'primary' : 'outline'}
+              size="sm"
+              className={`flex items-center gap-2 transition-all duration-200 ${
+                isGuidesEnabled
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'border-white/20 bg-white/10 hover:bg-white/20'
+              }`}
+              title={isGuidesEnabled ? 'Disable alignment guides' : 'Enable alignment guides'}
+            >
+              <Grid3x3 className="size-4" />
+              {isGuidesEnabled && <span className="text-xs">ON</span>}
+            </Button>
+          </div>
         </div>
 
         {/* Center Section - Status */}
         <div className="relative z-10">
           <StatusIndicator
-            currentTemplateName={currentTemplate?.name}
+            currentTemplateName={currentTemplateName}
           />
         </div>
 
@@ -276,7 +402,7 @@ export function DesignToolbar({
           <QrCodeButton
             designId={designId}
             locale={locale}
-            disabled={!canvas}
+            disabled={isExporting}
             canvas={canvas}
           />
 

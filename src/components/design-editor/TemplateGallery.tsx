@@ -1,24 +1,23 @@
 'use client';
 
-import { Download, Eye, Heart, Star } from 'lucide-react';
-import { useState } from 'react';
+import { Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { designDB, formatDesignTitle } from '@/lib/indexedDB';
 
-// Dynamic fabric loading
-let fabric: any;
+// Import fabric properly with error handling
+let fabric: any = null;
 let fabricLoaded = false;
 
 const loadFabric = async () => {
-  if (!fabricLoaded) {
+  if (typeof window !== 'undefined' && !fabricLoaded) {
     try {
       const fabricModule = await import('fabric');
       fabric = fabricModule.fabric;
       fabricLoaded = true;
-    } catch {
-      // Fabric loading failed
+    } catch (error) {
+      console.error('Failed to load Fabric.js in template gallery:', error);
     }
   }
   return fabric;
@@ -28,207 +27,264 @@ type TemplateGalleryProps = {
   canvas: any;
 };
 
-type Template = {
+type CombinedTemplate = {
   id: string;
   name: string;
   category: string;
-  thumbnail: string;
+  thumbnail?: string;
   data: any;
-  premium: boolean;
-  rating: number;
-  downloads: number;
+  type: 'design' | 'template';
+  createdAt: Date;
+  updatedAt: Date;
+  description?: string;
+  premium?: boolean;
+  rating?: number;
+  downloads?: number;
 };
 
-const mockTemplates: Template[] = [
-  {
-    id: '1',
-    name: 'Business Card',
-    category: 'Business',
-    thumbnail: '/templates/business-card.png',
-    data: { objects: [], background: '#ffffff' },
-    premium: false,
-    rating: 4.8,
-    downloads: 1234,
-  },
-  {
-    id: '2',
-    name: 'Social Media Post',
-    category: 'Social',
-    thumbnail: '/templates/social-post.png',
-    data: { objects: [], background: '#f0f0f0' },
-    premium: true,
-    rating: 4.9,
-    downloads: 2345,
-  },
-  // Add more templates as needed
-];
-
 export function TemplateGallery({ canvas }: TemplateGalleryProps) {
-  const [templates] = useState<Template[]>(mockTemplates);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [templates, setTemplates] = useState<CombinedTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', 'Business', 'Social', 'Marketing', 'Print'];
+  // Load templates and designs from IndexedDB
+  useEffect(() => {
+    const loadTemplatesAndDesigns = async () => {
+      try {
+        setLoading(true);
 
-  const filteredTemplates = templates.filter(template =>
-    selectedCategory === 'All' || template.category === selectedCategory,
-  );
+        // Load both templates and designs from IndexedDB
+        const [savedTemplates, savedDesigns] = await Promise.all([
+          designDB.getAllTemplates(),
+          designDB.getAllDesigns(),
+        ]);
 
-  const handleTemplateSelect = async (template: Template) => {
+        // Convert templates to combined format
+        const templatesData: CombinedTemplate[] = savedTemplates.map(template => ({
+          id: template.id,
+          name: template.name,
+          category: template.category,
+          data: template.canvasData,
+          type: 'template' as const,
+          createdAt: template.createdAt,
+          updatedAt: template.updatedAt,
+          description: template.description,
+          premium: false,
+          rating: 5,
+          downloads: 0,
+        }));
+
+        // Convert designs to template format
+        const designsData: CombinedTemplate[] = savedDesigns.map(design => ({
+          id: design.id,
+          name: formatDesignTitle(design.id, design.metadata.title),
+          category: 'My Designs',
+          data: design.canvasData,
+          type: 'design' as const,
+          createdAt: design.createdAt,
+          updatedAt: design.updatedAt,
+          description: design.metadata.description || 'Saved design',
+          premium: false,
+          rating: 4,
+          downloads: 0,
+        }));
+
+        // Combine and sort by updated date (newest first)
+        const allTemplates = [...templatesData, ...designsData]
+          .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+        setTemplates(allTemplates);
+      } catch (error) {
+        console.error('Failed to load templates and designs:', error);
+        toast.error('Failed to load templates');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTemplatesAndDesigns();
+  }, []);
+
+  const handleTemplateSelect = async (template: CombinedTemplate) => {
     if (!canvas) {
       toast.error('Canvas not available');
       return;
     }
 
-    await loadFabric();
-    if (!fabric) {
-      toast.error('Design tools not ready');
-      return;
-    }
-
     try {
+      await loadFabric();
+      if (!fabric) {
+        toast.error('Fabric.js not loaded');
+        return;
+      }
+
       // Clear current canvas
       canvas.clear();
 
-      // Load template data
+      // Load the template/design data
       if (template.data) {
+        // Set canvas dimensions if available
+        if (template.data.width && template.data.height) {
+          canvas.setDimensions({
+            width: template.data.width,
+            height: template.data.height,
+          });
+        }
+
+        // Set background color
+        if (template.data.background) {
+          canvas.backgroundColor = template.data.background;
+        }
+
+        // Load canvas data
         canvas.loadFromJSON(template.data, () => {
           canvas.renderAll();
-          toast.success(`Template "${template.name}" loaded`);
+          toast.success(`${template.name} loaded successfully!`);
         });
+      } else {
+        toast.error('Template data is corrupted');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error loading template:', error);
       toast.error('Failed to load template');
     }
   };
 
-  const handleTemplatePreview = (template: Template) => {
-    // Open template in new window/modal for preview
-    toast.info(`Previewing template: ${template.name}`);
-  };
+  // Filter templates by search term and category
+  const filteredTemplates = templates.filter((t) => {
+    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeCategory === 'All' || t.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const handleTemplateDownload = (_e: React.MouseEvent, template: Template) => {
-    toast.success(`Downloaded template: ${template.name}`);
-  };
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-32 animate-pulse rounded bg-gray-200"></div>
+          <p className="mt-2 text-sm text-gray-500">Loading your designs...</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border p-4">
+              <div className="mb-3 h-20 rounded bg-gray-200"></div>
+              <div className="h-4 rounded bg-gray-200"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  const toggleFavorite = (templateId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(templateId)) {
-        newFavorites.delete(templateId);
-      } else {
-        newFavorites.add(templateId);
-      }
-      return newFavorites;
-    });
-  };
+  if (templates.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <div className="mx-auto mb-4 size-16 rounded-full bg-gray-100 p-4">
+          <Star className="size-full text-gray-400" />
+        </div>
+        <h3 className="mb-2 text-lg font-semibold text-gray-900">No designs found</h3>
+        <p className="text-sm text-gray-500">
+          Create your first design and it will appear here as a template.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map(category => (
-          <Button
-            key={category}
-            variant={selectedCategory === category ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </Button>
-        ))}
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        <Input
+          placeholder="Search templates..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="h-9 border-white/30 bg-white/80 focus:border-blue-300"
+        />
+
+        <div className="flex flex-wrap gap-2">
+          {['All', 'Business Cards', 'Social Media', 'Marketing', 'Presentations', 'Branding'].map(cat => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                activeCategory === cat
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'border border-white/40 bg-white/70 text-gray-600 hover:bg-white/90'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {filteredTemplates.map(template => (
-          <Card key={template.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="relative">
-              {/* Template Thumbnail */}
-              <div className="flex aspect-video items-center justify-center bg-gray-100">
-                <span className="text-sm text-gray-400">{template.name}</span>
-              </div>
-
-              {/* Premium Badge */}
-              {template.premium && (
-                <Badge className="absolute right-2 top-2 bg-yellow-500">
-                  Premium
-                </Badge>
-              )}
-
-              {/* Favorite Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute left-2 top-2 size-8 p-1"
-                onClick={() => toggleFavorite(template.id)}
-              >
-                <Heart
-                  className={`size-4 ${
-                    favorites.has(template.id)
-                      ? 'fill-red-500 text-red-500'
-                      : 'text-gray-400'
-                  }`}
-                />
-              </Button>
+      {loading
+        ? (
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`loading-item-${i}`} className="animate-pulse">
+                  <div className="aspect-[4/3] rounded-lg bg-gray-200"></div>
+                  <div className="mt-2 h-4 w-3/4 rounded bg-gray-200"></div>
+                </div>
+              ))}
             </div>
-
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Template Info */}
-                <div>
-                  <h3 className="text-sm font-semibold">{template.name}</h3>
-                  <p className="text-xs text-gray-500">{template.category}</p>
-                </div>
-
-                {/* Rating and Downloads */}
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Star className="size-3 fill-yellow-400 text-yellow-400" />
-                    <span>{template.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download className="size-3" />
-                    <span>{template.downloads.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleTemplateSelect(template)}
-                  >
-                    Use Template
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleTemplatePreview(template)}
-                  >
-                    <Eye className="size-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={e => handleTemplateDownload(e, template)}
-                  >
-                    <Download className="size-3" />
-                  </Button>
-                </div>
+          )
+        : filteredTemplates.length === 0
+          ? (
+              <div className="py-8 text-center text-gray-500">
+                <p className="text-sm">No templates found</p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )
+          : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredTemplates.map(template => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    className="group cursor-pointer text-left"
+                    onClick={() => handleTemplateSelect(template)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTemplateSelect(template);
+                      }
+                    }}
+                  >
+                    {/* Simplified Card */}
+                    <div className="overflow-hidden rounded-lg border border-white/30 bg-white/70 shadow-sm transition-all duration-200 hover:bg-white/80 hover:shadow-md">
+                      {/* Simple Thumbnail */}
+                      <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                        {template.thumbnail
+                          ? (
+                              <img
+                                src={template.thumbnail}
+                                alt={template.name}
+                                className="size-full object-cover"
+                              />
+                            )
+                          : (
+                              <div className="text-gray-400">
+                                <svg className="size-8" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                      </div>
 
-      {/* Empty State */}
-      {filteredTemplates.length === 0 && (
-        <div className="py-12 text-center">
-          <p className="text-gray-500">No templates found in this category.</p>
-        </div>
-      )}
+                      {/* Simple Title */}
+                      <div className="p-3">
+                        <h4 className="truncate text-sm font-medium text-gray-900">
+                          {template.name}
+                        </h4>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
     </div>
   );
 }

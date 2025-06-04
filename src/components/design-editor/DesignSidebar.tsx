@@ -10,7 +10,7 @@ import {
   Shapes,
   Type,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CanvasSettings } from './CanvasSettings';
@@ -20,7 +20,6 @@ import { SidebarSection } from './components/sidebar/SidebarSection';
 import { DrawingTools } from './DrawingTools';
 import { useFabricOperations } from './hooks/useFabricOperations';
 import { ImageUpload } from './ImageUpload';
-import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import './sidebar-animations.css';
 
@@ -49,99 +48,98 @@ type DesignSidebarProps = {
   locale?: string;
 };
 
-const sidebarSections = [
-  {
-    id: 'design',
-    label: 'Design',
-    icon: Layout,
-    gradient: 'from-violet-500 to-purple-600',
-    description: 'Templates & layouts',
-    items: [
-      { id: 'templates', label: 'Templates', icon: Layout, description: 'Pre-made designs' },
-      { id: 'layouts', label: 'Layouts', icon: Layout, description: 'Grid layouts' },
-    ],
-  },
-  {
-    id: 'backgrounds',
-    label: 'Background',
-    icon: Palette,
-    gradient: 'from-indigo-500 to-purple-600',
-    description: 'Colors & patterns',
-    items: [
-      { id: 'colors', label: 'Colors', icon: Palette, description: 'Solid colors' },
-      { id: 'gradients', label: 'Gradients', icon: Palette, description: 'Color gradients' },
-      { id: 'patterns', label: 'Patterns', icon: Palette, description: 'Texture patterns' },
-    ],
-  },
-  {
-    id: 'elements',
-    label: 'Elements',
-    icon: Shapes,
-    gradient: 'from-blue-500 to-cyan-600',
-    description: 'Shapes & graphics',
-    items: [
-      { id: 'shapes', label: 'Shapes', icon: Shapes, description: 'Basic shapes' },
-      { id: 'lines', label: 'Lines', icon: PenTool, description: 'Lines & arrows' },
-      { id: 'icons', label: 'Icons', icon: Shapes, description: 'Icon library' },
-      { id: 'stickers', label: 'Stickers', icon: Shapes, description: 'Fun stickers' },
-    ],
-  },
-  {
-    id: 'text',
-    label: 'Text',
-    icon: Type,
-    gradient: 'from-emerald-500 to-teal-600',
-    description: 'Typography tools',
-    items: [
-      { id: 'add-text', label: 'Heading', icon: Type, description: 'Large title text' },
-      { id: 'add-subheading', label: 'Subheading', icon: Type, description: 'Medium subtitle' },
-      { id: 'add-body', label: 'Body Text', icon: Type, description: 'Regular paragraph' },
-    ],
-  },
-  {
-    id: 'images',
-    label: 'Images',
-    icon: Image,
-    gradient: 'from-orange-500 to-red-600',
-    description: 'Photos & graphics',
-    items: [
-      { id: 'upload', label: 'Upload', icon: Image, description: 'Your photos' },
-      { id: 'search', label: 'Search', icon: Image, description: 'Stock photos' },
-      { id: 'photos', label: 'Photos', icon: Image, description: 'Photo library' },
-    ],
-  },
-  {
-    id: 'draw',
-    label: 'Draw',
-    icon: PenTool,
-    gradient: 'from-pink-500 to-rose-600',
-    description: 'Drawing tools',
-    items: [
-      { id: 'brush', label: 'Brush', icon: PenTool, description: 'Freehand drawing' },
-      { id: 'pen', label: 'Pen', icon: PenTool, description: 'Precise lines' },
-      { id: 'eraser', label: 'Eraser', icon: PenTool, description: 'Remove parts' },
-    ],
-  },
-
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    gradient: 'from-slate-500 to-gray-600',
-    description: 'Canvas settings',
-    items: [
-      { id: 'canvas-settings', label: 'Canvas', icon: Settings, description: 'Size & format' },
-      { id: 'export-settings', label: 'Export', icon: Settings, description: 'Download options' },
-    ],
-  },
-];
-
 export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<DesignSidebarProps, '_onToggle'>) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [fabricReady, setFabricReady] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [selectedObject, setSelectedObject] = useState<any>(null);
   const fabricInitialized = useRef(false);
+
+  // Memoize the static sidebar sections array to prevent recreation on every render
+  const sidebarSections = useMemo(() => [
+    {
+      id: 'design',
+      label: 'Design',
+      icon: Layout,
+      gradient: 'from-violet-500 to-purple-600',
+      description: 'Templates & layouts',
+      items: [
+        { id: 'templates', label: 'Templates', icon: Layout, description: 'Pre-made designs' },
+        { id: 'layouts', label: 'Layouts', icon: Layout, description: 'Grid layouts' },
+      ],
+    },
+    {
+      id: 'backgrounds',
+      label: 'Background',
+      icon: Palette,
+      gradient: 'from-indigo-500 to-purple-600',
+      description: 'Colors & patterns',
+      items: [
+        { id: 'colors', label: 'Colors', icon: Palette, description: 'Solid colors' },
+        { id: 'gradients', label: 'Gradients', icon: Palette, description: 'Color gradients' },
+        { id: 'patterns', label: 'Patterns', icon: Palette, description: 'Texture patterns' },
+      ],
+    },
+    {
+      id: 'elements',
+      label: 'Elements',
+      icon: Shapes,
+      gradient: 'from-blue-500 to-cyan-600',
+      description: 'Shapes & graphics',
+      items: [
+        { id: 'shapes', label: 'Shapes', icon: Shapes, description: 'Basic shapes' },
+        { id: 'lines', label: 'Lines', icon: PenTool, description: 'Lines & arrows' },
+        { id: 'icons', label: 'Icons', icon: Shapes, description: 'Icon library' },
+        { id: 'stickers', label: 'Stickers', icon: Shapes, description: 'Fun stickers' },
+      ],
+    },
+    {
+      id: 'text',
+      label: 'Text',
+      icon: Type,
+      gradient: 'from-emerald-500 to-teal-600',
+      description: 'Typography tools',
+      items: [
+        { id: 'add-text', label: 'Heading', icon: Type, description: 'Large title text' },
+        { id: 'add-subheading', label: 'Subheading', icon: Type, description: 'Medium subtitle' },
+        { id: 'add-body', label: 'Body Text', icon: Type, description: 'Regular paragraph' },
+      ],
+    },
+    {
+      id: 'images',
+      label: 'Images',
+      icon: Image,
+      gradient: 'from-orange-500 to-red-600',
+      description: 'Photos & graphics',
+      items: [
+        { id: 'upload', label: 'Upload', icon: Image, description: 'Your photos' },
+        { id: 'search', label: 'Search', icon: Image, description: 'Stock photos' },
+        { id: 'photos', label: 'Photos', icon: Image, description: 'Photo library' },
+      ],
+    },
+    {
+      id: 'draw',
+      label: 'Draw',
+      icon: PenTool,
+      gradient: 'from-pink-500 to-rose-600',
+      description: 'Drawing tools',
+      items: [
+        { id: 'brush', label: 'Brush', icon: PenTool, description: 'Freehand drawing' },
+        { id: 'pen', label: 'Pen', icon: PenTool, description: 'Precise lines' },
+        { id: 'eraser', label: 'Eraser', icon: PenTool, description: 'Remove parts' },
+      ],
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      gradient: 'from-slate-500 to-gray-600',
+      description: 'Canvas settings',
+      items: [
+        { id: 'canvas-settings', label: 'Canvas', icon: Settings, description: 'Size & format' },
+        { id: 'export-settings', label: 'Export', icon: Settings, description: 'Download options' },
+      ],
+    },
+  ], []);
 
   // Load fabric on mount only once
   useEffect(() => {
@@ -155,43 +153,25 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
     }
   }, []);
 
-  // Listen for canvas selection changes
-  useEffect(() => {
-    if (!canvas) {
-      return;
-    }
-
-    const handleSelectionCreated = (e: any) => {
-      setSelectedObject(e.selected?.[0] || null);
-    };
-
-    const handleSelectionUpdated = (e: any) => {
-      setSelectedObject(e.selected?.[0] || null);
-    };
-
-    const handleSelectionCleared = () => {
-      setSelectedObject(null);
-    };
-
-    canvas.on('selection:created', handleSelectionCreated);
-    canvas.on('selection:updated', handleSelectionUpdated);
-    canvas.on('selection:cleared', handleSelectionCleared);
-
-    return () => {
-      canvas.off('selection:created', handleSelectionCreated);
-      canvas.off('selection:updated', handleSelectionUpdated);
-      canvas.off('selection:cleared', handleSelectionCleared);
-    };
-  }, [canvas]);
-
   // Use custom hook for fabric operations
-  const { handleAddText, handleAddShape, handleBackgroundChange, handleAddButton, handleAddLink, updateButtonProperties, updateLinkProperties } = useFabricOperations({
+  const {
+    handleAddText,
+    handleAddShape,
+    handleBackgroundChange,
+    handleAddButton,
+    handleAddLink,
+  } = useFabricOperations({
     canvas,
     fabric,
     fabricReady,
   });
 
-  const handleSectionClick = (sectionId: string) => {
+  // Memoize callbacks to prevent recreation on every render
+  const memoizedHandleBackgroundChange = useCallback((color: string) => {
+    handleBackgroundChange(color);
+  }, [handleBackgroundChange]);
+
+  const handleSectionClick = useCallback((sectionId: string) => {
     if (isAnimating) {
       return;
     } // Prevent clicks during animation
@@ -206,9 +186,9 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
 
     // Reset animation state after transition completes
     setTimeout(() => setIsAnimating(false), 400);
-  };
+  }, [isAnimating, activeSection]);
 
-  const handleItemClick = (sectionId: string, itemId: string) => {
+  const handleItemClick = useCallback((sectionId: string, itemId: string) => {
     if (sectionId === 'text') {
       handleAddText(itemId);
     } else if (sectionId === 'elements' && itemId === 'shapes') {
@@ -224,9 +204,10 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
     } else if (sectionId === 'settings') {
       // Keep settings panel open
     }
-  };
+  }, [handleAddText]);
 
-  const renderDetailPanel = () => {
+  // Memoize the detail panel rendering to prevent unnecessary re-renders
+  const renderDetailPanel = useCallback(() => {
     if (!activeSection) {
       return null;
     }
@@ -292,7 +273,7 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
               {/* Backgrounds panel */}
               <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
                 <SidebarSection title="Backgrounds">
-                  <BackgroundsPanel onBackgroundChange={handleBackgroundChange} />
+                  <BackgroundsPanel onBackgroundChange={memoizedHandleBackgroundChange} />
                 </SidebarSection>
               </div>
             </div>
@@ -400,7 +381,7 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
         </div>
       </div>
     );
-  };
+  }, [activeSection, sidebarSections, canvas, memoizedHandleBackgroundChange, handleAddShape, handleAddButton, handleAddLink, handleItemClick, designId, locale]);
 
   if (collapsed) {
     return null;
@@ -465,14 +446,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
 
       {/* Detail Panel */}
       {renderDetailPanel()}
-
-      {/* Properties Panel */}
-      <PropertiesPanel
-        canvas={canvas}
-        selectedObject={selectedObject}
-        updateButtonProperties={updateButtonProperties}
-        updateLinkProperties={updateLinkProperties}
-      />
     </div>
   );
 }

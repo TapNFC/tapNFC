@@ -29,7 +29,7 @@ export type DesignElement = {
     objectFit: 'cover' | 'contain' | 'fill';
   };
   shape?: {
-    type: 'rectangle' | 'circle' | 'triangle' | 'line';
+    type: 'rectangle' | 'circle' | 'triangle' | 'line' | 'diamond';
     fill: string;
     stroke: string;
     strokeWidth: number;

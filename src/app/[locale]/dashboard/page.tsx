@@ -61,7 +61,7 @@ function DashboardSkeleton() {
     <div className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-40 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700" />
+          <div key={`skeleton-card-${i}`} className="h-40 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700" />
         ))}
       </div>
       <div className="grid gap-8 lg:grid-cols-2">

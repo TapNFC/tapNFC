@@ -40,7 +40,7 @@ export function PropertiesPanel({
   // Update local state when selected object changes
   useEffect(() => {
     if (selectedObject) {
-      setObjectProperties({
+      const newProperties = {
         left: Math.round(selectedObject.left || 0),
         top: Math.round(selectedObject.top || 0),
         width: Math.round((selectedObject.width || 0) * (selectedObject.scaleX || 1)),
@@ -64,7 +64,9 @@ export function PropertiesPanel({
         buttonData: selectedObject.buttonData || null,
         // Link properties
         linkData: selectedObject.linkData || null,
-      });
+      };
+
+      setObjectProperties(() => newProperties);
     }
   }, [selectedObject]);
 
@@ -570,9 +572,12 @@ export function PropertiesPanel({
               id="link-url"
               value={objectProperties.linkData.url || ''}
               onChange={e => handleLinkPropertyChange('url', e.target.value)}
-              placeholder="https://example.com"
+              placeholder="https://example.com or https://yourwebsite.com"
               className="h-8"
             />
+            {(!objectProperties.linkData.url || objectProperties.linkData.url.trim() === '') && (
+              <p className="mt-1 text-xs text-amber-600">⚠️ Add a URL to make this link functional in the preview</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">

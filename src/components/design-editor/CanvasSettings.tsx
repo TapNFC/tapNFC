@@ -1,13 +1,15 @@
 'use client';
 
+import type { DesignData } from '@/lib/indexedDB';
 import { Monitor, QrCode, Ruler, Settings, Smartphone, Tablet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { designDB } from '@/lib/indexedDB';
 
 type CanvasSettingsProps = {
   canvas: any;
@@ -21,46 +23,8 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
   const [canvasWidth, setCanvasWidth] = useState(375);
   const [canvasHeight, setCanvasHeight] = useState(667);
 
-  const handleCanvasSizeChange = () => {
-    if (!canvas) {
-      return;
-    }
-
-    canvas.setDimensions({
-      width: canvasWidth,
-      height: canvasHeight,
-    });
-    canvas.renderAll();
-  };
-
-  const handleProceedToQrCode = () => {
-    if (!canvas || !designId) {
-      toast.error('Canvas or design ID not available');
-      return;
-    }
-
-    try {
-      // Save the current canvas data to localStorage before proceeding
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData']);
-      localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
-
-      // Navigate to QR code generation page
-      router.push(`/${locale}/design/${designId}/qr-code`);
-    } catch {
-      toast.error('Failed to save design data. Please try again.');
-    }
-  };
-
-  const handleClearCanvas = () => {
-    if (!canvas) {
-      return;
-    }
-    canvas.clear();
-    canvas.backgroundColor = '#ffffff';
-    canvas.renderAll();
-  };
-
-  const presetSizes = [
+  // Memoize preset sizes to prevent recreation on every render
+  const presetSizes = useMemo(() => [
     // Mobile First (Default)
     {
       name: 'iPhone 14',
@@ -148,9 +112,89 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
       category: 'Print',
       description: 'Document format',
     },
-  ];
+  ], []);
 
-  const categories = ['Mobile', 'Tablet', 'Social', 'Print'];
+  // Memoize categories array
+  const categories = useMemo(() => ['Mobile', 'Tablet', 'Social', 'Print'], []);
+
+  const handleCanvasSizeChange = useCallback(() => {
+    if (!canvas) {
+      return;
+    }
+
+    canvas.setDimensions({
+      width: canvasWidth,
+      height: canvasHeight,
+    });
+    canvas.renderAll();
+  }, [canvas, canvasWidth, canvasHeight]);
+
+  const handleProceedToQrCode = useCallback(async () => {
+    if (!canvas || !designId) {
+      toast.error('Canvas or design ID not available');
+      return;
+    }
+
+    try {
+      // Save the current canvas data to IndexedDB before proceeding
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+
+      // Add canvas dimensions and background to the saved data
+      canvasData.width = canvas.getWidth();
+      canvasData.height = canvas.getHeight();
+      canvasData.background = canvas.backgroundColor || '#ffffff';
+
+      const designData: DesignData = {
+        id: designId,
+        canvasData,
+        metadata: {
+          width: canvas.getWidth(),
+          height: canvas.getHeight(),
+          backgroundColor: canvas.backgroundColor || '#ffffff',
+          title: `Design ${designId}`,
+          description: 'Design created with canvas editor',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Save to IndexedDB
+      await designDB.saveDesign(designData);
+
+      // Also keep localStorage for backward compatibility (temporary)
+      localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
+
+      toast.success('Design saved successfully!');
+
+      // Navigate to QR code generation page
+      router.push(`/${locale}/design/${designId}/qr-code`);
+    } catch (error) {
+      console.error('Error saving design data:', error);
+      toast.error('Failed to save design data. Please try again.');
+    }
+  }, [canvas, designId, locale, router]);
+
+  const handleClearCanvas = useCallback(() => {
+    if (!canvas) {
+      return;
+    }
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.renderAll();
+  }, [canvas]);
+
+  // Memoize preset size handler to prevent recreation
+  const handlePresetSizeClick = useCallback((preset: typeof presetSizes[0]) => {
+    setCanvasWidth(preset.width);
+    setCanvasHeight(preset.height);
+    if (canvas) {
+      canvas.setDimensions({
+        width: preset.width,
+        height: preset.height,
+      });
+      canvas.renderAll();
+    }
+  }, [canvas]);
 
   return (
     <div className="space-y-8">
@@ -235,17 +279,7 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
                   return (
                     <Button
                       key={preset.name}
-                      onClick={() => {
-                        setCanvasWidth(preset.width);
-                        setCanvasHeight(preset.height);
-                        if (canvas) {
-                          canvas.setDimensions({
-                            width: preset.width,
-                            height: preset.height,
-                          });
-                          canvas.renderAll();
-                        }
-                      }}
+                      onClick={() => handlePresetSizeClick(preset)}
                       variant="outline"
                       className="group h-auto w-full justify-between border-gray-200 p-4 transition-all duration-200 hover:border-violet-300 hover:bg-violet-50"
                       disabled={!canvas}

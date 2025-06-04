@@ -74,6 +74,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           fill: '#3b82f6',
           stroke: '#1e40af',
           strokeWidth: 2,
+          rx: 8,
+          ry: 8,
         });
         break;
       }
@@ -82,8 +84,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           left: 100,
           top: 100,
           radius: 50,
-          fill: '#3b82f6',
-          stroke: '#1e40af',
+          fill: '#10b981',
+          stroke: '#059669',
           strokeWidth: 2,
         });
         break;
@@ -94,9 +96,37 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           top: 100,
           width: 100,
           height: 100,
-          fill: '#3b82f6',
-          stroke: '#1e40af',
+          fill: '#8b5cf6',
+          stroke: '#7c3aed',
           strokeWidth: 2,
+        });
+        break;
+      }
+      case 'diamond': {
+        const points = [
+          { x: 50, y: 0 },
+          { x: 100, y: 50 },
+          { x: 50, y: 100 },
+          { x: 0, y: 50 },
+        ];
+
+        shape = new fabric.Polygon(points, {
+          left: 100,
+          top: 100,
+          fill: '#ec4899',
+          stroke: '#db2777',
+          strokeWidth: 2,
+          shapeType: 'diamond',
+        });
+        break;
+      }
+      case 'line': {
+        shape = new fabric.Line([0, 0, 100, 0], {
+          left: 100,
+          top: 100,
+          stroke: '#374151',
+          strokeWidth: 3,
+          strokeLineCap: 'round',
         });
         break;
       }
@@ -105,9 +135,19 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     }
 
     if (shape) {
+      (shape as any).elementType = 'shape';
+      (shape as any).shapeData = {
+        type: shapeType,
+        fill: shape.fill,
+        stroke: shape.stroke,
+        strokeWidth: shape.strokeWidth,
+      };
+
       canvas.add(shape);
       canvas.setActiveObject(shape);
       canvas.renderAll();
+
+      toast.success(`${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} added to canvas`);
     }
   }, [canvas, fabric, fabricReady]);
 
@@ -117,11 +157,37 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       return;
     }
 
-    if (typeof background === 'string') {
-      canvas.setBackgroundColor(background, canvas.renderAll.bind(canvas));
-    } else {
-      // Handle gradient or pattern backgrounds
-      canvas.setBackgroundColor(background.value, canvas.renderAll.bind(canvas));
+    try {
+      let colorValue = '';
+
+      if (typeof background === 'string') {
+        colorValue = background;
+      } else {
+        colorValue = background.value;
+      }
+
+      // Validate color format
+      if (!colorValue || colorValue.trim() === '') {
+        toast.error('Invalid color value');
+        return;
+      }
+
+      // Handle transparent background
+      if (colorValue.toLowerCase() === 'transparent') {
+        canvas.setBackgroundColor('rgba(0,0,0,0)', () => {
+          canvas.renderAll();
+          toast.success('Background set to transparent');
+        });
+        return;
+      }
+
+      // Set the background color
+      canvas.setBackgroundColor(colorValue, () => {
+        canvas.renderAll();
+      });
+    } catch (error) {
+      console.error('Error changing background color:', error);
+      toast.error('Failed to change background color');
     }
   }, [canvas]);
 
@@ -152,9 +218,26 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       top: 100,
     });
 
+    (buttonGroup as any).elementType = 'button';
+    (buttonGroup as any).buttonData = {
+      text: 'Button',
+      backgroundColor: '#3b82f6',
+      textColor: '#ffffff',
+      borderColor: '#1e40af',
+      borderWidth: 0,
+      borderRadius: 8,
+      fontSize: 14,
+      fontWeight: 'normal',
+      fontFamily: 'Inter',
+      padding: { top: 8, right: 16, bottom: 8, left: 16 },
+      action: { type: 'url', value: '' },
+    };
+
     canvas.add(buttonGroup);
     canvas.setActiveObject(buttonGroup);
     canvas.renderAll();
+
+    toast.success('Button added to canvas');
   }, [canvas, fabric, fabricReady]);
 
   const handleAddLink = useCallback(() => {
@@ -163,9 +246,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       return;
     }
 
-    // For now, use default values - in a real app, this would open a dialog
-    const linkText = 'Link';
-    const linkUrl = 'https://example.com';
+    const linkText = 'Click here';
+    const linkUrl = ''; // Start with empty URL so user is prompted to add one
 
     const link = new fabric.IText(linkText, {
       left: 100,
@@ -176,20 +258,29 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       underline: true,
       selectable: true,
       hoverCursor: 'pointer',
-      moveCursor: 'pointer',
+      moveCursor: 'move',
     });
 
-    // Store URL as custom property
-    (link as any).linkUrl = linkUrl;
+    (link as any).elementType = 'link';
+    (link as any).linkData = {
+      text: linkText,
+      url: linkUrl,
+      color: '#3b82f6',
+      hoverColor: '#1e40af',
+      fontSize: 16,
+      fontWeight: 'normal',
+      fontFamily: 'Inter',
+      textDecoration: 'underline',
+      target: '_blank',
+    };
 
     canvas.add(link);
     canvas.setActiveObject(link);
     canvas.renderAll();
 
-    toast.success('Link added to canvas');
+    toast.success('Link added! Don\'t forget to add a URL in the properties panel.');
   }, [canvas, fabric, fabricReady]);
 
-  // Helper function to update button properties
   const updateButtonProperties = useCallback((buttonObject: any, updates: any) => {
     if (!buttonObject || buttonObject.elementType !== 'button') {
       return;
@@ -199,7 +290,6 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       const buttonData = { ...buttonObject.buttonData, ...updates };
       buttonObject.set('buttonData', buttonData);
 
-      // Update visual properties
       const [bgRect, textObj] = buttonObject.getObjects();
 
       if (bgRect && updates.backgroundColor) {
@@ -227,7 +317,6 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     }
   }, [canvas]);
 
-  // Helper function to update link properties
   const updateLinkProperties = useCallback((linkObject: any, updates: any) => {
     if (!linkObject || linkObject.elementType !== 'link') {
       return;
@@ -237,7 +326,6 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       const linkData = { ...linkObject.linkData, ...updates };
       linkObject.set('linkData', linkData);
 
-      // Update visual properties
       if (updates.text) {
         linkObject.set('text', updates.text);
       }

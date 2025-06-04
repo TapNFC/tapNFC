@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { generateDesignId } from '@/lib/indexedDB';
 
 type NewDesignPageProps = {
   params: Promise<{
@@ -9,8 +10,8 @@ type NewDesignPageProps = {
 export default async function NewDesignPage({ params }: NewDesignPageProps) {
   const { locale } = await params;
 
-  // Generate a unique design ID using crypto.randomUUID for better collision resistance
-  const designId = `design_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  // Generate a unique design ID using our utility function
+  const designId = generateDesignId();
 
   // Redirect to the design editor with the new ID
   redirect(`/${locale}/design/${designId}`);

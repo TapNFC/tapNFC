@@ -1,7 +1,8 @@
 'use client';
 
-import { Filter, Grid, List, Search } from 'lucide-react';
-import { nanoid } from 'nanoid';
+import { Filter, Folder, Grid, List, Search, Star } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -11,26 +12,73 @@ type DesignFiltersProps = {
   category?: string;
 };
 
-export function DesignFilters({ view, search, category: _category }: DesignFiltersProps) {
-  const handleCategoryChange = (_category: string) => {
-    // TODO: Implement category change logic
-  };
+export function DesignFilters({ view, search, category }: DesignFiltersProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = useState(search || '');
+
+  const handleCategoryChange = useCallback((newCategory: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (newCategory === 'All Designs') {
+      params.delete('category');
+    } else {
+      params.set('category', newCategory);
+    }
+
+    router.push(`?${params.toString()}`);
+  }, [router, searchParams]);
+
+  const handleViewChange = useCallback((newView: 'grid' | 'list') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', newView);
+    router.push(`?${params.toString()}`);
+  }, [router, searchParams]);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+  }, []);
+
+  const handleSearchSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (searchValue.trim()) {
+      params.set('search', searchValue.trim());
+    } else {
+      params.delete('search');
+    }
+
+    router.push(`?${params.toString()}`);
+  }, [router, searchParams, searchValue]);
+
+  const categories = [
+    { id: 'All Designs', label: 'All Designs', icon: null },
+    { id: 'My Designs', label: 'My Designs', icon: Folder },
+    { id: 'Templates', label: 'Templates', icon: Star },
+    { id: 'Business Cards', label: 'Business Cards', icon: null },
+    { id: 'Social Media', label: 'Social Media', icon: null },
+    { id: 'Marketing', label: 'Marketing', icon: null },
+    { id: 'Presentations', label: 'Presentations', icon: null },
+    { id: 'Branding', label: 'Branding', icon: null },
+  ];
 
   return (
     <div className="mb-8 space-y-4">
       {/* Main Filters Container */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Search Section */}
-        <div className="relative max-w-md flex-1">
+        <form onSubmit={handleSearchSubmit} className="relative max-w-md flex-1">
           <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2">
             <Search className="size-4 text-gray-500" />
           </div>
           <Input
             placeholder="Search designs..."
-            defaultValue={search}
+            value={searchValue}
+            onChange={handleSearchChange}
             className="border-white/30 bg-white/80 pl-10 shadow-lg shadow-blue-100/20 backdrop-blur-sm transition-all duration-200 placeholder:text-gray-500 hover:bg-white/90 focus:bg-white"
           />
-        </div>
+        </form>
 
         {/* Controls Section */}
         <div className="flex items-center gap-3">
@@ -47,8 +95,9 @@ export function DesignFilters({ view, search, category: _category }: DesignFilte
           {/* View Toggle */}
           <div className="flex items-center rounded-xl border border-white/30 bg-white/80 p-1 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
             <Button
-              variant={view === 'grid' ? 'primary' : 'ghost'}
+              variant="ghost"
               size="sm"
+              onClick={() => handleViewChange('grid')}
               className={`size-8 p-0 transition-all duration-200 ${
                 view === 'grid'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
@@ -59,8 +108,9 @@ export function DesignFilters({ view, search, category: _category }: DesignFilte
               <Grid className="size-4" />
             </Button>
             <Button
-              variant={view === 'list' ? 'primary' : 'ghost'}
+              variant="ghost"
               size="sm"
+              onClick={() => handleViewChange('list')}
               className={`size-8 p-0 transition-all duration-200 ${
                 view === 'list'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
@@ -76,18 +126,61 @@ export function DesignFilters({ view, search, category: _category }: DesignFilte
 
       {/* Quick Filter Tags */}
       <div className="flex flex-wrap gap-2">
-        {['All Designs', 'Business Cards', 'Social Media', 'Marketing', 'Presentations'].map(tag => (
-          <button
-            key={nanoid()}
-            type="button"
-            onClick={() => handleCategoryChange(tag)}
-            className="group relative rounded-full border border-white/40 bg-white/60 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-blue-200 hover:bg-white/80 hover:text-blue-700 hover:shadow-md"
-          >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 transition-opacity duration-200 group-hover:opacity-100"></div>
-            <span className="relative">{tag}</span>
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const Icon = cat.icon;
+          const isActive = category === cat.id || (!category && cat.id === 'All Designs');
+
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => handleCategoryChange(cat.id)}
+              className={`group relative rounded-full border px-4 py-2 text-sm font-medium shadow-sm backdrop-blur-sm transition-all duration-200 ${
+                isActive
+                  ? 'border-blue-300 bg-blue-100/80 text-blue-800 shadow-md'
+                  : 'border-white/40 bg-white/60 text-gray-700 hover:border-blue-200 hover:bg-white/80 hover:text-blue-700 hover:shadow-md'
+              }`}
+            >
+              <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 transition-opacity duration-200 ${
+                isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}
+              >
+              </div>
+              <span className="relative flex items-center gap-1">
+                {Icon && <Icon className="size-3" />}
+                {cat.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* Active Filters Display */}
+      {(search || category) && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="font-medium">Active filters:</span>
+          {search && (
+            <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+              Search: "
+              {search}
+              "
+            </span>
+          )}
+          {category && category !== 'All Designs' && (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+              Category:
+              {' '}
+              {category}
+            </span>
+          )}
+          <button
+            onClick={() => router.push('/design')}
+            className="text-xs text-blue-600 underline hover:text-blue-800"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
     </div>
   );
 }

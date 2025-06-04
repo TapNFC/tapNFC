@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 type RealTimePreviewProps = {
@@ -23,80 +23,96 @@ export function RealTimePreview({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Calculate scale to fit preview in container
-  const getPreviewScale = () => {
+  // Force re-render when canvas state changes by using a key
+  const canvasStateKey = useMemo(() => {
+    return JSON.stringify(canvasState);
+  }, [canvasState]);
+
+  // Memoize scale calculation to prevent unnecessary recalculations
+  const getPreviewScale = useMemo(() => {
     if (isFullscreen) {
       return 1;
     }
-    const maxPreviewWidth = 300;
-    const maxPreviewHeight = 400;
-    return Math.min(maxPreviewWidth / width, maxPreviewHeight / height, 1);
-  };
+    // Define the desired maximum dimensions for the small preview *container*
+    const smallPreviewContainerMaxWidth = 300; // Adjust as needed for default small preview width
+    const smallPreviewContainerMaxHeight = 225; // Adjust as needed for default small preview height
 
-  const scale = getPreviewScale();
-  const scaledWidth = width * scale;
-  const scaledHeight = height * scale;
+    // Calculate the scale factor needed to fit the original canvas content
+    // (dimensions: `width` x `height`) into the small preview container.
+    const scaleFactor = Math.min(smallPreviewContainerMaxWidth / width, smallPreviewContainerMaxHeight / height, 1);
+    return scaleFactor > 0 ? scaleFactor : 1; // Ensure scale is positive, default to 1 if width/height is 0
+  }, [isFullscreen, width, height]);
 
-  // Render canvas objects as HTML elements
-  const renderElements = () => {
-    if (!canvasState?.objects) {
+  // Memoize display dimensions
+  const displayDimensions = useMemo(() => {
+    const scale = getPreviewScale;
+    return {
+      width: width * scale,
+      height: height * scale,
+    };
+  }, [width, height, getPreviewScale]);
+
+  // Memoize the heavy renderElements function to prevent recreation on every render
+  const renderedElements = useMemo(() => {
+    if (!canvasState?.objects || canvasState.objects.length === 0) {
       return [];
     }
 
     return canvasState.objects.map((obj: any, index: number) => {
-      // Handle Fabric.js coordinate system and transforms properly
-      const left = obj.left || 0;
-      const top = obj.top || 0;
-      const width = obj.width || 0;
-      const height = obj.height || 0;
-      const scaleX = obj.scaleX || 1;
-      const scaleY = obj.scaleY || 1;
+      const objLeft = obj.left || 0;
+      const objTop = obj.top || 0;
+      const objWidth = (obj.width || 0);
+      const objHeight = (obj.height || 0);
+      const objScaleX = obj.scaleX || 1;
+      const objScaleY = obj.scaleY || 1;
       const angle = obj.angle || 0;
       const opacity = obj.opacity !== undefined ? obj.opacity : 1;
 
-      // Calculate actual dimensions after scaling
-      const actualWidth = width * scaleX;
-      const actualHeight = height * scaleY;
+      // Calculate actual dimensions after scaling, these are the dimensions on the *original* canvas
+      const actualWidth = objWidth * objScaleX;
+      const actualHeight = objHeight * objScaleY;
 
-      // Base styles for all elements
+      // Base styles for all elements - positions and dimensions are now relative to the original canvas,
+      // the `scale` will be applied by the parent container's transform.
       const baseStyle: React.CSSProperties = {
         position: 'absolute',
-        transformOrigin: 'center center',
+        left: `${objLeft}px`,
+        top: `${objTop}px`,
+        width: `${actualWidth}px`,
+        height: `${actualHeight}px`,
+        transform: `rotate(${angle}deg)`,
+        transformOrigin: 'center center', // Fabric.js typically uses center origin for rotation
         opacity,
         zIndex: index + 1,
-        pointerEvents: 'none',
+        pointerEvents: 'none', // Important for preview
+        visibility: obj.visible !== false ? ('visible' as const) : ('hidden' as const),
       };
 
       // Handle Button elements
       if (obj.elementType === 'button' && obj.buttonData) {
         const buttonData = obj.buttonData;
-        // Convert from center-based to top-left positioning FIRST, then apply scale
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: scaledWidth,
-              height: scaledHeight,
-              transform: `rotate(${angle}deg)`,
+              // Override width/height if buttonData has padding, as baseStyle uses scaled dimensions
+              // HTML button/div with text will auto-size based on content and padding.
+              // Forcing width/height here might conflict with padding.
+              // Let's rely on the width/height from baseStyle for now.
               backgroundColor: buttonData.backgroundColor || '#3b82f6',
               color: buttonData.textColor || '#ffffff',
-              border: `${(buttonData.borderWidth || 1) * scale}px solid ${buttonData.borderColor || 'transparent'}`,
-              borderRadius: (buttonData.borderRadius || 8) * scale,
-              fontSize: (buttonData.fontSize || 14) * scale,
+              border: `${buttonData.borderWidth || 1}px solid ${buttonData.borderColor || 'transparent'}`,
+              borderRadius: `${buttonData.borderRadius || 8}px`,
+              fontSize: `${buttonData.fontSize || 14}px`,
               fontWeight: buttonData.fontWeight || 'normal',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              fontFamily: buttonData.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              padding: `${buttonData.padding?.top || 8}px ${buttonData.padding?.right || 16}px ${buttonData.padding?.bottom || 8}px ${buttonData.padding?.left || 16}px`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxSizing: 'border-box',
+              cursor: 'default', // No interaction in preview
             }}
           >
             {buttonData.text || 'Button'}
@@ -107,27 +123,21 @@ export function RealTimePreview({
       // Handle Link elements
       if (obj.elementType === 'link' && obj.linkData) {
         const linkData = obj.linkData;
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: scaledWidth,
-              height: scaledHeight,
-              transform: `rotate(${angle}deg)`,
               color: linkData.color || '#3b82f6',
-              fontSize: (linkData.fontSize || 16) * scale,
+              fontSize: `${linkData.fontSize || 16}px`,
               fontWeight: linkData.fontWeight || 'normal',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              fontFamily: linkData.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
               textDecoration: linkData.textDecoration || 'underline',
-              display: 'inline-block',
+              display: 'flex', // Use flex to better align text
+              alignItems: 'center', // Vertically center
+              justifyContent: 'flex-start', // Align text to start
+              boxSizing: 'border-box',
+              cursor: 'default',
             }}
           >
             {linkData.text || 'Link'}
@@ -137,25 +147,14 @@ export function RealTimePreview({
 
       // Handle Rectangle shapes
       if (obj.type === 'rect') {
-        // Convert from Fabric.js center-based positioning to HTML top-left positioning
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: scaledWidth,
-              height: scaledHeight,
-              transform: `rotate(${angle}deg)`,
               backgroundColor: obj.fill || '#cccccc',
-              border: `${(obj.strokeWidth || 0) * scale}px solid ${obj.stroke || 'transparent'}`,
-              borderRadius: (obj.rx || 0) * scale,
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+              borderRadius: `${obj.rx || 0}px`, // rx and ry for rounded corners
               boxSizing: 'border-box',
             }}
           />
@@ -164,25 +163,16 @@ export function RealTimePreview({
 
       // Handle Circle shapes
       if (obj.type === 'circle') {
-        const radius = obj.radius || 25;
-        const effectiveRadius = radius * Math.max(scaleX, scaleY);
-        // For circles, Fabric.js center is the circle center, HTML needs top-left of bounding box
-        const htmlLeft = (left - effectiveRadius) * scale;
-        const htmlTop = (top - effectiveRadius) * scale;
-        const diameter = effectiveRadius * 2 * scale;
-
+        // For circles, FabricJS left/top is center of bounding box. HTML needs top-left.
+        // However, baseStyle already uses obj.left and obj.top.
+        // The width/height in baseStyle are diameter.
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: diameter,
-              height: diameter,
-              transform: `rotate(${angle}deg)`,
               backgroundColor: obj.fill || '#cccccc',
-              border: `${(obj.strokeWidth || 0) * scale}px solid ${obj.stroke || 'transparent'}`,
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
               borderRadius: '50%',
               boxSizing: 'border-box',
             }}
@@ -192,92 +182,276 @@ export function RealTimePreview({
 
       // Handle Triangle shapes
       if (obj.type === 'triangle') {
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
+        // Triangles with borders are tricky with CSS. This creates a filled triangle.
+        // For CSS triangles, width and height are used differently in border properties.
+        // We'll use a simple div with background for fill, border handling might be imperfect.
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: 0,
-              height: 0,
-              transform: `rotate(${angle}deg)`,
-              borderLeft: `${scaledWidth / 2}px solid transparent`,
-              borderRight: `${scaledWidth / 2}px solid transparent`,
-              borderBottom: `${scaledHeight}px solid ${obj.fill || '#cccccc'}`,
+              width: 0, // CSS triangle trick
+              height: 0, // CSS triangle trick
+              borderLeft: `${actualWidth / 2}px solid transparent`,
+              borderRight: `${actualWidth / 2}px solid transparent`,
+              borderBottom: `${actualHeight}px solid ${obj.fill || '#cccccc'}`,
+              // Reset background and border from baseStyle if they interfere
+              backgroundColor: 'transparent',
+              border: 'none',
             }}
           />
         );
       }
 
-      // Handle Text elements
-      if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
-        const fontSize = obj.fontSize || 16;
+      // Handle Polygon shapes (including diamond)
+      if (obj.type === 'polygon') {
+        const isStandardDiamond = obj.shapeType === 'diamond'
+          || (obj.points && obj.points.length === 4);
 
-        // Start with Fabric.js coordinates
-        let htmlLeft = left;
-        let htmlTop = top;
-
-        // Handle text origin adjustments in Fabric.js coordinate space first
-        if (obj.originX === 'center') {
-          htmlLeft = left - (actualWidth / 2);
-        } else if (obj.originX === 'right') {
-          htmlLeft = left - actualWidth;
+        if (isStandardDiamond) {
+          // Render diamond using CSS transform
+          return (
+            <div
+              key={index}
+              style={{
+                ...baseStyle,
+                backgroundColor: obj.fill || '#cccccc',
+                border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+                transform: `${baseStyle.transform} rotate(45deg)`,
+                borderRadius: '4px', // Small radius for better appearance
+                boxSizing: 'border-box',
+              }}
+            />
+          );
         } else {
-          // For 'left' origin, Fabric.js left IS the left edge
-          htmlLeft = left;
-        }
+          // For other polygons, use SVG for accurate rendering
+          const svgPath = `${obj.points?.map((point: any, i: number) =>
+            `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`,
+          ).join(' ')} Z`;
 
-        if (obj.originY === 'center') {
-          htmlTop = top - (actualHeight / 2);
-        } else if (obj.originY === 'bottom') {
-          htmlTop = top - actualHeight;
-        } else {
-          // For 'top' origin, Fabric.js top IS the top edge
-          htmlTop = top;
+          return (
+            <div
+              key={index}
+              style={{
+                ...baseStyle,
+                overflow: 'visible',
+              }}
+            >
+              <svg
+                width={actualWidth}
+                height={actualHeight}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: '100%',
+                }}
+              >
+                <path
+                  d={svgPath}
+                  fill={obj.fill || '#cccccc'}
+                  stroke={obj.stroke || 'transparent'}
+                  strokeWidth={obj.strokeWidth || 0}
+                />
+              </svg>
+            </div>
+          );
         }
+      }
 
-        // Additional text baseline adjustments
-        if (obj.textBaseline === 'alphabetic' || obj.textBaseline === 'baseline') {
-          htmlTop = htmlTop - fontSize * scaleX * 0.2;
-        } else if (obj.textBaseline === 'middle') {
-          htmlTop = htmlTop - fontSize * scaleX * 0.1;
-        }
-
-        // Now apply scale to final coordinates
-        const scaledLeft = htmlLeft * scale;
-        const scaledTop = htmlTop * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
+      // Handle Line shapes
+      if (obj.type === 'line') {
+        const x1 = obj.x1 || 0;
+        const y1 = obj.y1 || 0;
+        const x2 = obj.x2 || actualWidth;
+        const y2 = obj.y2 || 0;
 
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: scaledLeft,
-              top: scaledTop,
-              width: scaledWidth || 'auto',
-              height: scaledHeight || 'auto',
-              transform: `rotate(${angle}deg)`,
-              color: obj.fill || '#000000',
-              fontFamily: obj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-              fontSize: fontSize * scaleX * scale,
-              fontWeight: obj.fontWeight || 'normal',
-              fontStyle: obj.fontStyle || 'normal',
-              textAlign: obj.textAlign || 'left',
-              textDecoration: obj.underline ? 'underline' : obj.linethrough ? 'line-through' : 'none',
-              lineHeight: obj.lineHeight || 1.2,
-              boxSizing: 'border-box',
-              wordWrap: obj.type === 'textbox' ? 'break-word' : 'normal',
-              overflowWrap: obj.type === 'textbox' ? 'break-word' : 'normal',
+              overflow: 'visible',
             }}
           >
+            <svg
+              width={actualWidth}
+              height={actualHeight}
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+              }}
+            >
+              <line
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={obj.stroke || '#000000'}
+                strokeWidth={obj.strokeWidth || 1}
+                strokeLinecap={obj.strokeLineCap || 'round'}
+              />
+            </svg>
+          </div>
+        );
+      }
+
+      // Handle custom shape elements (from our shape system)
+      if (obj.elementType === 'shape' && obj.shapeData) {
+        const shapeData = obj.shapeData;
+
+        switch (shapeData.type) {
+          case 'rectangle':
+            return (
+              <div
+                key={index}
+                style={{
+                  ...baseStyle,
+                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                  borderRadius: `${obj.rx || 8}px`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            );
+
+          case 'circle':
+            return (
+              <div
+                key={index}
+                style={{
+                  ...baseStyle,
+                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                  borderRadius: '50%',
+                  boxSizing: 'border-box',
+                }}
+              />
+            );
+
+          case 'triangle':
+            return (
+              <div
+                key={index}
+                style={{
+                  ...baseStyle,
+                  width: 0,
+                  height: 0,
+                  borderLeft: `${actualWidth / 2}px solid transparent`,
+                  borderRight: `${actualWidth / 2}px solid transparent`,
+                  borderBottom: `${actualHeight}px solid ${shapeData.fill || obj.fill || '#cccccc'}`,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                }}
+              />
+            );
+
+          case 'diamond':
+            return (
+              <div
+                key={index}
+                style={{
+                  ...baseStyle,
+                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                  transform: `${baseStyle.transform} rotate(45deg)`,
+                  borderRadius: '4px',
+                  boxSizing: 'border-box',
+                }}
+              />
+            );
+
+          case 'line':
+            return (
+              <div
+                key={index}
+                style={{
+                  ...baseStyle,
+                  backgroundColor: shapeData.stroke || obj.stroke || '#000000',
+                  border: 'none',
+                  height: `${shapeData.strokeWidth || obj.strokeWidth || 2}px`,
+                  borderRadius: '1px',
+                }}
+              />
+            );
+
+          default:
+            break;
+        }
+      }
+
+      // Handle Text elements (i-text, text, textbox)
+      if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
+        const fontSize = obj.fontSize || 16;
+        // Fabric's (left, top) can be affected by originX, originY.
+        // PreviewButton's logic for text was more accurate.
+        let adjustedTop = objTop;
+        let adjustedLeft = objLeft; // Start with object's left
+
+        // Handle originX for left positioning (PreviewButton doesn't explicitly do this for `left`)
+        // Fabric's default originX for IText is 'left'.
+        // If originX is 'center', left is the center. For HTML, we need the actual left edge.
+        if (obj.originX === 'center') {
+          adjustedLeft = objLeft - actualWidth / 2;
+        } else if (obj.originX === 'right') {
+          adjustedLeft = objLeft - actualWidth;
+        }
+        // If originX is 'left', objLeft is already the left edge.
+
+        // Handle originY and textBaseline for top positioning
+        // This logic is similar to PreviewButton
+        if (obj.originY === 'center') {
+          adjustedTop = objTop - actualHeight / 2;
+        } else if (obj.originY === 'bottom') {
+          adjustedTop = objTop - actualHeight;
+        }
+        // If originY is 'top', objTop is already the top edge.
+
+        // Further baseline adjustment for text (inspired by PreviewButton)
+        // Note: Fabric's `top` for text also depends on `textBaseline`
+        // This might need fine-tuning depending on how Fabric calculates `obj.top` with `textBaseline`
+        const textBaseline = obj.textBaseline || 'alphabetic';
+        if (textBaseline === 'alphabetic' || textBaseline === 'baseline') {
+          // Approximation: Fabric's top is baseline; HTML div top is top.
+          // No major adjustment needed if originY is 'top'.
+          // If originY is center/bottom, it's already handled.
+        } else if (textBaseline === 'middle') {
+          // adjustedTop += fontSize * 0.1; // Example fine-tune
+        }
+
+        const textStyle: React.CSSProperties = {
+          ...baseStyle,
+          left: `${adjustedLeft}px`,
+          top: `${adjustedTop}px`,
+          // For text, width/height from baseStyle might need to be 'auto'
+          // if the text content dictates the size. FabricJS text objects can have fixed width/height (Textbox)
+          // or be sized by content (IText).
+          width: obj.type === 'textbox' ? `${actualWidth}px` : 'auto',
+          height: obj.type === 'textbox' ? `${actualHeight}px` : 'auto',
+          color: obj.fill || '#000000',
+          fontFamily: obj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', // Match RealTimePreview default
+          fontSize: `${fontSize}px`, // Use original font size, parent scales
+          fontWeight: obj.fontWeight || 'normal',
+          fontStyle: obj.fontStyle || 'normal',
+          textAlign: obj.textAlign || 'left',
+          textDecoration: obj.underline ? 'underline' : obj.linethrough ? 'line-through' : 'none',
+          lineHeight: obj.lineHeight || 1.2,
+          whiteSpace: 'pre-wrap', // Important for respecting newlines in text
+          boxSizing: 'border-box',
+          display: 'flex', // Helps with vertical alignment if needed
+          alignItems: 'flex-start', // Default for text
+          // justifyContent: handled by textAlign
+        };
+        if (textStyle.textAlign === 'center') {
+          textStyle.justifyContent = 'center';
+        } else if (textStyle.textAlign === 'right') {
+          textStyle.justifyContent = 'flex-end';
+        } else {
+          textStyle.justifyContent = 'flex-start';
+        }
+
+        return (
+          <div key={index} style={textStyle}>
             {obj.text || ''}
           </div>
         );
@@ -285,11 +459,6 @@ export function RealTimePreview({
 
       // Handle Image elements
       if (obj.type === 'image') {
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
         return (
           <img
             key={index}
@@ -297,109 +466,122 @@ export function RealTimePreview({
             alt="Design element"
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: scaledWidth,
-              height: scaledHeight,
-              transform: `rotate(${angle}deg)`,
-              objectFit: 'cover',
+              // objectFit: 'cover', // or 'contain', depending on desired behavior. Fabric default is like 'fill'
+              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover', // A common default
               boxSizing: 'border-box',
             }}
           />
         );
       }
 
-      // Handle Group elements
-      if (obj.type === 'group') {
-        const htmlLeft = (left - (actualWidth / 2)) * scale;
-        const htmlTop = (top - (actualHeight / 2)) * scale;
-        const scaledWidth = actualWidth * scale;
-        const scaledHeight = actualHeight * scale;
-
+      // Handle Group elements (basic rendering)
+      if (obj.type === 'group' && obj.objects) {
+        // For groups, the group itself has left, top, width, height, scaleX, scaleY, angle.
+        // The objects within the group have their own relative positions.
+        // RealTimePreview has a more detailed group rendering. Let's adopt a similar structure.
+        // The baseStyle applies to the group container.
         return (
           <div
             key={index}
             style={{
               ...baseStyle,
-              left: htmlLeft,
-              top: htmlTop,
-              width: scaledWidth,
-              height: scaledHeight,
-              transform: `rotate(${angle}deg)`,
+              // Group's own background/border usually transparent unless specified
+              // backgroundColor: obj.fill, // if groups can have fill
+              // border: obj.stroke ? `${obj.strokeWidth}px solid ${obj.stroke}` : 'none',
             }}
           >
-            {obj.objects && obj.objects.map((groupObj: any, groupIndex: number) => {
-              const groupWidth = (groupObj.width || 0) * (groupObj.scaleX || 1);
-              const groupHeight = (groupObj.height || 0) * (groupObj.scaleY || 1);
-              const groupHtmlLeft = ((groupObj.left || 0) - (groupWidth / 2)) * scale;
-              const groupHtmlTop = ((groupObj.top || 0) - (groupHeight / 2)) * scale;
-              const groupScaledWidth = groupWidth * scale;
-              const groupScaledHeight = groupHeight * scale;
+            {obj.objects.map((groupObj: any, groupIndex: number) => {
+              const groupObjLeft = groupObj.left || 0;
+              const groupObjTop = groupObj.top || 0;
+              const groupObjWidth = (groupObj.width || 0) * (groupObj.scaleX || 1);
+              const groupObjHeight = (groupObj.height || 0) * (groupObj.scaleY || 1);
+              const groupObjAngle = groupObj.angle || 0; // Angle relative to group
+
+              const groupObjStyle: React.CSSProperties = {
+                position: 'absolute',
+                left: `${groupObjLeft}px`, // Positions are relative to the group's top-left
+                top: `${groupObjTop}px`,
+                width: `${groupObjWidth}px`,
+                height: `${groupObjHeight}px`,
+                transform: `rotate(${groupObjAngle}deg)`,
+                transformOrigin: 'center center',
+                opacity: groupObj.opacity !== undefined ? groupObj.opacity : 1,
+                zIndex: groupIndex + 1, // Stacking within the group
+              };
 
               if (groupObj.type === 'rect') {
                 return (
                   <div
-                    key={groupIndex}
+                    key={`${index}-${groupIndex}`}
                     style={{
-                      position: 'absolute',
-                      left: groupHtmlLeft,
-                      top: groupHtmlTop,
-                      width: groupScaledWidth,
-                      height: groupScaledHeight,
+                      ...groupObjStyle,
                       backgroundColor: groupObj.fill || '#cccccc',
-                      borderRadius: (groupObj.rx || 0) * scale,
-                      border: `${(groupObj.strokeWidth || 0) * scale}px solid ${groupObj.stroke || 'transparent'}`,
+                      borderRadius: `${groupObj.rx || 0}px`,
+                      border: `${groupObj.strokeWidth || 0}px solid ${groupObj.stroke || 'transparent'}`,
                       boxSizing: 'border-box',
                     }}
                   />
                 );
-              } else if (groupObj.type === 'text' || groupObj.type === 'i-text') {
+              } else if (groupObj.type === 'text' || groupObj.type === 'i-text' || groupObj.type === 'textbox') {
+                const groupTextFontSize = groupObj.fontSize || 16;
                 return (
                   <div
-                    key={groupIndex}
+                    key={`${index}-${groupIndex}`}
                     style={{
-                      position: 'absolute',
-                      left: groupHtmlLeft,
-                      top: groupHtmlTop,
+                      ...groupObjStyle,
                       color: groupObj.fill || '#000000',
                       fontFamily: groupObj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      fontSize: (groupObj.fontSize || 16) * scale,
+                      fontSize: `${groupTextFontSize}px`,
                       fontWeight: groupObj.fontWeight || 'normal',
                       textAlign: groupObj.textAlign || 'left',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: groupObj.lineHeight || 1.2,
                       boxSizing: 'border-box',
+                      display: 'flex',
+                      alignItems: 'flex-start',
                     }}
                   >
                     {groupObj.text || ''}
                   </div>
                 );
+              } else if (groupObj.type === 'image') {
+                return (
+                  <img
+                    key={`${index}-${groupIndex}`}
+                    src={groupObj.src || ''}
+                    alt="Grouped element"
+                    style={{
+                      ...groupObjStyle,
+                      objectFit: 'fill',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                );
               }
+              // Add other group object types as needed
               return null;
             })}
           </div>
         );
       }
 
-      // Default fallback
+      // Default fallback (simple div with background) - useful for unknown types or basic shapes
       return (
         <div
           key={index}
           style={{
             ...baseStyle,
-            left: (left - (actualWidth / 2)) * scale,
-            top: (top - (actualHeight / 2)) * scale,
-            width: actualWidth * scale,
-            height: actualHeight * scale,
-            transform: `rotate(${angle}deg)`,
-            backgroundColor: obj.fill || '#cccccc',
-            border: `${scale}px solid ${obj.stroke || '#999'}`,
+            backgroundColor: obj.fill || '#cccccc', // Default fill
+            border: obj.stroke ? `${obj.strokeWidth || 1}px solid ${obj.stroke}` : '1px solid #999', // Default border
+            boxSizing: 'border-box',
           }}
         />
       );
     });
-  };
+  }, [canvasState?.objects]);
 
   // Handle fullscreen toggle
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!isFullscreen && previewRef.current) {
       if (previewRef.current.requestFullscreen) {
         previewRef.current.requestFullscreen();
@@ -408,9 +590,12 @@ export function RealTimePreview({
       document.exitFullscreen();
     }
     setIsFullscreen(!isFullscreen);
-  };
+  }, [isFullscreen]);
 
-  // Handle fullscreen events
+  const handleShowPreview = useCallback(() => setIsVisible(true), []);
+  const handleHidePreview = useCallback(() => setIsVisible(false), []);
+
+  // Handle fullscreen events with proper cleanup
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -426,7 +611,7 @@ export function RealTimePreview({
     return (
       <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
         <Button
-          onClick={() => setIsVisible(true)}
+          onClick={handleShowPreview}
           variant="outline"
           size="sm"
           className="bg-white shadow-lg hover:shadow-xl"
@@ -441,11 +626,11 @@ export function RealTimePreview({
   return (
     <div
       ref={previewRef}
-      className={`fixed ${isFullscreen ? 'inset-0 z-[9999] bg-gray-900' : 'bottom-4 right-4 z-50'} ${className}`}
+      className={`fixed ${isFullscreen ? 'inset-0 z-[9999] flex items-center justify-center bg-gray-900' : `bottom-4 right-4 z-50 ${className}`}`}
     >
-      <div className={`${isFullscreen ? 'flex h-full items-center justify-center' : 'rounded-lg border border-gray-200 bg-white shadow-lg'}`}>
+      <div className={`${isFullscreen ? 'relative flex flex-col' : 'rounded-lg border border-gray-200 bg-white shadow-lg'}`}>
         {/* Preview Header */}
-        <div className={`${isFullscreen ? 'absolute inset-x-4 top-4' : ''} flex items-center justify-between border-b border-gray-200 bg-white p-3 ${isFullscreen ? 'rounded-lg shadow-lg' : ''}`}>
+        <div className={`${isFullscreen ? 'absolute inset-x-4 top-4' : ''} flex items-center justify-between border-b border-gray-200 bg-white p-3 ${isFullscreen ? 'rounded-lg shadow-lg' : 'rounded-t-lg'}`}>
           <div className="flex items-center gap-2">
             <Eye className="size-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Live Preview</span>
@@ -468,7 +653,7 @@ export function RealTimePreview({
                   )}
             </Button>
             <Button
-              onClick={() => setIsVisible(false)}
+              onClick={handleHidePreview}
               variant="ghost"
               size="sm"
               className="size-8 p-0"
@@ -479,17 +664,34 @@ export function RealTimePreview({
         </div>
 
         {/* Preview Content */}
-        <div className={`${isFullscreen ? 'flex flex-1 items-center justify-center' : 'p-4'}`}>
+        <div
+          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-4' : 'p-4'}`}
+          style={!isFullscreen ? { width: `${displayDimensions.width + 20}px`, height: `${displayDimensions.height + 10}px`, overflow: 'hidden' } : {}}
+        >
           <div
             className="relative border border-gray-300 shadow-sm"
+            key={canvasStateKey}
             style={{
-              width: `${scaledWidth}px`,
-              height: `${scaledHeight}px`,
+              width: `${width}px`, // Use original canvas width
+              height: `${height}px`, // Use original canvas height
               backgroundColor,
               overflow: 'hidden',
+              transform: `scale(${getPreviewScale})`,
+              transformOrigin: 'top left',
             }}
           >
-            {renderElements()}
+            {renderedElements.length > 0
+              ? (
+                  renderedElements
+                )
+              : (
+                  <div className="flex h-full items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <div className="text-sm">Canvas is empty</div>
+                      <div className="text-xs">Add elements to see preview</div>
+                    </div>
+                  </div>
+                )}
           </div>
         </div>
 
@@ -506,7 +708,7 @@ export function RealTimePreview({
             </span>
             <span>
               Scale:
-              {Math.round(scale * 100)}
+              {Math.round(getPreviewScale * 100)}
               %
             </span>
           </div>

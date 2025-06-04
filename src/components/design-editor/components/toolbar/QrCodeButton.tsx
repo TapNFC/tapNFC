@@ -1,7 +1,9 @@
+import type { DesignData } from '@/lib/indexedDB';
 import { QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { designDB } from '@/lib/indexedDB';
 
 type QrCodeButtonProps = {
   designId: string;
@@ -13,17 +15,42 @@ type QrCodeButtonProps = {
 export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas }: QrCodeButtonProps) {
   const router = useRouter();
 
-  const handleProceedToQrCode = () => {
+  const handleProceedToQrCode = async () => {
     if (disabled) {
       return;
     }
 
-    // Save the current canvas data to localStorage before proceeding
+    // Save the current canvas data to IndexedDB before proceeding
     if (canvas) {
       try {
-        const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData']);
+        const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+
+        // Add canvas dimensions and background to the saved data
+        canvasData.width = canvas.getWidth();
+        canvasData.height = canvas.getHeight();
+        canvasData.background = canvas.backgroundColor || '#ffffff';
+
+        const designData: DesignData = {
+          id: designId,
+          canvasData,
+          metadata: {
+            width: canvas.getWidth(),
+            height: canvas.getHeight(),
+            backgroundColor: canvas.backgroundColor || '#ffffff',
+            title: `Design ${designId}`,
+            description: 'Design ready for QR code generation',
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        // Save to IndexedDB
+        await designDB.saveDesign(designData);
+
+        // Also keep localStorage for backward compatibility (temporary)
         localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
-      } catch {
+      } catch (error) {
+        console.error('Failed to save design data:', error);
         toast.error('Failed to save design data. Please try again.');
         return;
       }

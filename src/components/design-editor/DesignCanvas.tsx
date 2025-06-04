@@ -1,7 +1,7 @@
 'use client';
 
 import type { CanvasSize, DesignElement } from '@/stores/designStore';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CanvasElement } from './CanvasElement';
 
 type DesignCanvasProps = {
@@ -47,7 +47,7 @@ export function DesignCanvas({
           y: Math.max(0, (containerRect.height - canvasHeight) / 2),
         };
 
-        setCanvasOffset(newOffset);
+        setCanvasOffset(() => newOffset);
       }
     }
   }, [canvasSize, zoom]);
@@ -180,7 +180,32 @@ export function DesignCanvas({
     setIsDragging(false);
   }, []);
 
-  const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+  // Memoize sorted elements to prevent unnecessary re-computations
+  const sortedElements = useMemo(() => {
+    return [...elements].sort((a, b) => a.zIndex - b.zIndex);
+  }, [elements]);
+
+  // Memoize canvas styles to prevent recalculation
+  const canvasStyles = useMemo(() => ({
+    transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
+    width: canvasSize.width * zoom,
+    height: canvasSize.height * zoom,
+  }), [canvasOffset.x, canvasOffset.y, canvasSize.width, canvasSize.height, zoom]);
+
+  const innerCanvasStyles = useMemo(() => ({
+    width: canvasSize.width * zoom,
+    height: canvasSize.height * zoom,
+    transform: `scale(${zoom})`,
+    transformOrigin: 'top left',
+  }), [canvasSize.width, canvasSize.height, zoom]);
+
+  const gridStyles = useMemo(() => ({
+    backgroundImage: `
+      linear-gradient(to right, #000 1px, transparent 1px),
+      linear-gradient(to bottom, #000 1px, transparent 1px)
+    `,
+    backgroundSize: '20px 20px',
+  }), []);
 
   return (
     <button
@@ -196,22 +221,13 @@ export function DesignCanvas({
       {/* Canvas Container */}
       <div
         className="relative"
-        style={{
-          transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
-          width: canvasSize.width * zoom,
-          height: canvasSize.height * zoom,
-        }}
+        style={canvasStyles}
       >
         {/* Canvas Background */}
         <button
           ref={canvasRef}
           className="relative bg-white shadow-lg"
-          style={{
-            width: canvasSize.width * zoom,
-            height: canvasSize.height * zoom,
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
-          }}
+          style={innerCanvasStyles}
           onClick={handleCanvasClick}
           onKeyDown={handleCanvasKeyDown}
           aria-label="Design workspace - click to add elements or press Escape to deselect"
@@ -220,13 +236,7 @@ export function DesignCanvas({
           {/* Grid Pattern */}
           <div
             className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, #000 1px, transparent 1px),
-                linear-gradient(to bottom, #000 1px, transparent 1px)
-              `,
-              backgroundSize: '20px 20px',
-            }}
+            style={gridStyles}
           />
 
           {/* Canvas Elements */}

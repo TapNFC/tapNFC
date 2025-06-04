@@ -2,25 +2,23 @@
 
 import {
   AlignCenter,
-  AlignJustify,
   AlignLeft,
   AlignRight,
-  ArrowDown,
-  ArrowUp,
   Bold,
   ChevronDown,
   ChevronUp,
-  Circle,
   Italic,
   Minus,
   Plus,
-  Square,
+  Send,
   Strikethrough,
-  Type,
   Underline,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -29,29 +27,53 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type TextToolbarProps = {
   canvas: any;
   selectedObject?: any;
 };
 
-const fontFamilies = [
+// Memoize font families array outside component to prevent recreation
+const FONT_FAMILIES = [
   'Arial',
-  'Helvetica',
-  'Times New Roman',
   'Georgia',
-  'Verdana',
+  'Times New Roman',
   'Courier New',
+  'Verdana',
+  'Helvetica',
   'Impact',
   'Comic Sans MS',
   'Trebuchet MS',
-  'Palatino',
-];
+  'Lucida Console',
+  'Inter',
+  'Roboto',
+  'Open Sans',
+  'Lato',
+  'Montserrat',
+  'Poppins',
+  'Source Sans Pro',
+  'Oswald',
+  'Raleway',
+  'Ubuntu',
+] as const;
 
-const fontSizes = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
+// Memoize text alignment options
+const TEXT_ALIGNMENTS = [
+  { value: 'left', icon: AlignLeft, label: 'Left' },
+  { value: 'center', icon: AlignCenter, label: 'Center' },
+  { value: 'right', icon: AlignRight, label: 'Right' },
+] as const;
 
 export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
-  const [fontFamily, setFontFamily] = useState('Arial');
+  const [isVisible, setIsVisible] = useState(false);
+  const [fontFamily, setFontFamily] = useState('Inter');
   const [fontSize, setFontSize] = useState(16);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
@@ -61,15 +83,22 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   const [textColor, setTextColor] = useState('#000000');
   const [fillColor, setFillColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(1);
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [opacity, setOpacity] = useState(100);
 
-  // Update toolbar state when selected object changes
+  const isTextObject = selectedObject
+    && (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox');
+
+  // Update visibility and properties based on selected object
   useEffect(() => {
     if (selectedObject) {
+      setIsVisible(true);
+
+      // Update state based on selected object properties
       const updateState = () => {
-        // Text-specific properties
-        if (selectedObject.type === 'i-text') {
-          setFontFamily(selectedObject.fontFamily || 'Arial');
+        // Handle text objects
+        if (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox') {
+          setFontFamily(selectedObject.fontFamily || 'Inter');
           setFontSize(selectedObject.fontSize || 16);
           setIsBold(selectedObject.fontWeight === 'bold');
           setIsItalic(selectedObject.fontStyle === 'italic');
@@ -77,396 +106,416 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
           setIsStrikethrough(selectedObject.linethrough || false);
           setTextAlign(selectedObject.textAlign || 'left');
           setTextColor(selectedObject.fill || '#000000');
+          setFillColor(selectedObject.fill || '#000000');
+          setStrokeColor(selectedObject.stroke || '#000000');
+          setStrokeWidth(selectedObject.strokeWidth || 0);
         }
-
-        // Shape and general object properties
-        setFillColor(selectedObject.fill || '#000000');
-        setStrokeColor(selectedObject.stroke || '#000000');
-        setStrokeWidth(selectedObject.strokeWidth || 1);
+        // Handle all objects for opacity
+        setOpacity(Math.round((selectedObject.opacity || 1) * 100));
       };
 
       updateState();
+    } else {
+      setIsVisible(false);
     }
   }, [selectedObject]);
 
-  const updateObjectProperty = (property: string, value: any) => {
-    if (!canvas || !selectedObject) {
-      return;
+  const updateObjectProperty = useCallback((property: string, value: any) => {
+    if (selectedObject && canvas) {
+      selectedObject.set(property, value);
+      canvas.renderAll();
     }
+  }, [selectedObject, canvas]);
 
-    selectedObject.set(property, value);
-    canvas.renderAll();
-  };
-
-  const updateTextProperty = (property: string, value: any) => {
-    if (!canvas || !selectedObject || selectedObject.type !== 'i-text') {
-      return;
+  const updateTextProperty = useCallback((property: string, value: any) => {
+    if (isTextObject) {
+      updateObjectProperty(property, value);
     }
+  }, [isTextObject, updateObjectProperty]);
 
-    selectedObject.set(property, value);
-    canvas.renderAll();
-  };
-
-  const handleFontFamilyChange = (value: string) => {
+  const handleFontFamilyChange = useCallback((value: string) => {
     setFontFamily(value);
     updateTextProperty('fontFamily', value);
-  };
+  }, [updateTextProperty]);
 
-  const handleFontSizeChange = (value: string) => {
+  const handleFontSizeChange = useCallback((value: string) => {
     const size = Number.parseInt(value);
-    setFontSize(size);
-    updateTextProperty('fontSize', size);
-  };
+    if (!Number.isNaN(size) && size > 0) {
+      setFontSize(size);
+      updateTextProperty('fontSize', size);
+    }
+  }, [updateTextProperty]);
 
-  const toggleBold = () => {
-    const newBold = !isBold;
-    setIsBold(newBold);
-    updateTextProperty('fontWeight', newBold ? 'bold' : 'normal');
-  };
+  const toggleBold = useCallback(() => {
+    const newValue = !isBold;
+    setIsBold(newValue);
+    updateTextProperty('fontWeight', newValue ? 'bold' : 'normal');
+  }, [isBold, updateTextProperty]);
 
-  const toggleItalic = () => {
-    const newItalic = !isItalic;
-    setIsItalic(newItalic);
-    updateTextProperty('fontStyle', newItalic ? 'italic' : 'normal');
-  };
+  const toggleItalic = useCallback(() => {
+    const newValue = !isItalic;
+    setIsItalic(newValue);
+    updateTextProperty('fontStyle', newValue ? 'italic' : 'normal');
+  }, [isItalic, updateTextProperty]);
 
-  const toggleUnderline = () => {
-    const newUnderline = !isUnderline;
-    setIsUnderline(newUnderline);
-    updateTextProperty('underline', newUnderline);
-  };
+  const toggleUnderline = useCallback(() => {
+    const newValue = !isUnderline;
+    setIsUnderline(newValue);
+    updateTextProperty('underline', newValue);
+  }, [isUnderline, updateTextProperty]);
 
-  const toggleStrikethrough = () => {
-    const newStrikethrough = !isStrikethrough;
-    setIsStrikethrough(newStrikethrough);
-    updateTextProperty('linethrough', newStrikethrough);
-  };
+  const toggleStrikethrough = useCallback(() => {
+    const newValue = !isStrikethrough;
+    setIsStrikethrough(newValue);
+    updateTextProperty('linethrough', newValue);
+  }, [isStrikethrough, updateTextProperty]);
 
-  const handleTextAlign = (align: string) => {
+  const handleTextAlign = useCallback((align: string) => {
     setTextAlign(align);
     updateTextProperty('textAlign', align);
-  };
+  }, [updateTextProperty]);
 
-  const handleTextColorChange = (color: string) => {
+  const handleTextColorChange = useCallback((color: string) => {
     setTextColor(color);
     updateTextProperty('fill', color);
-  };
+  }, [updateTextProperty]);
 
-  const handleFillColorChange = (color: string) => {
+  const handleFillColorChange = useCallback((color: string) => {
     setFillColor(color);
     updateObjectProperty('fill', color);
-  };
+  }, [updateObjectProperty]);
 
-  const handleStrokeColorChange = (color: string) => {
+  const handleStrokeColorChange = useCallback((color: string) => {
     setStrokeColor(color);
     updateObjectProperty('stroke', color);
-  };
+  }, [updateObjectProperty]);
 
-  const handleStrokeWidthChange = (width: number) => {
+  const handleStrokeWidthChange = useCallback((width: number) => {
     setStrokeWidth(width);
     updateObjectProperty('strokeWidth', width);
-  };
+  }, [updateObjectProperty]);
 
-  const increaseFontSize = () => {
-    const newSize = Math.min(fontSize + 2, 72);
+  const handleOpacityChange = useCallback((value: number[]) => {
+    // Only proceed if value is an array with at least one element
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'number') {
+      const opacityValue = value[0] / 100;
+      setOpacity(value[0]);
+      updateObjectProperty('opacity', opacityValue);
+    }
+  }, [updateObjectProperty]);
+
+  const increaseFontSize = useCallback(() => {
+    const newSize = Math.min(fontSize + 2, 200);
     setFontSize(newSize);
     updateTextProperty('fontSize', newSize);
-  };
+  }, [fontSize, updateTextProperty]);
 
-  const decreaseFontSize = () => {
+  const decreaseFontSize = useCallback(() => {
     const newSize = Math.max(fontSize - 2, 8);
     setFontSize(newSize);
     updateTextProperty('fontSize', newSize);
-  };
+  }, [fontSize, updateTextProperty]);
 
-  // Layer management functions
-  const bringToFront = () => {
-    if (!canvas || !selectedObject) {
-      return;
+  const bringToFront = useCallback(() => {
+    if (selectedObject && canvas) {
+      canvas.bringToFront(selectedObject);
+      canvas.renderAll();
     }
-    canvas.bringToFront(selectedObject);
-    canvas.renderAll();
-  };
+  }, [selectedObject, canvas]);
 
-  const sendToBack = () => {
-    if (!canvas || !selectedObject) {
-      return;
+  const sendToBack = useCallback(() => {
+    if (selectedObject && canvas) {
+      canvas.sendToBack(selectedObject);
+      canvas.renderAll();
     }
-    canvas.sendToBack(selectedObject);
-    canvas.renderAll();
-  };
+  }, [selectedObject, canvas]);
 
-  const bringForward = () => {
-    if (!canvas || !selectedObject) {
-      return;
+  const bringForward = useCallback(() => {
+    if (selectedObject && canvas) {
+      canvas.bringForward(selectedObject);
+      canvas.renderAll();
     }
-    canvas.bringForward(selectedObject);
-    canvas.renderAll();
-  };
+  }, [selectedObject, canvas]);
 
-  const sendBackward = () => {
-    if (!canvas || !selectedObject) {
-      return;
+  const sendBackward = useCallback(() => {
+    if (selectedObject && canvas) {
+      canvas.sendBackward(selectedObject);
+      canvas.renderAll();
     }
-    canvas.sendBackwards(selectedObject);
-    canvas.renderAll();
-  };
+  }, [selectedObject, canvas]);
 
-  const isTextSelected = selectedObject && selectedObject.type === 'i-text';
-  const isShapeSelected = selectedObject && ['rect', 'circle', 'ellipse', 'polygon', 'path'].includes(selectedObject.type);
-  const isAnyObjectSelected = !!selectedObject;
+  if (!isVisible || !selectedObject) {
+    return null;
+  }
 
   return (
-    <div className="relative flex items-center gap-3 overflow-x-auto border-b border-white/20 bg-white/80 p-4 shadow-lg shadow-blue-100/20 backdrop-blur-xl">
-      {/* Elegant gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
+    <div className="border-b border-white/20 bg-white/80 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        <TooltipProvider>
+          <div className="flex items-center space-x-4">
+            {/* Text-specific controls */}
+            {isTextObject && (
+              <>
+                {/* Font Family */}
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium text-gray-700">Font:</Label>
+                  <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONT_FAMILIES.map(font => (
+                        <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                          {font}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      <div className="relative z-10 flex w-full items-center gap-3">
-        {/* Text Controls - Only show when text is selected */}
-        {isTextSelected && (
-          <>
-            {/* Font Family */}
-            <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
-              <SelectTrigger className="h-8 w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {fontFamilies.map(font => (
-                  <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                    {font}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Separator orientation="vertical" className="h-6" />
 
-            <Separator orientation="vertical" className="h-6" />
+                {/* Font Size */}
+                <div className="flex items-center space-x-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" onClick={decreaseFontSize} className="size-8 p-0">
+                        <Minus className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Decrease font size</TooltipContent>
+                  </Tooltip>
 
-            {/* Font Size Controls */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="size-8 p-0"
-                onClick={decreaseFontSize}
-              >
-                <Minus className="size-3" />
-              </Button>
+                  <Input
+                    type="number"
+                    value={fontSize}
+                    onChange={e => handleFontSizeChange(e.target.value)}
+                    className="w-16 text-center text-sm"
+                    min="8"
+                    max="200"
+                  />
 
-              <Select value={fontSize.toString()} onValueChange={handleFontSizeChange}>
-                <SelectTrigger className="h-8 w-16">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontSizes.map(size => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" onClick={increaseFontSize} className="size-8 p-0">
+                        <Plus className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Increase font size</TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Text Formatting */}
+                <div className="flex items-center space-x-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isBold ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={toggleBold}
+                        className="size-8 p-0"
+                      >
+                        <Bold className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Bold</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isItalic ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={toggleItalic}
+                        className="size-8 p-0"
+                      >
+                        <Italic className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Italic</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isUnderline ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={toggleUnderline}
+                        className="size-8 p-0"
+                      >
+                        <Underline className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Underline</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isStrikethrough ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={toggleStrikethrough}
+                        className="size-8 p-0"
+                      >
+                        <Strikethrough className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Strikethrough</TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Text Alignment */}
+                <div className="flex items-center space-x-1">
+                  {TEXT_ALIGNMENTS.map(({ value, icon: Icon, label }) => (
+                    <Tooltip key={value}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={textAlign === value ? 'primary' : 'ghost'}
+                          size="sm"
+                          onClick={() => handleTextAlign(value)}
+                          className="size-8 p-0"
+                          title={label}
+                        >
+                          <Icon className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{label}</TooltipContent>
+                    </Tooltip>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="size-8 p-0"
-                onClick={increaseFontSize}
-              >
-                <Plus className="size-3" />
-              </Button>
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Text Color */}
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium text-gray-700">Text:</Label>
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={textColor}
+                      onChange={e => handleTextColorChange(e.target.value)}
+                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Universal controls for all objects */}
+            {!isTextObject && (
+              <>
+                {/* Fill Color */}
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium text-gray-700">Fill:</Label>
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={fillColor}
+                      onChange={e => handleFillColorChange(e.target.value)}
+                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Stroke Color */}
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium text-gray-700">Stroke:</Label>
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={strokeColor}
+                      onChange={e => handleStrokeColorChange(e.target.value)}
+                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Stroke Width */}
+                <div className="flex items-center space-x-2">
+                  <Label className="text-sm font-medium text-gray-700">Width:</Label>
+                  <Input
+                    type="number"
+                    value={strokeWidth}
+                    onChange={e => handleStrokeWidthChange(Number(e.target.value))}
+                    className="w-16 text-sm"
+                    min="0"
+                    max="20"
+                  />
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+              </>
+            )}
+
+            {/* Opacity Control - for all objects */}
+            <div className="flex items-center space-x-3">
+              <Label className="text-sm font-medium text-gray-700">Opacity:</Label>
+              <div className="flex items-center space-x-2">
+                <Slider
+                  value={[opacity]}
+                  onValueChange={handleOpacityChange}
+                  max={100}
+                  min={0}
+                  step={1}
+                  className="w-24"
+                />
+                <span className="w-8 text-xs text-gray-600">
+                  {opacity}
+                  %
+                </span>
+              </div>
             </div>
-
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Text Formatting */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant={isBold ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0 transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-                onClick={toggleBold}
-              >
-                <Bold className="size-4" />
-              </Button>
-
-              <Button
-                variant={isItalic ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0 transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-                onClick={toggleItalic}
-              >
-                <Italic className="size-4" />
-              </Button>
-
-              <Button
-                variant={isUnderline ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0 transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-                onClick={toggleUnderline}
-              >
-                <Underline className="size-4" />
-              </Button>
-
-              <Button
-                variant={isStrikethrough ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0 transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-                onClick={toggleStrikethrough}
-              >
-                <Strikethrough className="size-4" />
-              </Button>
-            </div>
-
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Text Alignment */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant={textAlign === 'left' ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0"
-                onClick={() => handleTextAlign('left')}
-              >
-                <AlignLeft className="size-4" />
-              </Button>
-
-              <Button
-                variant={textAlign === 'center' ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0"
-                onClick={() => handleTextAlign('center')}
-              >
-                <AlignCenter className="size-4" />
-              </Button>
-
-              <Button
-                variant={textAlign === 'right' ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0"
-                onClick={() => handleTextAlign('right')}
-              >
-                <AlignRight className="size-4" />
-              </Button>
-
-              <Button
-                variant={textAlign === 'justify' ? 'primary' : 'ghost'}
-                size="sm"
-                className="size-8 p-0"
-                onClick={() => handleTextAlign('justify')}
-              >
-                <AlignJustify className="size-4" />
-              </Button>
-            </div>
-
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Text Color */}
-            <div className="flex items-center gap-2">
-              <Type className="size-4 text-gray-500" />
-              <input
-                type="color"
-                value={textColor}
-                onChange={e => handleTextColorChange(e.target.value)}
-                className="size-8 cursor-pointer rounded border border-gray-300"
-              />
-            </div>
-
-            <Separator orientation="vertical" className="h-6" />
-          </>
-        )}
-
-        {/* Shape Controls - Show when shapes are selected */}
-        {isShapeSelected && (
-          <>
-            {/* Fill Color */}
-            <div className="flex items-center gap-2">
-              <Square className="size-4 text-gray-500" />
-              <span className="text-xs text-gray-500">Fill</span>
-              <input
-                type="color"
-                value={fillColor}
-                onChange={e => handleFillColorChange(e.target.value)}
-                className="size-8 cursor-pointer rounded border border-gray-300"
-              />
-            </div>
-
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Stroke Color */}
-            <div className="flex items-center gap-2">
-              <Circle className="size-4 text-gray-500" />
-              <span className="text-xs text-gray-500">Border</span>
-              <input
-                type="color"
-                value={strokeColor}
-                onChange={e => handleStrokeColorChange(e.target.value)}
-                className="size-8 cursor-pointer rounded border border-gray-300"
-              />
-            </div>
-
-            {/* Stroke Width */}
-            <div className="flex items-center gap-1">
-              <input
-                type="range"
-                min="0"
-                max="20"
-                value={strokeWidth}
-                onChange={e => handleStrokeWidthChange(Number.parseInt(e.target.value))}
-                className="h-2 w-16"
-              />
-              <span className="w-6 text-xs text-gray-500">
-                {strokeWidth}
-                px
-              </span>
-            </div>
-
-            <Separator orientation="vertical" className="h-6" />
-          </>
-        )}
-
-        {/* Layer Controls - Works for any selected object */}
-        {isAnyObjectSelected && (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-8 p-0"
-              onClick={bringToFront}
-              title="Bring to Front"
-            >
-              <ArrowUp className="size-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-8 p-0"
-              onClick={bringForward}
-              title="Bring Forward"
-            >
-              <ChevronUp className="size-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-8 p-0"
-              onClick={sendBackward}
-              title="Send Backward"
-            >
-              <ChevronDown className="size-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-8 p-0"
-              onClick={sendToBack}
-              title="Send to Back"
-            >
-              <ArrowDown className="size-4" />
-            </Button>
           </div>
-        )}
+
+          {/* Layer Controls */}
+          <div className="flex items-center space-x-1">
+            <Separator orientation="vertical" className="h-6" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={bringToFront} className="size-8 p-0">
+                  <ChevronUp className="size-4" />
+                  <Send className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Bring to front</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={bringForward} className="size-8 p-0">
+                  <ChevronUp className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Bring forward</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={sendBackward} className="size-8 p-0">
+                  <ChevronDown className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send backward</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={sendToBack} className="size-8 p-0">
+                  <ChevronDown className="size-4" />
+                  <Send className="size-3 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send to back</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
     </div>
   );

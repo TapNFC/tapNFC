@@ -18,6 +18,30 @@ export type SharedDesign = {
   expiresAt?: Date;
 };
 
+export type DesignData = {
+  id: string;
+  canvasData: any;
+  metadata: {
+    width: number;
+    height: number;
+    backgroundColor: string;
+    title?: string;
+    description?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TemplateData = {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  canvasData: any;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 class IndexedDBManager {
   private db: IDBDatabase | null = null;
 
@@ -37,11 +61,19 @@ class IndexedDBManager {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Create object store if it doesn't exist
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          store.createIndex('createdAt', 'createdAt', { unique: false });
-          store.createIndex('expiresAt', 'expiresAt', { unique: false });
+        // Create designs store
+        if (!db.objectStoreNames.contains('designs')) {
+          const designStore = db.createObjectStore('designs', { keyPath: 'id' });
+          designStore.createIndex('createdAt', 'createdAt', { unique: false });
+          designStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        }
+
+        // Create templates store
+        if (!db.objectStoreNames.contains('templates')) {
+          const templateStore = db.createObjectStore('templates', { keyPath: 'id' });
+          templateStore.createIndex('name', 'name', { unique: false });
+          templateStore.createIndex('category', 'category', { unique: false });
+          templateStore.createIndex('createdAt', 'createdAt', { unique: false });
         }
       };
     });
@@ -180,3 +212,322 @@ export const getSharedDesign = (id: string) => indexedDBManager.getSharedDesign(
 export const deleteSharedDesign = (id: string) => indexedDBManager.deleteSharedDesign(id);
 export const getAllSharedDesigns = () => indexedDBManager.getAllSharedDesigns();
 export const clearExpiredDesigns = () => indexedDBManager.clearExpiredDesigns();
+
+class DesignIndexedDB {
+  private dbName = 'DesignEditorDB';
+  private version = 1;
+  private db: IDBDatabase | null = null;
+
+  async init(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+
+      request.onerror = () => {
+        reject(new Error('Failed to open IndexedDB'));
+      };
+
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        // Create designs store
+        if (!db.objectStoreNames.contains('designs')) {
+          const designStore = db.createObjectStore('designs', { keyPath: 'id' });
+          designStore.createIndex('createdAt', 'createdAt', { unique: false });
+          designStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        }
+
+        // Create templates store
+        if (!db.objectStoreNames.contains('templates')) {
+          const templateStore = db.createObjectStore('templates', { keyPath: 'id' });
+          templateStore.createIndex('name', 'name', { unique: false });
+          templateStore.createIndex('category', 'category', { unique: false });
+          templateStore.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+      };
+    });
+  }
+
+  private async ensureDB(): Promise<IDBDatabase> {
+    if (!this.db) {
+      await this.init();
+    }
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db;
+  }
+
+  // Design operations
+  async saveDesign(designData: DesignData): Promise<void> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['designs'], 'readwrite');
+      const store = transaction.objectStore('designs');
+
+      const now = new Date();
+      const dataToSave = {
+        ...designData,
+        updatedAt: now,
+        createdAt: designData.createdAt || now,
+      };
+
+      const request = store.put(dataToSave);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new Error('Failed to save design'));
+    });
+  }
+
+  async getDesign(id: string): Promise<DesignData | null> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['designs'], 'readonly');
+      const store = transaction.objectStore('designs');
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          // Convert date strings back to Date objects
+          result.createdAt = new Date(result.createdAt);
+          result.updatedAt = new Date(result.updatedAt);
+        }
+        resolve(result || null);
+      };
+      request.onerror = () => reject(new Error('Failed to get design'));
+    });
+  }
+
+  async getAllDesigns(): Promise<DesignData[]> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['designs'], 'readonly');
+      const store = transaction.objectStore('designs');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const results = request.result.map((item: any) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+          updatedAt: new Date(item.updatedAt),
+        }));
+        resolve(results);
+      };
+      request.onerror = () => reject(new Error('Failed to get designs'));
+    });
+  }
+
+  async deleteDesign(id: string): Promise<void> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['designs'], 'readwrite');
+      const store = transaction.objectStore('designs');
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new Error('Failed to delete design'));
+    });
+  }
+
+  // Template operations
+  async saveTemplate(templateData: TemplateData): Promise<void> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['templates'], 'readwrite');
+      const store = transaction.objectStore('templates');
+
+      const now = new Date();
+      const dataToSave = {
+        ...templateData,
+        updatedAt: now,
+        createdAt: templateData.createdAt || now,
+      };
+
+      const request = store.put(dataToSave);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new Error('Failed to save template'));
+    });
+  }
+
+  async getTemplate(id: string): Promise<TemplateData | null> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['templates'], 'readonly');
+      const store = transaction.objectStore('templates');
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          result.createdAt = new Date(result.createdAt);
+          result.updatedAt = new Date(result.updatedAt);
+        }
+        resolve(result || null);
+      };
+      request.onerror = () => reject(new Error('Failed to get template'));
+    });
+  }
+
+  async getAllTemplates(): Promise<TemplateData[]> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['templates'], 'readonly');
+      const store = transaction.objectStore('templates');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const results = request.result.map((item: any) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+          updatedAt: new Date(item.updatedAt),
+        }));
+        resolve(results);
+      };
+      request.onerror = () => reject(new Error('Failed to get templates'));
+    });
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['templates'], 'readwrite');
+      const store = transaction.objectStore('templates');
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new Error('Failed to delete template'));
+    });
+  }
+
+  // Utility methods
+  async migrateFromLocalStorage(): Promise<void> {
+    try {
+      // Migrate designs
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('design_')) {
+          try {
+            const data = localStorage.getItem(key);
+            if (data) {
+              const canvasData = JSON.parse(data);
+              const designId = key.replace('design_', '');
+
+              const designData: DesignData = {
+                id: designId,
+                canvasData,
+                metadata: {
+                  width: canvasData.width || 375,
+                  height: canvasData.height || 667,
+                  backgroundColor: canvasData.background || '#ffffff',
+                  title: `Design ${designId}`,
+                  description: 'Migrated from localStorage',
+                },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+
+              await this.saveDesign(designData);
+              localStorage.removeItem(key);
+            }
+          } catch (error) {
+            console.warn(`Failed to migrate design ${key}:`, error);
+          }
+        }
+      }
+
+      // Migrate templates
+      const templatesKey = 'design-templates';
+      const templatesData = localStorage.getItem(templatesKey);
+      if (templatesData) {
+        try {
+          const templates = JSON.parse(templatesData);
+          if (Array.isArray(templates)) {
+            for (const template of templates) {
+              const templateData: TemplateData = {
+                id: template.id,
+                name: template.name,
+                description: template.description,
+                category: template.category || 'General',
+                canvasData: template.data,
+                createdAt: new Date(template.createdAt || Date.now()),
+                updatedAt: new Date(template.updatedAt || Date.now()),
+              };
+              await this.saveTemplate(templateData);
+            }
+            localStorage.removeItem(templatesKey);
+          }
+        } catch (error) {
+          console.warn('Failed to migrate templates:', error);
+        }
+      }
+    } catch (error) {
+      console.warn('Migration from localStorage failed:', error);
+    }
+  }
+
+  async clearAll(): Promise<void> {
+    const db = await this.ensureDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['designs', 'templates'], 'readwrite');
+
+      const clearDesigns = transaction.objectStore('designs').clear();
+      const clearTemplates = transaction.objectStore('templates').clear();
+
+      let completed = 0;
+      const checkComplete = () => {
+        completed++;
+        if (completed === 2) {
+          resolve();
+        }
+      };
+
+      clearDesigns.onsuccess = checkComplete;
+      clearTemplates.onsuccess = checkComplete;
+
+      clearDesigns.onerror = () => reject(new Error('Failed to clear designs'));
+      clearTemplates.onerror = () => reject(new Error('Failed to clear templates'));
+    });
+  }
+}
+
+// Create singleton instance
+export const designDB = new DesignIndexedDB();
+
+// Utility functions for design management
+export const generateDesignId = () => {
+  return `design_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+};
+
+export const generateTemplateId = () => {
+  return `template_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+};
+
+export const formatDesignTitle = (designId: string, customTitle?: string) => {
+  if (customTitle) {
+    return customTitle;
+  }
+
+  // Extract timestamp from design ID for better default titles
+  const timestampMatch = designId.match(/design_(\d+)_/);
+  if (timestampMatch) {
+    const timestamp = Number.parseInt(timestampMatch[1] || '0');
+    const date = new Date(timestamp);
+    return `Design ${date.toLocaleDateString()}`;
+  }
+
+  return `Design ${designId.slice(-8)}`;
+};
+
+// Initialize on first import
+if (typeof window !== 'undefined') {
+  designDB.init().then(() => {
+    // Auto-migrate from localStorage on first load
+    designDB.migrateFromLocalStorage().catch(console.warn);
+  }).catch(console.error);
+}

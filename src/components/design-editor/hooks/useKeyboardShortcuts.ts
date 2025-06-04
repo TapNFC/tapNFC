@@ -24,7 +24,7 @@ export function useKeyboardShortcuts({
   canUndo = false,
   canRedo = false,
 }: UseKeyboardShortcutsOptions) {
-  const { loadTemplate, templates } = useTemplateStore();
+  const { templates } = useTemplateStore();
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!canvas) {
@@ -211,9 +211,9 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         const templateIndex = Number.parseInt(event.code.replace('Digit', ''), 10) - 1;
         if (templates[templateIndex]) {
-          const template = loadTemplate(templates[templateIndex].id);
-          if (template && template.canvasData) {
-            canvas.loadFromJSON(template.canvasData, (loadedCanvas: any, error: any) => {
+          const template = templates[templateIndex];
+          if (template && template.data) {
+            canvas.loadFromJSON(template.data, (loadedCanvas: any, error: any) => {
               if (error) {
                 console.error('Error loading quick template:', error);
                 return;
@@ -262,7 +262,7 @@ export function useKeyboardShortcuts({
     } catch (error) {
       console.error('Error in keyboard shortcut handler:', error);
     }
-  }, [canvas, fabric, selectedObject, loadTemplate, templates, onShowSaveDialog, onShowLoadDialog, onUndo, onRedo, canUndo, canRedo]);
+  }, [canvas, fabric, selectedObject, templates, onShowSaveDialog, onShowLoadDialog, onUndo, onRedo, canUndo, canRedo]);
 
   // Add keyboard event listeners
   useEffect(() => {

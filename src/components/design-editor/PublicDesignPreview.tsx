@@ -1,141 +1,484 @@
+/* eslint-disable no-console */
 'use client';
 
-import type { SharedDesign } from '@/lib/indexedDB';
-import { AlertTriangle } from 'lucide-react';
-
+import type { DesignData } from '@/lib/indexedDB';
+import { AlertTriangle, Eye, Share2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { createDummyHtml } from '@/lib/canvasToHtml';
-import { getSharedDesign } from '@/lib/indexedDB';
+import { toast } from 'sonner';
+import { designDB } from '@/lib/indexedDB';
 
 type PublicDesignPreviewProps = {
   designId: string;
 };
 
-// Create a dummy design fallback
-const createDummyDesign = (designId: string): SharedDesign => {
+// Create a demo design fallback with interactive elements
+const createDemoDesign = (designId: string): DesignData => {
   return {
     id: designId,
     canvasData: {
-      // Minimal canvas data - will be created programmatically
       version: '5.2.4',
-      objects: [],
+      objects: [
+        {
+          type: 'text',
+          left: 187.5,
+          top: 150,
+          width: 200,
+          height: 40,
+          text: 'Welcome to Our Design!',
+          fontSize: 24,
+          fontWeight: 'bold',
+          fill: '#1e40af',
+          textAlign: 'center',
+          fontFamily: 'Arial',
+        },
+        {
+          type: 'rect',
+          left: 187.5,
+          top: 220,
+          width: 200,
+          height: 80,
+          fill: '#3b82f6',
+          stroke: '#1e40af',
+          strokeWidth: 2,
+          rx: 12,
+        },
+        {
+          type: 'text',
+          left: 187.5,
+          top: 250,
+          width: 200,
+          height: 20,
+          text: 'Click to Learn More',
+          fontSize: 16,
+          fill: '#ffffff',
+          textAlign: 'center',
+          fontFamily: 'Arial',
+        },
+        {
+          elementType: 'button',
+          left: 187.5,
+          top: 320,
+          width: 160,
+          height: 45,
+          buttonData: {
+            text: 'Get Started',
+            backgroundColor: '#10b981',
+            textColor: '#ffffff',
+            borderRadius: 8,
+            fontSize: 16,
+            fontWeight: '600',
+            action: {
+              type: 'url',
+              value: 'https://example.com',
+            },
+          },
+        },
+        {
+          elementType: 'link',
+          left: 187.5,
+          top: 380,
+          width: 120,
+          height: 25,
+          linkData: {
+            text: 'Visit our website',
+            url: 'https://google.com',
+            target: '_blank',
+            color: '#3b82f6',
+            fontSize: 16,
+            fontWeight: 'normal',
+            textDecoration: 'underline',
+            hoverColor: '#1e40af',
+          },
+        },
+        {
+          type: 'text',
+          left: 187.5,
+          top: 420,
+          width: 300,
+          height: 60,
+          text: 'This is a demo design showcasing our QR code functionality. Create your own designs and share them instantly!',
+          fontSize: 14,
+          fill: '#64748b',
+          textAlign: 'center',
+          fontFamily: 'Arial',
+        },
+      ],
       background: '#f8fafc',
     },
-    htmlContent: createDummyHtml({
-      width: 375,
-      height: 667,
-      backgroundColor: '#f8fafc',
-    }),
     metadata: {
       width: 375,
       height: 667,
       backgroundColor: '#f8fafc',
-      title: 'Demo Design Template',
-      description: 'This is a sample design template created to demonstrate the QR code preview functionality.',
+      title: 'Demo Design Preview',
+      description: 'Interactive design template with QR code sharing',
     },
     createdAt: new Date(),
-    expiresAt: undefined, // Demo designs don't expire
+    updatedAt: new Date(),
   };
 };
 
 export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
-  const htmlContainerRef = useRef<HTMLDivElement>(null);
-  const [designData, setDesignData] = useState<SharedDesign | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [designData, setDesignData] = useState<DesignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch design data from IndexedDB
+  // Load design data from IndexedDB
   useEffect(() => {
-    const fetchDesignData = async () => {
+    const loadDesignData = async () => {
       try {
-        console.warn('Fetching design from IndexedDB with ID:', designId);
+        setLoading(true);
 
-        const sharedDesign = await getSharedDesign(designId);
+        // Initialize IndexedDB first
+        await designDB.init();
 
-        if (!sharedDesign) {
-          console.warn('Design not found in IndexedDB, creating dummy design');
-          // Instead of throwing an error, create a dummy design
-          const dummyDesign = createDummyDesign(designId);
-          setDesignData(dummyDesign);
+        // Try to load from IndexedDB
+        const savedDesign = await designDB.getDesign(designId);
+
+        if (savedDesign) {
+          setDesignData(savedDesign);
         } else {
-          console.warn('Design data retrieved from IndexedDB:', sharedDesign);
+          // Fallback: try localStorage for backward compatibility
+          const localStorageKey = `design_${designId}`;
+          const localData = localStorage.getItem(localStorageKey);
 
-          // If no HTML content exists, create dummy HTML
-          if (!sharedDesign.htmlContent) {
-            console.warn('No HTML content found, creating dummy HTML');
-            sharedDesign.htmlContent = createDummyHtml({
-              width: sharedDesign.metadata.width,
-              height: sharedDesign.metadata.height,
-              backgroundColor: sharedDesign.metadata.backgroundColor,
-            });
+          if (localData) {
+            try {
+              const canvasData = JSON.parse(localData);
+              const designData: DesignData = {
+                id: designId,
+                canvasData,
+                metadata: {
+                  width: canvasData.width || 375,
+                  height: canvasData.height || 667,
+                  backgroundColor: canvasData.background || '#ffffff',
+                  title: `Design ${designId}`,
+                  description: 'Shared design template',
+                },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+
+              // Save to IndexedDB for future use
+              await designDB.saveDesign(designData);
+              setDesignData(designData);
+            } catch (parseError) {
+              console.warn('Failed to parse localStorage design data:', parseError);
+              throw new Error('Invalid design data format');
+            }
+          } else {
+            // No saved design found, show demo design
+            const demoDesign = createDemoDesign(designId);
+            setDesignData(demoDesign);
           }
-
-          setDesignData(sharedDesign);
         }
       } catch (err) {
-        console.error('Error fetching design data:', err);
-        // Even if there's an error, show dummy design instead of error
-        console.warn('Error occurred, creating dummy design as fallback');
-        const dummyDesign = createDummyDesign(designId);
-        setDesignData(dummyDesign);
+        console.error('Error loading design data:', err);
+        setError('Failed to load design data');
+
+        // Even on error, show demo design
+        const demoDesign = createDemoDesign(designId);
+        setDesignData(demoDesign);
       } finally {
         setLoading(false);
       }
     };
 
     if (designId) {
-      fetchDesignData();
+      loadDesignData();
     }
   }, [designId]);
 
-  // Render HTML content
+  // Render design elements
   useEffect(() => {
-    if (!designData || !htmlContainerRef.current) {
+    if (!designData || !containerRef.current) {
       return;
     }
 
     try {
-      const htmlContent = designData.htmlContent || createDummyHtml({
-        width: designData.metadata.width,
-        height: designData.metadata.height,
-        backgroundColor: designData.metadata.backgroundColor,
+      // Clear container
+      containerRef.current.innerHTML = '';
+
+      // Create design elements
+      const objects = designData.canvasData.objects || [];
+
+      objects.forEach((obj: any, index: number) => {
+        const left = obj.left || 0;
+        const top = obj.top || 0;
+        const width = (obj.width || 100) * (obj.scaleX || 1);
+        const height = (obj.height || 30) * (obj.scaleY || 1);
+        const angle = obj.angle || 0;
+        const opacity = obj.opacity !== undefined ? obj.opacity : 1;
+        const visible = obj.visible !== false;
+
+        if (!visible) {
+          return;
+        }
+
+        // Handle different element types
+        if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
+          const textElement = document.createElement('div');
+          textElement.style.position = 'absolute';
+          textElement.style.left = `${left}px`;
+          textElement.style.top = `${top}px`;
+          textElement.style.width = obj.type === 'textbox' ? `${width}px` : 'auto';
+          textElement.style.height = obj.type === 'textbox' ? `${height}px` : 'auto';
+          textElement.style.transform = `rotate(${angle}deg)`;
+          textElement.style.opacity = `${opacity}`;
+          textElement.style.zIndex = `${index + 1}`;
+          textElement.textContent = obj.text || '';
+          textElement.style.fontSize = `${obj.fontSize || 16}px`;
+          textElement.style.color = obj.fill || '#000000';
+          textElement.style.fontFamily = obj.fontFamily || 'Arial';
+          textElement.style.fontWeight = obj.fontWeight || 'normal';
+          textElement.style.fontStyle = obj.fontStyle || 'normal';
+          textElement.style.textAlign = obj.textAlign || 'left';
+          textElement.style.textDecoration = obj.underline ? 'underline' : obj.linethrough ? 'line-through' : 'none';
+          textElement.style.display = 'flex';
+          textElement.style.alignItems = 'flex-start';
+          textElement.style.justifyContent = obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start';
+          textElement.style.pointerEvents = 'none';
+          textElement.style.whiteSpace = 'pre-wrap';
+          textElement.style.lineHeight = `${obj.lineHeight || 1.2}`;
+
+          containerRef.current?.appendChild(textElement);
+        } else if (obj.type === 'rect') {
+          const rectElement = document.createElement('div');
+          rectElement.style.position = 'absolute';
+          rectElement.style.left = `${left}px`;
+          rectElement.style.top = `${top}px`;
+          rectElement.style.width = `${width}px`;
+          rectElement.style.height = `${height}px`;
+          rectElement.style.transform = `rotate(${angle}deg)`;
+          rectElement.style.opacity = `${opacity}`;
+          rectElement.style.zIndex = `${index + 1}`;
+          rectElement.style.backgroundColor = obj.fill || '#cccccc';
+          rectElement.style.border = `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`;
+          rectElement.style.borderRadius = `${obj.rx || 0}px`;
+
+          containerRef.current?.appendChild(rectElement);
+        } else if (obj.type === 'circle') {
+          const circleElement = document.createElement('div');
+          circleElement.style.position = 'absolute';
+          circleElement.style.left = `${left}px`;
+          circleElement.style.top = `${top}px`;
+          circleElement.style.width = `${width}px`;
+          circleElement.style.height = `${height}px`;
+          circleElement.style.transform = `rotate(${angle}deg)`;
+          circleElement.style.opacity = `${opacity}`;
+          circleElement.style.zIndex = `${index + 1}`;
+          circleElement.style.backgroundColor = obj.fill || '#cccccc';
+          circleElement.style.border = `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`;
+          circleElement.style.borderRadius = '50%';
+
+          containerRef.current?.appendChild(circleElement);
+        } else if (obj.type === 'triangle') {
+          const triangleElement = document.createElement('div');
+          triangleElement.style.position = 'absolute';
+          triangleElement.style.left = `${left}px`;
+          triangleElement.style.top = `${top}px`;
+          triangleElement.style.width = '0';
+          triangleElement.style.height = '0';
+          triangleElement.style.borderLeft = `${width / 2}px solid transparent`;
+          triangleElement.style.borderRight = `${width / 2}px solid transparent`;
+          triangleElement.style.borderBottom = `${height}px solid ${obj.fill || '#cccccc'}`;
+          triangleElement.style.transform = `rotate(${angle}deg)`;
+          triangleElement.style.opacity = `${opacity}`;
+          triangleElement.style.zIndex = `${index + 1}`;
+
+          containerRef.current?.appendChild(triangleElement);
+        } else if (obj.type === 'polygon' || (obj.shapeData && obj.shapeData.type === 'diamond')) {
+          const polygonElement = document.createElement('div');
+          polygonElement.style.position = 'absolute';
+          polygonElement.style.left = `${left}px`;
+          polygonElement.style.top = `${top}px`;
+          polygonElement.style.width = `${width}px`;
+          polygonElement.style.height = `${height}px`;
+          polygonElement.style.opacity = `${opacity}`;
+          polygonElement.style.zIndex = `${index + 1}`;
+          polygonElement.style.backgroundColor = obj.fill || obj.shapeData?.fill || '#cccccc';
+          polygonElement.style.border = `${obj.strokeWidth || obj.shapeData?.strokeWidth || 0}px solid ${obj.stroke || obj.shapeData?.stroke || 'transparent'}`;
+
+          // Diamond shape gets rotated 45 degrees
+          if (obj.shapeData?.type === 'diamond' || (obj.points && obj.points.length === 4)) {
+            polygonElement.style.transform = `rotate(${angle + 45}deg)`;
+            polygonElement.style.borderRadius = '4px';
+          } else {
+            polygonElement.style.transform = `rotate(${angle}deg)`;
+          }
+
+          containerRef.current?.appendChild(polygonElement);
+        } else if (obj.type === 'line' || (obj.shapeData && obj.shapeData.type === 'line')) {
+          const lineElement = document.createElement('div');
+          lineElement.style.position = 'absolute';
+          lineElement.style.left = `${left}px`;
+          lineElement.style.top = `${top}px`;
+          lineElement.style.width = `${width}px`;
+          lineElement.style.height = `${obj.strokeWidth || obj.shapeData?.strokeWidth || 2}px`;
+          lineElement.style.transform = `rotate(${angle}deg)`;
+          lineElement.style.opacity = `${opacity}`;
+          lineElement.style.zIndex = `${index + 1}`;
+          lineElement.style.backgroundColor = obj.stroke || obj.shapeData?.stroke || '#000000';
+          lineElement.style.borderRadius = '1px';
+
+          containerRef.current?.appendChild(lineElement);
+        } else if (obj.type === 'image') {
+          const imageElement = document.createElement('img');
+          imageElement.style.position = 'absolute';
+          imageElement.style.left = `${left}px`;
+          imageElement.style.top = `${top}px`;
+          imageElement.style.width = `${width}px`;
+          imageElement.style.height = `${height}px`;
+          imageElement.style.transform = `rotate(${angle}deg)`;
+          imageElement.style.opacity = `${opacity}`;
+          imageElement.style.zIndex = `${index + 1}`;
+          imageElement.style.objectFit = 'cover';
+          imageElement.src = obj.src || '';
+          imageElement.alt = obj.alt || 'Design element';
+
+          containerRef.current?.appendChild(imageElement);
+        } else if (obj.elementType === 'button' && obj.buttonData) {
+          const button = document.createElement('button');
+          button.textContent = obj.buttonData.text || 'Button';
+          button.style.position = 'absolute';
+          button.style.left = `${left}px`;
+          button.style.top = `${top}px`;
+          button.style.width = `${width}px`;
+          button.style.height = `${height}px`;
+          button.style.transform = `rotate(${angle}deg)`;
+          button.style.opacity = `${opacity}`;
+          button.style.zIndex = `${index + 1}`;
+          button.style.backgroundColor = obj.buttonData.backgroundColor || '#3b82f6';
+          button.style.color = obj.buttonData.textColor || '#ffffff';
+          button.style.border = `${obj.buttonData.borderWidth || 0}px solid ${obj.buttonData.borderColor || 'transparent'}`;
+          button.style.borderRadius = `${obj.buttonData.borderRadius || 4}px`;
+          button.style.fontSize = `${obj.buttonData.fontSize || 14}px`;
+          button.style.fontWeight = obj.buttonData.fontWeight || 'normal';
+          button.style.fontFamily = obj.buttonData.fontFamily || 'Arial';
+          button.style.cursor = 'pointer';
+          button.style.transition = 'all 0.2s ease';
+          button.style.display = 'flex';
+          button.style.alignItems = 'center';
+          button.style.justifyContent = 'center';
+          button.style.padding = `${obj.buttonData.padding?.top || 8}px ${obj.buttonData.padding?.right || 16}px ${obj.buttonData.padding?.bottom || 8}px ${obj.buttonData.padding?.left || 16}px`;
+
+          // Add hover effects
+          button.onmouseenter = () => {
+            if (obj.buttonData.hoverBackgroundColor) {
+              button.style.backgroundColor = obj.buttonData.hoverBackgroundColor;
+            }
+            if (obj.buttonData.hoverTextColor) {
+              button.style.color = obj.buttonData.hoverTextColor;
+            }
+            button.style.transform = `rotate(${angle}deg) translateY(-1px)`;
+            button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          };
+          button.onmouseleave = () => {
+            button.style.backgroundColor = obj.buttonData.backgroundColor || '#3b82f6';
+            button.style.color = obj.buttonData.textColor || '#ffffff';
+            button.style.transform = `rotate(${angle}deg) translateY(0)`;
+            button.style.boxShadow = 'none';
+          };
+
+          // Add click handler
+          if (obj.buttonData.action) {
+            button.onclick = () => {
+              const action = obj.buttonData.action;
+              if (action.type === 'url' && action.value) {
+                window.open(action.value, '_blank');
+              } else if (action.type === 'email' && action.value) {
+                window.location.href = `mailto:${action.value}`;
+              } else if (action.type === 'phone' && action.value) {
+                window.location.href = `tel:${action.value}`;
+              }
+            };
+          }
+
+          containerRef.current?.appendChild(button);
+        } else if (obj.elementType === 'link' && obj.linkData) {
+          const linkElement = document.createElement('a');
+          linkElement.textContent = obj.linkData.text || 'Link';
+
+          // Basic positioning and styling
+          linkElement.style.cssText = `
+            position: absolute;
+            left: ${left}px;
+            top: ${top}px;
+            width: ${width}px;
+            height: ${height}px;
+            transform: rotate(${angle}deg);
+            opacity: ${opacity};
+            z-index: ${index + 1000};
+            color: ${obj.linkData.color || '#3b82f6'};
+            font-size: ${obj.linkData.fontSize || 16}px;
+            font-weight: ${obj.linkData.fontWeight || 'normal'};
+            font-family: ${obj.linkData.fontFamily || 'Arial'};
+            text-decoration: ${obj.linkData.textDecoration || 'underline'};
+            display: block;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+            transition: all 0.2s ease;
+            background: rgba(255,0,0,0.1);
+            border: 1px solid rgba(255,0,0,0.3);
+          `;
+
+          // Set link properties
+          const hasUrl = obj.linkData.url && obj.linkData.url.trim() !== '';
+
+          if (hasUrl) {
+            linkElement.href = obj.linkData.url;
+            linkElement.target = obj.linkData.target || '_blank';
+            linkElement.rel = 'noopener noreferrer';
+
+            // Multiple event handlers for maximum compatibility
+            linkElement.onclick = (e) => {
+              e.stopPropagation();
+              window.open(obj.linkData.url, '_blank');
+              return false;
+            };
+
+            linkElement.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.open(obj.linkData.url, '_blank');
+            }, true);
+          } else {
+            linkElement.href = '#';
+            linkElement.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toast.error('This link has no URL configured.');
+              return false;
+            };
+          }
+
+          // Hover effects
+          linkElement.addEventListener('mouseenter', () => {
+            linkElement.style.color = obj.linkData.hoverColor || '#1e40af';
+            linkElement.style.textDecoration = 'underline';
+          });
+
+          linkElement.addEventListener('mouseleave', () => {
+            linkElement.style.color = obj.linkData.color || '#3b82f6';
+          });
+
+          // Add debugging
+          linkElement.addEventListener('mousedown', () => {
+            console.log('Link mousedown');
+          });
+
+          linkElement.addEventListener('mouseup', () => {
+            console.log('Link mouseup');
+          });
+
+          console.log('Appending link element to container');
+          containerRef.current?.appendChild(linkElement);
+        }
       });
-
-      // Create an iframe for proper HTML rendering
-      const iframe = document.createElement('iframe');
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      iframe.style.borderRadius = '12px';
-      iframe.style.overflow = 'hidden';
-
-      // Clear existing content
-      htmlContainerRef.current.innerHTML = '';
-      htmlContainerRef.current.appendChild(iframe);
-
-      // Write HTML content to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
-      }
-
-      console.warn('HTML design rendered successfully in iframe');
     } catch (renderError) {
-      console.error('Error rendering HTML design:', renderError);
+      console.error('Error rendering design:', renderError);
       setError('Failed to render design');
-
-      // Fallback to direct HTML injection
-      try {
-        htmlContainerRef.current.innerHTML = designData.htmlContent || createDummyHtml({
-          width: designData.metadata.width,
-          height: designData.metadata.height,
-          backgroundColor: designData.metadata.backgroundColor,
-        });
-      } catch (fallbackError) {
-        console.error('Fallback rendering also failed:', fallbackError);
-      }
     }
   }, [designData]);
 
@@ -176,34 +519,69 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
   }
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const scale = isMobile ? Math.min(window.innerWidth / designData.metadata.width, window.innerHeight / designData.metadata.height) * 0.9 : 1;
 
   return (
-    <div
-      className={`flex min-h-screen items-center justify-center p-0 ${
-        isMobile
-          ? 'bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-100/50'
-          : 'bg-gray-50'
-      }`}
-    >
-      {/* Design Container */}
-      <div
-        className="relative shadow-2xl"
-        style={{
-          width: `${Math.min(designData.metadata.width, typeof window !== 'undefined' ? window.innerWidth - 32 : 800)}px`,
-          height: `${Math.min(designData.metadata.height, typeof window !== 'undefined' ? window.innerHeight - 32 : 600)}px`,
-          maxWidth: '100vw',
-          maxHeight: '100vh',
-          borderRadius: '16px',
-          overflow: 'hidden',
-        }}
-      >
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/40">
+      {/* Header */}
+      <div className="border-b border-white/30 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto max-w-4xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 p-2">
+                <Eye className="size-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {designData.metadata.title || 'Design Preview'}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {designData.metadata.description || 'Shared via QR code'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Share2 className="size-4 text-gray-500" />
+              <span className="text-sm text-gray-500">QR Preview</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Design Preview */}
+      <div className="flex min-h-screen items-center justify-center p-4">
         <div
-          ref={htmlContainerRef}
-          className="size-full"
+          className="relative shadow-2xl"
           style={{
-            backgroundColor: designData.metadata.backgroundColor || '#ffffff',
+            width: `${designData.metadata.width * scale}px`,
+            height: `${designData.metadata.height * scale}px`,
+            maxWidth: '95vw',
+            maxHeight: '80vh',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
           }}
-        />
+        >
+          <div
+            ref={containerRef}
+            className="relative size-full"
+            style={{
+              backgroundColor: designData.metadata.backgroundColor || '#ffffff',
+              width: `${designData.metadata.width}px`,
+              height: `${designData.metadata.height}px`,
+            }}
+          />
+
+          {/* Overlay for demo indication */}
+          {designData.id.includes('demo') && (
+            <div className="absolute inset-x-4 bottom-4 rounded-lg bg-blue-500/90 p-3 text-center backdrop-blur-sm">
+              <p className="text-sm font-medium text-white">
+                This is a demo design. Create your own at our design platform!
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

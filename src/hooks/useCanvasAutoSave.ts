@@ -1,212 +1,238 @@
+import type { DesignData } from '@/lib/indexedDB';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTemplateStore } from '@/stores/templateStore';
-import { useCanvasHistory } from './useCanvasHistory';
+import { designDB } from '@/lib/indexedDB';
 
 type UseCanvasAutoSaveOptions = {
   canvas: any;
   designId: string;
-  autoSaveInterval?: number; // in milliseconds
+  autoSaveInterval?: number;
   enabled?: boolean;
 };
 
-// Safely serialize canvas with error handling and cleanup
-const safeCanvasToJSON = (canvas: any, customProperties: string[] = []): any | null => {
-  if (!canvas) {
-    return null;
-  }
-
-  try {
-    // First, clean up any problematic objects
-    const objects = canvas.getObjects();
-    let hasProblematicObjects = false;
-
-    objects.forEach((obj: any) => {
-      try {
-        // Test if object can be serialized
-        obj.toObject();
-      } catch (error) {
-        console.warn('Found problematic object, cleaning up:', error);
-        hasProblematicObjects = true;
-
-        // Clean up the object's problematic properties
-        if (obj.styles && typeof obj.styles === 'object') {
-          Object.keys(obj.styles).forEach((key) => {
-            if (!obj.styles[key] || typeof obj.styles[key] !== 'object') {
-              delete obj.styles[key];
-            }
-          });
-        }
-
-        // Reset other potentially problematic properties
-        if (obj.path && typeof obj.path !== 'string') {
-          delete obj.path;
-        }
-      }
-    });
-
-    // If we had problematic objects, render the canvas again
-    if (hasProblematicObjects) {
-      canvas.renderAll();
-    }
-
-    // Now try to serialize the entire canvas
-    const serialized = canvas.toJSON(customProperties);
-
-    // Validate the serialized data
-    if (!serialized || typeof serialized !== 'object') {
-      throw new Error('Serialization resulted in invalid data');
-    }
-
-    return serialized;
-  } catch (error) {
-    console.error('Error serializing canvas:', error);
-
-    // As a last resort, try to create a minimal valid canvas state
-    try {
-      return {
-        version: '5.3.0',
-        objects: [],
-        background: canvas.backgroundColor || '#ffffff',
-        width: canvas.getWidth ? canvas.getWidth() : 375,
-        height: canvas.getHeight ? canvas.getHeight() : 667,
-      };
-    } catch (fallbackError) {
-      console.error('Even fallback serialization failed:', fallbackError);
-      return null;
-    }
-  }
+type PreviewData = {
+  canvasData: any;
+  width: number;
+  height: number;
+  backgroundColor: string;
 };
 
 export function useCanvasAutoSave({
   canvas,
   designId,
-  autoSaveInterval = 2000, // Auto-save every 2 seconds
+  autoSaveInterval = 3000,
   enabled = true,
 }: UseCanvasAutoSaveOptions) {
-  const [canvasState, setCanvasState] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCanvasStateRef = useRef<string>('');
-  const serializationErrorCount = useRef<number>(0);
+  const isLoadingRef = useRef(false);
 
-  const { saveCurrentTemplate } = useTemplateStore();
+  // Save current canvas state to IndexedDB
+  const saveCanvasState = useCallback(async () => {
+    if (!canvas || !enabled || isLoadingRef.current) {
+      return;
+    }
 
-  // Initialize canvas history for undo/redo
-  const {
-    saveState: saveHistoryState,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    initializeHistory,
-    isPerformingHistoryAction,
-  } = useCanvasHistory({ canvas });
+    try {
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
 
-  // Get current canvas state as JSON with safe serialization
-  const getCurrentCanvasState = useCallback(() => {
+      // Add canvas dimensions and background
+      canvasData.width = canvas.getWidth();
+      canvasData.height = canvas.getHeight();
+      canvasData.background = canvas.backgroundColor || '#ffffff';
+
+      const designData: DesignData = {
+        id: designId,
+        canvasData,
+        metadata: {
+          width: canvas.getWidth(),
+          height: canvas.getHeight(),
+          backgroundColor: canvas.backgroundColor || '#ffffff',
+          title: `Design ${designId}`,
+          description: 'Auto-saved design',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await designDB.saveDesign(designData);
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Failed to save design to IndexedDB:', error);
+    }
+  }, [canvas, designId, enabled]);
+
+  // Manual save function
+  const saveNow = useCallback(async () => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+    await saveCanvasState();
+  }, [saveCanvasState]);
+
+  // Load design from IndexedDB
+  const loadDesign = useCallback(async () => {
+    if (!canvas || !designId || isLoadingRef.current) {
+      return;
+    }
+
+    try {
+      isLoadingRef.current = true;
+      const designData = await designDB.getDesign(designId);
+
+      if (designData?.canvasData) {
+        // Clear canvas first
+        canvas.clear();
+
+        // Set canvas dimensions if available
+        if (designData.metadata.width && designData.metadata.height) {
+          canvas.setDimensions({
+            width: designData.metadata.width,
+            height: designData.metadata.height,
+          });
+        }
+
+        // Set background color
+        if (designData.metadata.backgroundColor) {
+          canvas.backgroundColor = designData.metadata.backgroundColor;
+        }
+
+        // Load canvas data
+        canvas.loadFromJSON(designData.canvasData, () => {
+          canvas.renderAll();
+          setLastSaved(designData.updatedAt);
+          setHasUnsavedChanges(false);
+
+          // Initialize history with loaded state
+          const initialState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+          setHistory([initialState]);
+          setCurrentHistoryIndex(0);
+          lastCanvasStateRef.current = JSON.stringify(initialState);
+        });
+      } else {
+        // No saved design found, initialize with empty state
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+
+        const initialState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+        setHistory([initialState]);
+        setCurrentHistoryIndex(0);
+        lastCanvasStateRef.current = JSON.stringify(initialState);
+      }
+    } catch (error) {
+      console.error('Failed to load design from IndexedDB:', error);
+    } finally {
+      isLoadingRef.current = false;
+    }
+  }, [canvas, designId]);
+
+  // Track canvas changes for auto-save and history
+  const handleCanvasChange = useCallback(() => {
+    if (!canvas || !enabled || isLoadingRef.current) {
+      return;
+    }
+
+    const currentState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+    const currentStateString = JSON.stringify(currentState);
+
+    // Only trigger if state actually changed
+    if (currentStateString !== lastCanvasStateRef.current) {
+      setHasUnsavedChanges(true);
+      lastCanvasStateRef.current = currentStateString;
+
+      // Add to history (limit to 50 states)
+      setHistory((prev) => {
+        const newHistory = prev.slice(0, currentHistoryIndex + 1);
+        newHistory.push(currentState);
+        return newHistory.slice(-50); // Keep last 50 states
+      });
+      setCurrentHistoryIndex(prev => Math.min(prev + 1, 49));
+
+      // Clear existing timeout and set new one
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        saveCanvasState();
+      }, autoSaveInterval);
+    }
+  }, [canvas, enabled, currentHistoryIndex, autoSaveInterval, saveCanvasState]);
+
+  // Undo function
+  const undo = useCallback(() => {
+    if (!canvas || currentHistoryIndex <= 0) {
+      return;
+    }
+
+    const newIndex = currentHistoryIndex - 1;
+    const targetState = history[newIndex];
+
+    if (targetState) {
+      isLoadingRef.current = true;
+      canvas.loadFromJSON(targetState, () => {
+        canvas.renderAll();
+        setCurrentHistoryIndex(newIndex);
+        lastCanvasStateRef.current = JSON.stringify(targetState);
+        setHasUnsavedChanges(newIndex !== 0); // Mark as unsaved if not at initial state
+        isLoadingRef.current = false;
+      });
+    }
+  }, [canvas, currentHistoryIndex, history]);
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (!canvas || currentHistoryIndex >= history.length - 1) {
+      return;
+    }
+
+    const newIndex = currentHistoryIndex + 1;
+    const targetState = history[newIndex];
+
+    if (targetState) {
+      isLoadingRef.current = true;
+      canvas.loadFromJSON(targetState, () => {
+        canvas.renderAll();
+        setCurrentHistoryIndex(newIndex);
+        lastCanvasStateRef.current = JSON.stringify(targetState);
+        setHasUnsavedChanges(true);
+        isLoadingRef.current = false;
+      });
+    }
+  }, [canvas, currentHistoryIndex, history]);
+
+  // Get preview data for real-time preview
+  const getPreviewData = useCallback((): PreviewData | null => {
     if (!canvas) {
       return null;
     }
 
-    const result = safeCanvasToJSON(canvas, ['elementType', 'buttonData', 'linkData']);
-
-    if (!result) {
-      serializationErrorCount.current += 1;
-      console.warn(`Canvas serialization failed (attempt ${serializationErrorCount.current})`);
-
-      // If we've had too many serialization errors, disable auto-save temporarily
-      if (serializationErrorCount.current > 5) {
-        console.error('Too many serialization errors, auto-save may be unstable');
-      }
-    } else {
-      // Reset error count on successful serialization
-      serializationErrorCount.current = 0;
+    try {
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      return {
+        canvasData,
+        width: canvas.getWidth(),
+        height: canvas.getHeight(),
+        backgroundColor: canvas.backgroundColor || '#ffffff',
+      };
+    } catch (error) {
+      console.error('Failed to get preview data:', error);
+      return null;
     }
-
-    return result;
   }, [canvas]);
 
-  // Save canvas to template store
-  const saveCanvas = useCallback(async () => {
-    if (!canvas || !enabled) {
-      return;
+  // Load design on mount
+  useEffect(() => {
+    if (canvas && designId) {
+      loadDesign();
     }
-
-    try {
-      const canvasData = getCurrentCanvasState();
-      if (!canvasData) {
-        console.warn('Cannot save: Canvas state is invalid');
-        return;
-      }
-
-      const templateName = `Design_${designId}_${Date.now()}`;
-      saveCurrentTemplate(canvasData, templateName);
-
-      setHasUnsavedChanges(false);
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Error auto-saving canvas:', error);
-    }
-  }, [canvas, designId, enabled, getCurrentCanvasState, saveCurrentTemplate]);
-
-  // Debounced auto-save function
-  const scheduleAutoSave = useCallback(() => {
-    if (!enabled) {
-      return;
-    }
-
-    // Skip auto-save if we've had too many serialization errors
-    if (serializationErrorCount.current > 5) {
-      console.warn('Skipping auto-save due to serialization issues');
-      return;
-    }
-
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      saveCanvas();
-    }, autoSaveInterval);
-  }, [enabled, autoSaveInterval, saveCanvas]);
-
-  // Handle canvas modifications with error boundaries
-  const handleCanvasModified = useCallback(() => {
-    if (!canvas) {
-      return;
-    }
-
-    // Don't save history during undo/redo operations
-    if (isPerformingHistoryAction()) {
-      return;
-    }
-
-    try {
-      const currentState = getCurrentCanvasState();
-      if (!currentState) {
-        return;
-      }
-
-      const currentStateString = JSON.stringify(currentState);
-
-      // Only update if state actually changed
-      if (currentStateString !== lastCanvasStateRef.current) {
-        setCanvasState(currentState);
-        setHasUnsavedChanges(true);
-        lastCanvasStateRef.current = currentStateString;
-
-        // Save to history for undo/redo (only if serialization worked)
-        saveHistoryState();
-
-        // Schedule auto-save
-        scheduleAutoSave();
-      }
-    } catch (error) {
-      console.error('Error handling canvas modification:', error);
-      // Don't propagate the error to prevent crashes
-    }
-  }, [canvas, getCurrentCanvasState, scheduleAutoSave, saveHistoryState, isPerformingHistoryAction]);
+  }, [canvas, designId, loadDesign]);
 
   // Set up canvas event listeners
   useEffect(() => {
@@ -222,87 +248,39 @@ export function useCanvasAutoSave({
       'object:scaling',
       'object:rotating',
       'object:skewing',
-      'path:created', // For drawing
+      'path:created',
       'text:changed',
-      'canvas:background-changed',
     ];
 
-    // Add event listeners with error boundaries
-    const safeHandleCanvasModified = () => {
-      try {
-        handleCanvasModified();
-      } catch (error) {
-        console.error('Error in canvas event handler:', error);
-      }
-    };
-
-    // Add event listeners
     events.forEach((event) => {
-      canvas.on(event, safeHandleCanvasModified);
+      canvas.on(event, handleCanvasChange);
     });
 
-    // Initialize history when canvas is ready
-    try {
-      initializeHistory();
-    } catch (error) {
-      console.error('Error initializing canvas history:', error);
-    }
-
-    // Initial state capture
-    setTimeout(() => {
-      safeHandleCanvasModified();
-    }, 100); // Small delay to ensure canvas is ready
-
-    // Cleanup
     return () => {
       events.forEach((event) => {
-        canvas.off(event, safeHandleCanvasModified);
+        canvas.off(event, handleCanvasChange);
       });
+    };
+  }, [canvas, enabled, handleCanvasChange]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [canvas, enabled, handleCanvasModified, initializeHistory]);
-
-  // Manual save function
-  const saveNow = useCallback(async () => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    await saveCanvas();
-  }, [saveCanvas]);
-
-  // Get preview data optimized for preview component
-  const getPreviewData = useCallback(() => {
-    if (!canvasState) {
-      return null;
-    }
-
-    try {
-      return {
-        canvasData: canvasState,
-        width: canvas?.getWidth() || 375,
-        height: canvas?.getHeight() || 667,
-        backgroundColor: canvas?.backgroundColor || '#ffffff',
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error('Error getting preview data:', error);
-      return null;
-    }
-  }, [canvasState, canvas]);
+  }, []);
 
   return {
-    canvasState,
     hasUnsavedChanges,
     lastSaved,
     saveNow,
+    loadDesign,
     getPreviewData,
-    // Expose undo/redo functionality
     undo,
     redo,
-    canUndo,
-    canRedo,
+    canUndo: currentHistoryIndex > 0,
+    canRedo: currentHistoryIndex < history.length - 1,
   };
 }

@@ -24,198 +24,356 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
       const canvasBackground = canvas.backgroundColor || '#ffffff';
 
       // Get all objects from canvas with custom properties
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData']);
+      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
       const objects = canvasData.objects || [];
+
+      if (objects.length === 0) {
+        toast.error('No elements found on canvas. Add some elements first.');
+        return;
+      }
 
       // Convert Fabric.js objects to HTML elements
       const renderElements = () => {
         return objects.map((obj: any, index: number) => {
-          const left = obj.left || 0;
-          const top = obj.top || 0;
-          const width = (obj.width || 0) * (obj.scaleX || 1);
-          const height = (obj.height || 0) * (obj.scaleY || 1);
-          const angle = obj.angle || 0;
+          try {
+            const left = obj.left || 0;
+            const top = obj.top || 0;
+            const width = (obj.width || 0) * (obj.scaleX || 1);
+            const height = (obj.height || 0) * (obj.scaleY || 1);
+            const angle = obj.angle || 0;
 
-          // Common styles
-          const baseStyle = {
-            position: 'absolute' as const,
-            left: `${left}px`,
-            top: `${top}px`,
-            width: `${width}px`,
-            height: `${height}px`,
-            transform: `rotate(${angle}deg)`,
-            opacity: obj.opacity || 1,
-            visibility: obj.visible !== false ? 'visible' as const : 'hidden' as const,
-          };
+            // Common styles
+            const baseStyle = {
+              position: 'absolute' as const,
+              left: `${left}px`,
+              top: `${top}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              transform: `rotate(${angle}deg)`,
+              opacity: obj.opacity || 1,
+              visibility: obj.visible !== false ? 'visible' as const : 'hidden' as const,
+            };
 
-          // Handle different element types
-          if (obj.elementType === 'button' && obj.buttonData) {
-            const buttonData = obj.buttonData;
-            return `
-              <button
-                key="${index}"
-                style="
-                  ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                  background-color: ${buttonData.backgroundColor || '#3b82f6'};
-                  color: ${buttonData.textColor || '#ffffff'};
-                  border: ${buttonData.borderWidth || 0}px solid ${buttonData.borderColor || 'transparent'};
-                  border-radius: ${buttonData.borderRadius || 8}px;
-                  font-size: ${buttonData.fontSize || 14}px;
-                  font-weight: ${buttonData.fontWeight || 'normal'};
-                  padding: ${buttonData.padding?.top || 8}px ${buttonData.padding?.right || 16}px ${buttonData.padding?.bottom || 8}px ${buttonData.padding?.left || 16}px;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  text-decoration: none;
-                  outline: none;
-                  transition: all 0.2s ease;
-                "
-                onmouseover="this.style.backgroundColor='${buttonData.hoverBackgroundColor || '#2563eb'}'; this.style.color='${buttonData.hoverTextColor || '#ffffff'}';"
-                onmouseout="this.style.backgroundColor='${buttonData.backgroundColor || '#3b82f6'}'; this.style.color='${buttonData.textColor || '#ffffff'}';"
-                onclick="
-                  const action = ${JSON.stringify(buttonData.action || { type: 'url', value: '' })}
-                  if (action.type === 'url' && action.value) {
-                    window.open(action.value, '_blank');
-                  } else if (action.type === 'email' && action.value) {
-                    window.location.href = 'mailto:' + action.value;
-                  } else if (action.type === 'phone' && action.value) {
-                    window.location.href = 'tel:' + action.value;
-                  } else if (action.type === 'custom' && action.value) {
-                    console.log('Custom action:', action.value);
-                  }
-                "
-              >
-                ${buttonData.text || 'Button'}
-              </button>
-            `;
-          }
-
-          if (obj.elementType === 'link' && obj.linkData) {
-            const linkData = obj.linkData;
-            return `
-              <a
-                key="${index}"
-                href="${linkData.url || '#'}"
-                target="${linkData.target || '_blank'}"
-                style="
-                  ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                  color: ${linkData.color || '#3b82f6'};
-                  font-size: ${linkData.fontSize || 16}px;
-                  font-weight: ${linkData.fontWeight || 'normal'};
-                  text-decoration: ${linkData.textDecoration || 'underline'};
-                  cursor: pointer;
-                  display: inline-block;
-                  transition: all 0.2s ease;
-                "
-                onmouseover="this.style.color='${linkData.hoverColor || '#1e40af'}';"
-                onmouseout="this.style.color='${linkData.color || '#3b82f6'}';"
-              >
-                ${linkData.text || 'Link'}
-              </a>
-            `;
-          }
-
-          // Handle text elements
-          if (obj.type === 'i-text' || obj.type === 'text') {
-            // Adjust text positioning to match Fabric.js canvas rendering
-            const fontSize = obj.fontSize || 16;
-            const textBaseline = obj.textBaseline || 'alphabetic';
-            let adjustedTop = top;
-
-            // More accurate baseline adjustment based on actual font metrics
-            if (textBaseline === 'alphabetic' || textBaseline === 'baseline') {
-              adjustedTop = top - fontSize * 0.75; // More accurate adjustment
-            } else if (textBaseline === 'middle') {
-              adjustedTop = top - fontSize * 0.4; // Adjust for middle baseline
-            } else if (textBaseline === 'bottom') {
-              adjustedTop = top - fontSize * 0.9; // Adjust for bottom baseline
-            } else if (textBaseline === 'top') {
-              adjustedTop = top; // No adjustment needed for top baseline
+            // Handle different element types
+            if (obj.elementType === 'button' && obj.buttonData) {
+              const buttonData = obj.buttonData;
+              return `
+                <button
+                  key="${index}"
+                  style="
+                    ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                    background-color: ${buttonData.backgroundColor || '#3b82f6'};
+                    color: ${buttonData.textColor || '#ffffff'};
+                    border: ${buttonData.borderWidth || 0}px solid ${buttonData.borderColor || 'transparent'};
+                    border-radius: ${buttonData.borderRadius || 8}px;
+                    font-size: ${buttonData.fontSize || 14}px;
+                    font-weight: ${buttonData.fontWeight || 'normal'};
+                    padding: ${buttonData.padding?.top || 8}px ${buttonData.padding?.right || 16}px ${buttonData.padding?.bottom || 8}px ${buttonData.padding?.left || 16}px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-decoration: none;
+                    outline: none;
+                    transition: all 0.2s ease;
+                  "
+                  onmouseover="this.style.backgroundColor='${buttonData.hoverBackgroundColor || '#2563eb'}'; this.style.color='${buttonData.hoverTextColor || '#ffffff'}';"
+                  onmouseout="this.style.backgroundColor='${buttonData.backgroundColor || '#3b82f6'}'; this.style.color='${buttonData.textColor || '#ffffff'}';"
+                  onclick="
+                    const action = ${JSON.stringify(buttonData.action || { type: 'url', value: '' })}
+                    if (action.type === 'url' && action.value) {
+                      window.open(action.value, '_blank');
+                    } else if (action.type === 'email' && action.value) {
+                      window.location.href = 'mailto:' + action.value;
+                    } else if (action.type === 'phone' && action.value) {
+                      window.location.href = 'tel:' + action.value;
+                    } else if (action.type === 'custom' && action.value) {
+                      console.log('Custom action:', action.value);
+                    }
+                  "
+                >
+                  ${buttonData.text || 'Button'}
+                </button>
+              `;
             }
 
-            // Additional adjustment based on originY if present
-            const originY = obj.originY || 'top';
-            if (originY === 'center') {
-              adjustedTop = top - fontSize * 0.4;
-            } else if (originY === 'bottom') {
-              adjustedTop = top - fontSize * 0.8;
+            // Handle Link elements
+            if (obj.elementType === 'link' && obj.linkData) {
+              const linkData = obj.linkData;
+              const hasUrl = linkData.url && linkData.url.trim() !== '';
+
+              return `
+                <a
+                  key="${index}"
+                  href="${hasUrl ? linkData.url : '#'}"
+                  target="${hasUrl ? (linkData.target || '_blank') : '_self'}"
+                  style="
+                    ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                    color: ${linkData.color || '#3b82f6'};
+                    font-size: ${linkData.fontSize || 16}px;
+                    font-weight: ${linkData.fontWeight || 'normal'};
+                    text-decoration: ${linkData.textDecoration || 'underline'};
+                    cursor: ${hasUrl ? 'pointer' : 'default'};
+                    display: inline-block;
+                    transition: all 0.2s ease;
+                    ${!hasUrl ? 'opacity: 0.6;' : ''}
+                  "
+                  onmouseover="this.style.color='${linkData.hoverColor || '#1e40af'}';"
+                  onmouseout="this.style.color='${linkData.color || '#3b82f6'}';"
+                  onclick="${hasUrl ? '' : 'event.preventDefault(); alert(\'This link has no URL configured.\'); return false;'}"
+                >
+                  ${linkData.text || 'Link'}
+                </a>
+              `;
             }
 
-            return `
-              <div
-                key="${index}"
-                style="
-                  ${Object.entries({ ...baseStyle, top: `${adjustedTop}px` }).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                  color: ${obj.fill || '#000000'};
-                  font-size: ${fontSize}px;
-                  font-weight: ${obj.fontWeight || 'normal'};
-                  font-family: ${obj.fontFamily || 'Arial'};
-                  text-align: ${obj.textAlign || 'left'};
-                  white-space: pre-wrap;
-                  pointer-events: none;
-                  line-height: 1.2;
-                  display: flex;
-                  align-items: flex-start;
-                  justify-content: ${obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start'};
-                  min-height: ${fontSize * 1.2}px;
-                "
-              >
-                ${obj.text || ''}
-              </div>
-            `;
-          }
+            // Handle text elements
+            if (obj.type === 'i-text' || obj.type === 'text') {
+              // Adjust text positioning to match Fabric.js canvas rendering
+              const fontSize = obj.fontSize || 16;
+              const textBaseline = obj.textBaseline || 'alphabetic';
+              let adjustedTop = top;
 
-          // Handle shape elements
-          if (['rect', 'circle', 'triangle', 'polygon'].includes(obj.type)) {
-            if (obj.type === 'rect') {
+              // More accurate baseline adjustment based on actual font metrics
+              if (textBaseline === 'alphabetic' || textBaseline === 'baseline') {
+                adjustedTop = top - fontSize * 0.75; // More accurate adjustment
+              } else if (textBaseline === 'middle') {
+                adjustedTop = top - fontSize * 0.4; // Adjust for middle baseline
+              } else if (textBaseline === 'bottom') {
+                adjustedTop = top - fontSize * 0.9; // Adjust for bottom baseline
+              } else if (textBaseline === 'top') {
+                adjustedTop = top; // No adjustment needed for top baseline
+              }
+
+              // Additional adjustment based on originY if present
+              const originY = obj.originY || 'top';
+              if (originY === 'center') {
+                adjustedTop = top - fontSize * 0.4;
+              } else if (originY === 'bottom') {
+                adjustedTop = top - fontSize * 0.8;
+              }
+
+              return `
+                <div
+                  key="${index}"
+                  style="
+                    ${Object.entries({ ...baseStyle, top: `${adjustedTop}px` }).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                    color: ${obj.fill || '#000000'};
+                    font-size: ${fontSize}px;
+                    font-weight: ${obj.fontWeight || 'normal'};
+                    font-family: ${obj.fontFamily || 'Arial'};
+                    text-align: ${obj.textAlign || 'left'};
+                    white-space: pre-wrap;
+                    pointer-events: none;
+                    line-height: 1.2;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: ${obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start'};
+                    min-height: ${fontSize * 1.2}px;
+                  "
+                >
+                  ${obj.text || ''}
+                </div>
+              `;
+            }
+
+            // Handle shape elements
+            if (['rect', 'circle', 'triangle', 'polygon'].includes(obj.type)) {
+              if (obj.type === 'rect') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${obj.fill || 'transparent'};
+                      border: ${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'};
+                      border-radius: ${obj.rx || 0}px;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (obj.type === 'circle') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${obj.fill || 'transparent'};
+                      border: ${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'};
+                      border-radius: 50%;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (obj.type === 'triangle') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      width: 0;
+                      height: 0;
+                      border-left: ${width / 2}px solid transparent;
+                      border-right: ${width / 2}px solid transparent;
+                      border-bottom: ${height}px solid ${obj.fill || '#cccccc'};
+                      background-color: transparent;
+                      border: none;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (obj.type === 'polygon') {
+                const isStandardDiamond = obj.shapeType === 'diamond'
+                  || (obj.points && obj.points.length === 4);
+
+                if (isStandardDiamond) {
+                  return `
+                    <div
+                      key="${index}"
+                      style="
+                        ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                        background-color: ${obj.fill || 'transparent'};
+                        border: ${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'};
+                        transform: ${baseStyle.transform} rotate(45deg);
+                        border-radius: 4px;
+                        pointer-events: none;
+                      "
+                    ></div>
+                  `;
+                }
+              }
+            }
+
+            // Handle custom shape elements (from our shape system)
+            if (obj.elementType === 'shape' && obj.shapeData) {
+              const shapeData = obj.shapeData;
+
+              if (shapeData.type === 'rectangle') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${shapeData.fill || obj.fill || '#cccccc'};
+                      border: ${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'};
+                      border-radius: ${obj.rx || 8}px;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (shapeData.type === 'circle') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${shapeData.fill || obj.fill || '#cccccc'};
+                      border: ${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'};
+                      border-radius: 50%;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (shapeData.type === 'triangle') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      width: 0;
+                      height: 0;
+                      border-left: ${width / 2}px solid transparent;
+                      border-right: ${width / 2}px solid transparent;
+                      border-bottom: ${height}px solid ${shapeData.fill || obj.fill || '#cccccc'};
+                      background-color: transparent;
+                      border: none;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (shapeData.type === 'diamond') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${shapeData.fill || obj.fill || '#cccccc'};
+                      border: ${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'};
+                      transform: ${baseStyle.transform} rotate(45deg);
+                      border-radius: 4px;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+
+              if (shapeData.type === 'line') {
+                return `
+                  <div
+                    key="${index}"
+                    style="
+                      ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                      background-color: ${shapeData.stroke || obj.stroke || '#000000'};
+                      border: none;
+                      height: ${shapeData.strokeWidth || obj.strokeWidth || 2}px;
+                      border-radius: 1px;
+                      pointer-events: none;
+                    "
+                  ></div>
+                `;
+              }
+            }
+
+            // Handle images
+            if (obj.type === 'image') {
+              return `
+                <img
+                  key="${index}"
+                  src="${obj.src || ''}"
+                  style="
+                    ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
+                    object-fit: cover;
+                    pointer-events: none;
+                  "
+                  alt=""
+                />
+              `;
+            }
+
+            // Handle Line shapes
+            if (obj.type === 'line') {
               return `
                 <div
                   key="${index}"
                   style="
                     ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                    background-color: ${obj.fill || 'transparent'};
-                    border: ${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'};
-                    border-radius: ${obj.rx || 0}px;
+                    background-color: ${obj.stroke || '#000000'};
+                    border: none;
+                    height: ${obj.strokeWidth || 1}px;
+                    border-radius: 1px;
                     pointer-events: none;
                   "
                 ></div>
               `;
             }
 
-            if (obj.type === 'circle') {
-              return `
-                <div
-                  key="${index}"
-                  style="
-                    ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                    background-color: ${obj.fill || 'transparent'};
-                    border: ${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'};
-                    border-radius: 50%;
-                    pointer-events: none;
-                  "
-                ></div>
-              `;
-            }
+            return '';
+          } catch (error) {
+            console.error(`Error rendering element ${index}:`, error);
+            return '';
           }
-
-          // Handle images
-          if (obj.type === 'image') {
-            return `
-              <img
-                key="${index}"
-                src="${obj.src || ''}"
-                style="
-                  ${Object.entries(baseStyle).map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`).join('; ')};
-                  object-fit: cover;
-                  pointer-events: none;
-                "
-                alt=""
-              />
-            `;
-          }
-
-          return '';
         }).filter(Boolean).join('');
       };
 

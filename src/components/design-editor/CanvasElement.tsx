@@ -2,7 +2,7 @@
 
 import type { DesignElement } from '@/stores/designStore';
 import Image from 'next/image';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 type CanvasElementProps = {
   element: DesignElement;
@@ -39,7 +39,7 @@ export function CanvasElement({
         height: element.height,
       });
     }
-  }, [onSelect, element]);
+  }, [onSelect, element.x, element.y, element.width, element.height]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -75,9 +75,10 @@ export function CanvasElement({
       width: element.width,
       height: element.height,
     });
-  }, [element]);
+  }, [element.x, element.y, element.width, element.height]);
 
-  const renderElement = () => {
+  // Memoize the heavy renderElement function
+  const renderedElement = useMemo(() => {
     const commonStyle = {
       position: 'absolute' as const,
       left: element.x,
@@ -125,7 +126,7 @@ export function CanvasElement({
             <div
               style={{
                 ...shapeStyle,
-                borderRadius: element.shape?.borderRadius || 0,
+                borderRadius: element.shape?.borderRadius || 8,
               }}
             />
           );
@@ -138,14 +139,42 @@ export function CanvasElement({
               }}
             />
           );
-        } else if (element.shape?.type === 'line') {
+        } else if (element.shape?.type === 'triangle') {
+          return (
+            <div
+              style={{
+                ...commonStyle,
+                width: 0,
+                height: 0,
+                borderLeft: `${element.width / 2}px solid transparent`,
+                borderRight: `${element.width / 2}px solid transparent`,
+                borderBottom: `${element.height}px solid ${element.shape?.fill || '#3b82f6'}`,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: isDragging ? 'grabbing' : 'grab',
+              }}
+            />
+          );
+        } else if (element.shape?.type === 'diamond') {
           return (
             <div
               style={{
                 ...shapeStyle,
-                backgroundColor: element.shape?.stroke || '#1e40af',
+                transform: `rotate(${element.rotation}deg) rotate(45deg)`,
+                borderRadius: 4,
+              }}
+            />
+          );
+        } else if (element.shape?.type === 'line') {
+          return (
+            <div
+              style={{
+                ...commonStyle,
+                backgroundColor: element.shape?.stroke || '#374151',
                 border: 'none',
-                height: element.shape?.strokeWidth || 2,
+                height: element.shape?.strokeWidth || 3,
+                borderRadius: 1,
+                cursor: isDragging ? 'grabbing' : 'grab',
               }}
             />
           );
@@ -254,7 +283,80 @@ export function CanvasElement({
         return null;
     }
     return null;
-  };
+  }, [element, isDragging]);
+
+  // Memoize selection handles
+  const selectionHandles = useMemo(() => {
+    if (!isSelected) {
+      return null;
+    }
+
+    return (
+      <div
+        className="pointer-events-none absolute"
+        style={{
+          left: element.x - 4,
+          top: element.y - 4,
+          width: element.width + 8,
+          height: element.height + 8,
+          border: '2px solid #3b82f6',
+          borderRadius: '4px',
+        }}
+      >
+        {/* Corner Resize Handles */}
+        <button
+          type="button"
+          className="pointer-events-auto absolute -left-1 -top-1 size-3 cursor-nw-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'nw')}
+          aria-label="Resize northwest"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -right-1 -top-1 size-3 cursor-ne-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'ne')}
+          aria-label="Resize northeast"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -bottom-1 -left-1 size-3 cursor-sw-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'sw')}
+          aria-label="Resize southwest"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'se')}
+          aria-label="Resize southeast"
+        />
+
+        {/* Edge Resize Handles */}
+        <button
+          type="button"
+          className="pointer-events-auto absolute -top-1 left-1/2 size-3 -translate-x-1/2 cursor-n-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'n')}
+          aria-label="Resize north"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -bottom-1 left-1/2 size-3 -translate-x-1/2 cursor-s-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 's')}
+          aria-label="Resize south"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -left-1 top-1/2 size-3 -translate-y-1/2 cursor-w-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'w')}
+          aria-label="Resize west"
+        />
+        <button
+          type="button"
+          className="pointer-events-auto absolute -right-1 top-1/2 size-3 -translate-y-1/2 cursor-e-resize rounded-sm border-2 border-blue-500 bg-white"
+          onMouseDown={e => handleResizeMouseDown(e, 'e')}
+          aria-label="Resize east"
+        />
+      </div>
+    );
+  }, [isSelected, element.x, element.y, element.width, element.height, handleResizeMouseDown]);
 
   return (
     <div
@@ -267,75 +369,11 @@ export function CanvasElement({
       onKeyDown={handleKeyDown}
     >
       <div ref={elementRef}>
-        {renderElement()}
+        {renderedElement}
       </div>
 
       {/* Selection Handles */}
-      {isSelected && (
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: element.x - 4,
-            top: element.y - 4,
-            width: element.width + 8,
-            height: element.height + 8,
-            border: '2px solid #3b82f6',
-            borderRadius: '4px',
-          }}
-        >
-          {/* Corner Resize Handles */}
-          <button
-            type="button"
-            className="pointer-events-auto absolute -left-1 -top-1 size-3 cursor-nw-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'nw')}
-            aria-label="Resize northwest"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -right-1 -top-1 size-3 cursor-ne-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'ne')}
-            aria-label="Resize northeast"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -bottom-1 -left-1 size-3 cursor-sw-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'sw')}
-            aria-label="Resize southwest"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'se')}
-            aria-label="Resize southeast"
-          />
-
-          {/* Edge Resize Handles */}
-          <button
-            type="button"
-            className="pointer-events-auto absolute -top-1 left-1/2 size-3 -translate-x-1/2 cursor-n-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'n')}
-            aria-label="Resize north"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -bottom-1 left-1/2 size-3 -translate-x-1/2 cursor-s-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 's')}
-            aria-label="Resize south"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -left-1 top-1/2 size-3 -translate-y-1/2 cursor-w-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'w')}
-            aria-label="Resize west"
-          />
-          <button
-            type="button"
-            className="pointer-events-auto absolute -right-1 top-1/2 size-3 -translate-y-1/2 cursor-e-resize rounded-sm border-2 border-blue-500 bg-white"
-            onMouseDown={e => handleResizeMouseDown(e, 'e')}
-            aria-label="Resize east"
-          />
-        </div>
-      )}
+      {selectionHandles}
     </div>
   );
 }
