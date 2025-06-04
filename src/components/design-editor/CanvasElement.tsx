@@ -250,22 +250,30 @@ export function CanvasElement({
               cursor: isDragging ? 'grabbing' : 'pointer',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               color: element.link?.color || '#3b82f6',
               fontSize: element.link?.fontSize || 16,
               fontWeight: element.link?.fontWeight || 'normal',
               textDecoration: element.link?.textDecoration || 'underline',
               transition: 'all 0.2s ease-in-out',
-              background: 'none',
-              border: 'none',
-              padding: 0,
+              background: 'rgba(59, 130, 246, 0.05)',
+              border: '2px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              userSelect: 'none',
+              boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.3)' : 'none',
             }}
             onMouseEnter={(e) => {
               if (element.link?.hoverColor) {
                 e.currentTarget.style.color = element.link.hoverColor;
+                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
               }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = element.link?.color || '#3b82f6';
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.2)';
             }}
             onClick={(e) => {
               if (!isDragging && element.link?.url) {
@@ -275,6 +283,19 @@ export function CanvasElement({
             }}
           >
             {element.link?.text || 'Link'}
+            {/* Visual indicator dot */}
+            <div
+              style={{
+                position: 'absolute',
+                right: 4,
+                top: 4,
+                width: 6,
+                height: 6,
+                backgroundColor: '#10b981',
+                borderRadius: '50%',
+                opacity: 0.8,
+              }}
+            />
           </button>
         );
       }

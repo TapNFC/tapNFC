@@ -273,7 +273,10 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
               {/* Backgrounds panel */}
               <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
                 <SidebarSection title="Backgrounds">
-                  <BackgroundsPanel onBackgroundChange={memoizedHandleBackgroundChange} />
+                  <BackgroundsPanel
+                    onBackgroundChange={memoizedHandleBackgroundChange}
+                    currentBackground={canvas?.backgroundColor || '#ffffff'}
+                  />
                 </SidebarSection>
               </div>
             </div>

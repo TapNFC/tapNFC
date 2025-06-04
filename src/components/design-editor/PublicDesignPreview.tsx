@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 'use client';
 
 import type { DesignData } from '@/lib/indexedDB';
@@ -199,6 +198,9 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
       // Clear container
       containerRef.current.innerHTML = '';
 
+      // Ensure container allows pointer events
+      containerRef.current.style.pointerEvents = 'auto';
+
       // Create design elements
       const objects = designData.canvasData.objects || [];
 
@@ -215,8 +217,91 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
           return;
         }
 
+        // Handle link elements FIRST, before handling text
+        if (obj.elementType === 'link') {
+          // Create a real anchor element for links
+          const linkElement = document.createElement('a');
+          linkElement.textContent = obj.text || obj.linkData?.text || 'Link';
+
+          // Debug log
+          console.warn('Creating link element:', obj);
+
+          // Use native anchor element for best compatibility
+          linkElement.href = obj.linkData?.url || '#';
+          linkElement.target = obj.linkData?.target || '_blank';
+          linkElement.rel = 'noopener noreferrer';
+
+          // Basic positioning and styling
+          linkElement.style.cssText = `
+            position: absolute;
+            left: ${left}px;
+            top: ${top}px;
+            width: auto;
+            min-width: ${width}px;
+            height: auto;
+            min-height: ${height}px;
+            transform: rotate(${angle}deg);
+            opacity: ${opacity};
+            z-index: 9999;
+            color: ${obj.linkData?.color || obj.fill || '#3b82f6'};
+            font-size: ${obj.fontSize || obj.linkData?.fontSize || 16}px;
+            font-weight: ${obj.fontWeight || obj.linkData?.fontWeight || 'normal'};
+            font-family: ${obj.fontFamily || obj.linkData?.fontFamily || 'Arial'};
+            text-decoration: underline;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            user-select: none;
+            transition: all 0.2s ease;
+            text-align: center;
+            background: none;
+            border: none;
+            padding: 0;
+          `;
+
+          // Add direct click handler as backup
+          linkElement.onclick = function (e) {
+            // Only handle click if href is a real URL
+            if ((this as HTMLAnchorElement).href === '#') {
+              e.preventDefault();
+              toast.error('This link has no URL configured.');
+              return false;
+            }
+
+            // Show success message
+            toast.success(`Opening link: ${(this as HTMLAnchorElement).href}`);
+            // Let the native anchor behavior work
+            return true;
+          };
+
+          // Hover effects with native CSS
+          linkElement.onmouseover = function () {
+            const element = this as HTMLAnchorElement;
+            element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            element.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+            element.style.color = obj.linkData?.hoverColor || '#1e40af';
+          };
+
+          linkElement.onmouseout = function () {
+            const element = this as HTMLAnchorElement;
+            element.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+            element.style.borderColor = 'rgba(59, 130, 246, 0.2)';
+            element.style.color = obj.linkData?.color || obj.fill || '#3b82f6';
+          };
+
+          containerRef.current?.appendChild(linkElement);
+          return; // Skip the rest of the rendering for this object
+        }
+
         // Handle different element types
         if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
+          // Don't render text elements that are links
+          if (obj.elementType === 'link') {
+            return;
+          }
+
           const textElement = document.createElement('div');
           textElement.style.position = 'absolute';
           textElement.style.left = `${left}px`;
@@ -395,85 +480,6 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
           }
 
           containerRef.current?.appendChild(button);
-        } else if (obj.elementType === 'link' && obj.linkData) {
-          const linkElement = document.createElement('a');
-          linkElement.textContent = obj.linkData.text || 'Link';
-
-          // Basic positioning and styling
-          linkElement.style.cssText = `
-            position: absolute;
-            left: ${left}px;
-            top: ${top}px;
-            width: ${width}px;
-            height: ${height}px;
-            transform: rotate(${angle}deg);
-            opacity: ${opacity};
-            z-index: ${index + 1000};
-            color: ${obj.linkData.color || '#3b82f6'};
-            font-size: ${obj.linkData.fontSize || 16}px;
-            font-weight: ${obj.linkData.fontWeight || 'normal'};
-            font-family: ${obj.linkData.fontFamily || 'Arial'};
-            text-decoration: ${obj.linkData.textDecoration || 'underline'};
-            display: block;
-            cursor: pointer;
-            pointer-events: auto;
-            user-select: none;
-            transition: all 0.2s ease;
-            background: rgba(255,0,0,0.1);
-            border: 1px solid rgba(255,0,0,0.3);
-          `;
-
-          // Set link properties
-          const hasUrl = obj.linkData.url && obj.linkData.url.trim() !== '';
-
-          if (hasUrl) {
-            linkElement.href = obj.linkData.url;
-            linkElement.target = obj.linkData.target || '_blank';
-            linkElement.rel = 'noopener noreferrer';
-
-            // Multiple event handlers for maximum compatibility
-            linkElement.onclick = (e) => {
-              e.stopPropagation();
-              window.open(obj.linkData.url, '_blank');
-              return false;
-            };
-
-            linkElement.addEventListener('click', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              window.open(obj.linkData.url, '_blank');
-            }, true);
-          } else {
-            linkElement.href = '#';
-            linkElement.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toast.error('This link has no URL configured.');
-              return false;
-            };
-          }
-
-          // Hover effects
-          linkElement.addEventListener('mouseenter', () => {
-            linkElement.style.color = obj.linkData.hoverColor || '#1e40af';
-            linkElement.style.textDecoration = 'underline';
-          });
-
-          linkElement.addEventListener('mouseleave', () => {
-            linkElement.style.color = obj.linkData.color || '#3b82f6';
-          });
-
-          // Add debugging
-          linkElement.addEventListener('mousedown', () => {
-            console.log('Link mousedown');
-          });
-
-          linkElement.addEventListener('mouseup', () => {
-            console.log('Link mouseup');
-          });
-
-          console.log('Appending link element to container');
-          containerRef.current?.appendChild(linkElement);
         }
       });
     } catch (renderError) {
@@ -570,6 +576,8 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
               backgroundColor: designData.metadata.backgroundColor || '#ffffff',
               width: `${designData.metadata.width}px`,
               height: `${designData.metadata.height}px`,
+              position: 'relative',
+              pointerEvents: 'auto',
             }}
           />
 

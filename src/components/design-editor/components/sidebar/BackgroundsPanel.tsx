@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react';
+/* eslint-disable jsx-a11y/label-has-associated-control */
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { SidebarSection } from './SidebarSection';
 
 type BackgroundsPanelProps = {
   onBackgroundChange: (color: string) => void;
+  currentBackground?: string;
 };
 
 const backgrounds = [
@@ -43,9 +45,16 @@ const gradientBackgrounds = [
   { id: 'gradient-15', gradient: 'linear-gradient(135deg, #e0c3fc, #9bb5ff)' },
 ];
 
-export function BackgroundsPanel({ onBackgroundChange }: BackgroundsPanelProps) {
-  const [customColor, setCustomColor] = useState('#ffffff');
-  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
+export function BackgroundsPanel({ onBackgroundChange, currentBackground = '#ffffff' }: BackgroundsPanelProps) {
+  const [customColor, setCustomColor] = useState(currentBackground);
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(currentBackground);
+
+  useEffect(() => {
+    if (currentBackground && currentBackground !== selectedBackground) {
+      setSelectedBackground(currentBackground);
+      setCustomColor(currentBackground);
+    }
+  }, [currentBackground, selectedBackground]);
 
   const handleColorChange = useCallback((color: string) => {
     try {
@@ -59,10 +68,23 @@ export function BackgroundsPanel({ onBackgroundChange }: BackgroundsPanelProps) 
   }, [onBackgroundChange]);
 
   const handleCustomColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = e.target.value;
-    setCustomColor(newColor);
-    handleColorChange(newColor);
-  }, [handleColorChange]);
+    try {
+      const newColor = e.target.value;
+
+      // Update local state
+      setCustomColor(newColor);
+      setSelectedBackground(newColor);
+
+      // Apply to canvas
+      onBackgroundChange(newColor);
+
+      // Show feedback
+      toast.success('Custom background color applied!');
+    } catch (error) {
+      console.error('Error setting custom color:', error);
+      toast.error('Failed to apply custom color');
+    }
+  }, [onBackgroundChange]);
 
   return (
     <SidebarSection title="Backgrounds">
@@ -97,9 +119,6 @@ export function BackgroundsPanel({ onBackgroundChange }: BackgroundsPanelProps) 
               }
                 `}
                 />
-
-                {/* Inner glow effect */}
-                <div className="absolute inset-1 rounded-lg bg-white/20 opacity-0 transition-all duration-300 group-hover:opacity-100" />
 
                 {/* Check indicator for selected color */}
                 {selectedBackground === bg.color && (
@@ -150,16 +169,20 @@ export function BackgroundsPanel({ onBackgroundChange }: BackgroundsPanelProps) 
           <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">Custom</h4>
           <div className="group relative overflow-hidden rounded-xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-4 transition-all duration-300 hover:border-gray-300 hover:shadow-md">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <input
-                  type="color"
-                  value={customColor}
-                  onChange={handleCustomColorChange}
-                  className="size-12 cursor-pointer rounded-lg border-2 border-white shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md"
-                  title="Choose custom background color"
-                />
-                {/* Color picker icon overlay */}
-                <div className="pointer-events-none absolute inset-0 rounded-lg border border-gray-300/50" />
+              <div className="relative flex">
+                <label
+                  htmlFor="custom-color-picker"
+                  className="flex size-12 cursor-pointer items-center justify-center rounded-lg border-2 border-white shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  style={{ backgroundColor: customColor }}
+                >
+                  <input
+                    id="custom-color-picker"
+                    type="color"
+                    value={customColor}
+                    onChange={handleCustomColorChange}
+                    className="absolute opacity-0"
+                  />
+                </label>
 
                 {/* Selected indicator */}
                 {selectedBackground === customColor && (
@@ -173,8 +196,6 @@ export function BackgroundsPanel({ onBackgroundChange }: BackgroundsPanelProps) 
               </div>
             </div>
 
-            {/* Background pattern */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
         </div>
 

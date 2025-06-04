@@ -246,28 +246,42 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       return;
     }
 
-    const linkText = 'Click here';
-    const linkUrl = ''; // Start with empty URL so user is prompted to add one
+    const linkText = 'Click me';
+    const linkUrl = 'https://example.com'; // Start with example URL to make testing easier
 
+    // Create a more prominent link element
     const link = new fabric.IText(linkText, {
       left: 100,
       top: 100,
-      fontSize: 16,
+      fontSize: 18,
       fill: '#3b82f6',
       fontFamily: 'Inter',
       underline: true,
       selectable: true,
       hoverCursor: 'pointer',
       moveCursor: 'move',
+      textAlign: 'center',
+      width: 150, // Ensure width is set
+      height: 40, // Ensure height is set
+      stroke: '#3b82f6',
+      strokeWidth: 0,
+      backgroundColor: 'rgba(59, 130, 246, 0.05)',
     });
 
+    // Ensure the object has appropriate dimensions
+    link.set({
+      width: link.getScaledWidth() || 150,
+      height: link.getScaledHeight() || 40,
+    });
+
+    // Add custom properties for the link
     (link as any).elementType = 'link';
     (link as any).linkData = {
       text: linkText,
       url: linkUrl,
       color: '#3b82f6',
       hoverColor: '#1e40af',
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 'normal',
       fontFamily: 'Inter',
       textDecoration: 'underline',
@@ -278,7 +292,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     canvas.setActiveObject(link);
     canvas.renderAll();
 
-    toast.success('Link added! Don\'t forget to add a URL in the properties panel.');
+    toast.success('Link added! Double-click to edit its URL and text.');
   }, [canvas, fabric, fabricReady]);
 
   const updateButtonProperties = useCallback((buttonObject: any, updates: any) => {
