@@ -79,6 +79,20 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         });
         break;
       }
+      case 'outlined-rectangle': {
+        shape = new fabric.Rect({
+          left: 100,
+          top: 100,
+          width: 100,
+          height: 100,
+          fill: 'transparent',
+          stroke: '#1e40af',
+          strokeWidth: 3,
+          rx: 8,
+          ry: 8,
+        });
+        break;
+      }
       case 'circle': {
         shape = new fabric.Circle({
           left: 100,
@@ -87,6 +101,17 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           fill: '#10b981',
           stroke: '#059669',
           strokeWidth: 2,
+        });
+        break;
+      }
+      case 'outlined-circle': {
+        shape = new fabric.Circle({
+          left: 100,
+          top: 100,
+          radius: 50,
+          fill: 'transparent',
+          stroke: '#059669',
+          strokeWidth: 3,
         });
         break;
       }
@@ -137,7 +162,11 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     if (shape) {
       (shape as any).elementType = 'shape';
       (shape as any).shapeData = {
-        type: shapeType,
+        type: shapeType === 'outlined-rectangle'
+          ? 'rectangle'
+          : shapeType === 'outlined-circle'
+            ? 'circle'
+            : shapeType,
         fill: shape.fill,
         stroke: shape.stroke,
         strokeWidth: shape.strokeWidth,
