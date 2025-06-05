@@ -1,6 +1,5 @@
 'use client';
 
-import type { BackgroundInput } from './hooks/useFabricOperations';
 import {
   ChevronRight,
   Image,
@@ -40,6 +39,15 @@ const loadFabric = async () => {
   }
   return fabric;
 };
+
+// Use the same type definition for BackgroundInput as used in useFabricOperations
+type FabricColorStop = { offset: number; color: string };
+type FabricGradientOption = {
+  type: 'linear';
+  colorStops: FabricColorStop[];
+};
+
+type BackgroundInput = string | { type: 'gradient'; value: FabricGradientOption };
 
 type DesignSidebarProps = {
   canvas: any;

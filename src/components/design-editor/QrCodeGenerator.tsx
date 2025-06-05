@@ -47,9 +47,9 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
       // Get the current domain and generate the preview URL
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const previewUrl = `${baseUrl}/${locale}/preview/${designId}`;
-      setQrUrl(() => previewUrl);
-      setTitle(() => `Design Preview - ${designId}`);
-      setDescription(() => 'Scan this QR code to view the design');
+      setQrUrl(previewUrl);
+      setTitle(`Design Preview - ${designId}`);
+      setDescription('Scan this QR code to view the design');
 
       // Set the initial selected sample to 'style-none' (Plain QR)
       const plainQrSample = sampleQrDesigns.find(s => s.id === 'style-none');
@@ -64,7 +64,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
 
       return () => clearTimeout(timer);
     }
-    // Return a noop function for when designId is not available
+    // Return empty cleanup function when designId is falsy
     return () => {};
   }, [designId, locale]);
 

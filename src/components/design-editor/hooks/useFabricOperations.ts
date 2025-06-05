@@ -9,7 +9,7 @@ type FabricGradientOptionForOps = {
 };
 
 // Type for the background input parameter, accommodating strings (solid colors) and gradient objects
-export type BackgroundInput =
+type BackgroundInput =
   | string
   | { type: 'gradient'; value: FabricGradientOptionForOps }
   | { type: string; value: string }; // For other potential object-based backgrounds (original structure)

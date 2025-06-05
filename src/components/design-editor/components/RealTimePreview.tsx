@@ -113,7 +113,6 @@ export function RealTimePreview({
         zIndex: index + 1,
         pointerEvents: 'none', // Important for preview
         visibility: obj.visible !== false ? ('visible' as const) : ('hidden' as const),
-        boxSizing: 'border-box', // Ensure padding and borders are included in width/height
       };
 
       // Handle Button elements
@@ -494,8 +493,8 @@ export function RealTimePreview({
             alt="Design element"
             style={{
               ...baseStyle,
-              objectFit: obj.objectFit || 'contain', // Default to 'contain' to prevent cropping
-              objectPosition: 'center',
+              // objectFit: 'cover', // or 'contain', depending on desired behavior. Fabric default is like 'fill'
+              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover', // A common default
               boxSizing: 'border-box',
             }}
           />
@@ -584,8 +583,7 @@ export function RealTimePreview({
                     alt="Grouped element"
                     style={{
                       ...groupObjStyle,
-                      objectFit: groupObj.objectFit || 'contain',
-                      objectPosition: 'center',
+                      objectFit: 'fill',
                       boxSizing: 'border-box',
                     }}
                   />
@@ -706,8 +704,8 @@ export function RealTimePreview({
 
         {/* Preview Content */}
         <div
-          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-8' : 'p-4'}`}
-          style={!isFullscreen ? { width: `${displayDimensions.width + 40}px`, height: `${displayDimensions.height + 40}px`, overflow: 'hidden' } : {}}
+          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-4' : 'p-4'}`}
+          style={!isFullscreen ? { width: `${displayDimensions.width + 20}px`, height: `${displayDimensions.height + 10}px`, overflow: 'hidden' } : {}}
         >
           <div
             className="relative border border-gray-300 shadow-sm"
@@ -719,7 +717,6 @@ export function RealTimePreview({
               overflow: 'hidden',
               transform: `scale(${getPreviewScale})`,
               transformOrigin: 'top left',
-              margin: 'auto', // Center the canvas in the container
             }}
           >
             {renderedElements.length > 0
