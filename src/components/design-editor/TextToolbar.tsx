@@ -122,8 +122,8 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
   const updateObjectProperty = useCallback((property: string, value: any) => {
     if (selectedObject && canvas) {
-      selectedObject.set(property, value);
-      canvas.renderAll();
+      selectedObject.set?.(property, value);
+      canvas.renderAll?.();
     }
   }, [selectedObject, canvas]);
 
@@ -218,29 +218,29 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
   const bringToFront = useCallback(() => {
     if (selectedObject && canvas) {
-      canvas.bringToFront(selectedObject);
-      canvas.renderAll();
+      canvas.bringToFront?.(selectedObject);
+      canvas.renderAll?.();
     }
   }, [selectedObject, canvas]);
 
   const sendToBack = useCallback(() => {
     if (selectedObject && canvas) {
-      canvas.sendToBack(selectedObject);
-      canvas.renderAll();
+      canvas.sendToBack?.(selectedObject);
+      canvas.renderAll?.();
     }
   }, [selectedObject, canvas]);
 
   const bringForward = useCallback(() => {
     if (selectedObject && canvas) {
-      canvas.bringForward(selectedObject);
-      canvas.renderAll();
+      canvas.bringForward?.(selectedObject);
+      canvas.renderAll?.();
     }
   }, [selectedObject, canvas]);
 
   const sendBackward = useCallback(() => {
     if (selectedObject && canvas) {
-      canvas.sendBackward(selectedObject);
-      canvas.renderAll();
+      canvas.sendBackward?.(selectedObject);
+      canvas.renderAll?.();
     }
   }, [selectedObject, canvas]);
 

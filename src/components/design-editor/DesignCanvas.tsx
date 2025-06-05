@@ -39,8 +39,9 @@ export function DesignCanvas({
       const container = canvasRef.current.parentElement;
       if (container) {
         const containerRect = container.getBoundingClientRect();
-        const canvasWidth = canvasSize.width * zoom;
-        const canvasHeight = canvasSize.height * zoom;
+        const effectiveZoom = zoom || 1; // Ensure zoom is not zero
+        const canvasWidth = (canvasSize?.width || 0) * effectiveZoom;
+        const canvasHeight = (canvasSize?.height || 0) * effectiveZoom;
 
         const newOffset = {
           x: Math.max(0, (containerRect.width - canvasWidth) / 2),
@@ -55,8 +56,8 @@ export function DesignCanvas({
   useEffect(() => {
     // Only update if canvasSize or zoom actually changed
     if (
-      prevCanvasSizeRef.current.width !== canvasSize.width
-      || prevCanvasSizeRef.current.height !== canvasSize.height
+      prevCanvasSizeRef.current?.width !== canvasSize?.width
+      || prevCanvasSizeRef.current?.height !== canvasSize?.height
       || prevZoomRef.current !== zoom
     ) {
       updateCanvasOffset();
@@ -71,10 +72,11 @@ export function DesignCanvas({
       onElementSelect(null);
 
       // If a tool is selected, add element at click position
+      const effectiveZoom = zoom || 1;
       if (selectedTool !== 'select' && canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / zoom;
-        const y = (e.clientY - rect.top) / zoom;
+        const x = (e.clientX - rect.left) / effectiveZoom;
+        const y = (e.clientY - rect.top) / effectiveZoom;
 
         let newElement: Omit<DesignElement, 'id' | 'zIndex'>;
 
@@ -182,22 +184,22 @@ export function DesignCanvas({
 
   // Memoize sorted elements to prevent unnecessary re-computations
   const sortedElements = useMemo(() => {
-    return [...elements].sort((a, b) => a.zIndex - b.zIndex);
+    return [...(elements || [])].sort((a, b) => (a?.zIndex || 0) - (b?.zIndex || 0));
   }, [elements]);
 
   // Memoize canvas styles to prevent recalculation
   const canvasStyles = useMemo(() => ({
     transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
-    width: canvasSize.width * zoom,
-    height: canvasSize.height * zoom,
-  }), [canvasOffset.x, canvasOffset.y, canvasSize.width, canvasSize.height, zoom]);
+    width: (canvasSize?.width || 0) * (zoom || 1),
+    height: (canvasSize?.height || 0) * (zoom || 1),
+  }), [canvasOffset.x, canvasOffset.y, canvasSize?.width, canvasSize?.height, zoom]);
 
   const innerCanvasStyles = useMemo(() => ({
-    width: canvasSize.width * zoom,
-    height: canvasSize.height * zoom,
-    transform: `scale(${zoom})`,
+    width: (canvasSize?.width || 0) * (zoom || 1),
+    height: (canvasSize?.height || 0) * (zoom || 1),
+    transform: `scale(${zoom || 1})`,
     transformOrigin: 'top left',
-  }), [canvasSize.width, canvasSize.height, zoom]);
+  }), [canvasSize?.width, canvasSize?.height, zoom]);
 
   const gridStyles = useMemo(() => ({
     backgroundImage: `
@@ -240,16 +242,21 @@ export function DesignCanvas({
           />
 
           {/* Canvas Elements */}
-          {sortedElements.map(element => (
-            <CanvasElement
-              key={element.id}
-              element={element}
-              isSelected={selectedElement === element.id}
-              zoom={zoom}
-              onSelect={() => onElementSelect(element.id)}
-              onUpdate={updates => onElementUpdate(element.id, updates)}
-            />
-          ))}
+          {sortedElements.map((element) => {
+            if (!element?.id) {
+              return null;
+            } // Ensure element and id exist
+            return (
+              <CanvasElement
+                key={element.id}
+                element={element}
+                isSelected={selectedElement === element.id}
+                zoom={zoom || 1} // Pass effective zoom
+                onSelect={() => onElementSelect(element.id)}
+                onUpdate={updates => onElementUpdate(element.id, updates)}
+              />
+            );
+          })}
 
           {/* Canvas Border */}
           <div className="pointer-events-none absolute inset-0 border border-gray-300" />
@@ -257,17 +264,17 @@ export function DesignCanvas({
 
         {/* Canvas Info */}
         <div className="absolute -bottom-8 left-0 text-xs text-gray-500">
-          {canvasSize.width}
+          {canvasSize?.width || 0}
           {' '}
           ×
-          {canvasSize.height}
+          {canvasSize?.height || 0}
           px
         </div>
       </div>
 
       {/* Zoom Info */}
       <div className="absolute bottom-4 left-4 rounded bg-black/80 px-2 py-1 text-xs text-white">
-        {Math.round(zoom * 100)}
+        {Math.round((zoom || 0) * 100)}
         %
       </div>
     </button>

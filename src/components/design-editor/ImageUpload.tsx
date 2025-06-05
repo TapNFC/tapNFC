@@ -47,18 +47,26 @@ export function ImageUpload({ canvas }: ImageUploadProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageSrc = e.target?.result as string;
+      if (!imageSrc) {
+        return;
+      }
 
-      fabric.Image.fromURL(imageSrc, (img: any) => {
-        img.set({
+      fabric.Image.fromURL(imageSrc, (img: any, isError?: boolean) => {
+        if (isError || !img) {
+          console.error('Error loading image into fabric');
+          return;
+        }
+
+        img.set?.({
           left: 100,
           top: 100,
           scaleX: 0.5,
           scaleY: 0.5,
         });
 
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
+        canvas.add?.(img);
+        canvas.setActiveObject?.(img);
+        canvas.renderAll?.();
       });
     };
 

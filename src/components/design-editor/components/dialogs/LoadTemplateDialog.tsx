@@ -41,28 +41,28 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
       ]);
 
       // Convert templates to combined format
-      const templatesData: CombinedTemplate[] = savedTemplates.map(template => ({
-        id: template.id,
-        name: template.name,
-        description: template.description,
-        category: template.category,
+      const templatesData: CombinedTemplate[] = (Array.isArray(savedTemplates) ? savedTemplates : []).map(template => ({
+        id: template?.id || `template-${Math.random()}`,
+        name: template?.name || 'Untitled Template',
+        description: template?.description,
+        category: template?.category || 'Uncategorized',
         type: 'template' as const,
-        updatedAt: template.updatedAt,
+        updatedAt: template?.updatedAt ? new Date(template.updatedAt) : new Date(),
       }));
 
       // Convert designs to template format
-      const designsData: CombinedTemplate[] = savedDesigns.map(design => ({
-        id: design.id,
-        name: design.metadata.title || `Design ${design.id.slice(-8)}`,
-        description: design.metadata.description,
+      const designsData: CombinedTemplate[] = (Array.isArray(savedDesigns) ? savedDesigns : []).map(design => ({
+        id: design?.id || `design-${Math.random()}`,
+        name: design?.metadata?.title || `Design ${design?.id?.slice(-8) || 'Unknown'}`,
+        description: design?.metadata?.description,
         category: 'My Designs',
         type: 'design' as const,
-        updatedAt: design.updatedAt,
+        updatedAt: design?.updatedAt ? new Date(design.updatedAt) : new Date(),
       }));
 
       // Combine and sort by updated date (newest first)
       const allTemplates = [...templatesData, ...designsData]
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        .sort((a, b) => (b?.updatedAt?.getTime() || 0) - (a?.updatedAt?.getTime() || 0));
 
       setTemplates(allTemplates);
     } catch (error) {
@@ -128,44 +128,48 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
                   </div>
                 )
               : (
-                  templates.map(template => (
-                    <div
-                      key={template.id}
-                      role="button"
-                      tabIndex={0}
-                      className="flex cursor-pointer items-center space-x-4 rounded-lg border p-3 transition-colors hover:bg-gray-50"
-                      onClick={() => handleLoadTemplate(template.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleLoadTemplate(template.id);
-                        }
-                      }}
-                    >
-                      <div className="flex h-12 w-16 items-center justify-center rounded bg-gray-200">
-                        <FileText className="size-6 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{template.name}</h4>
-                        {template.description && (
-                          <p className="text-sm text-gray-500">{template.description}</p>
-                        )}
-                        <div className="mt-1 flex items-center space-x-2">
-                          <span className={`rounded px-2 py-1 text-xs ${
-                            template.type === 'template'
+                  templates.map((template) => {
+                    if (!template || !template.id) {
+                      return null;
+                    }
+                    return (
+                      <div
+                        key={template.id}
+                        role="button"
+                        tabIndex={0}
+                        className="flex cursor-pointer items-center space-x-4 rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                        onClick={() => handleLoadTemplate(template.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleLoadTemplate(template.id);
+                          }
+                        }}
+                      >
+                        <div className="flex h-12 w-16 items-center justify-center rounded bg-gray-200">
+                          <FileText className="size-6 text-gray-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{template.name || 'Untitled'}</h4>
+                          {template.description && (
+                            <p className="text-sm text-gray-500">{template.description}</p>
+                          )}
+                          <div className="mt-1 flex items-center space-x-2">
+                            <span className={`rounded px-2 py-1 text-xs ${template.type === 'template'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
-                          }`}
-                          >
-                            {template.category}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {formatDate(template.updatedAt)}
-                          </span>
+                            }`}
+                            >
+                              {template.category || 'Uncategorized'}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {template.updatedAt ? formatDate(template.updatedAt) : 'Date N/A'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
         </div>
         <DialogFooter>

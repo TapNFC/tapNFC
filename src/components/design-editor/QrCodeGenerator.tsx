@@ -1,9 +1,10 @@
 'use client';
 
+import type { QrSampleProps } from './QrCodeSamples';
 import { ArrowLeft, Check, Copy, Download, Eye, Settings, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { QrCodeSamples, sampleQrDesigns } from './QrCodeSamples';
 
 type QrCodeGeneratorProps = {
   designId: string;
   locale: string;
 };
+
+// Define a default QR code size for the inner QR code when a style is applied.
+const STYLED_QR_INNER_SIZE = 40;
 
 export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
   const router = useRouter();
@@ -25,6 +30,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(true);
 
   // QR Code styling options
   const [qrSize, setQrSize] = useState(256);
@@ -32,6 +38,8 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
   const [qrColor, setQrColor] = useState('#000000');
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [includeMargin, setIncludeMargin] = useState(true);
+
+  const [selectedQrSample, setSelectedQrSample] = useState<QrSampleProps | null>(null);
 
   // Auto-generate the preview URL on component mount
   useEffect(() => {
@@ -42,8 +50,27 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
       setQrUrl(() => previewUrl);
       setTitle(() => `Design Preview - ${designId}`);
       setDescription(() => 'Scan this QR code to view the design');
+
+      // Set the initial selected sample to 'style-none' (Plain QR)
+      const plainQrSample = sampleQrDesigns.find(s => s.id === 'style-none');
+      if (plainQrSample) {
+        setSelectedQrSample(plainQrSample);
+      }
+
+      // Simulate QR code generation process with a 2-second delay
+      const timer = setTimeout(() => {
+        setIsGenerating(false);
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }
+    // Return a noop function for when designId is not available
+    return () => {};
   }, [designId, locale]);
+
+  const handleSampleSelect = (sample: QrSampleProps | null) => {
+    setSelectedQrSample(sample);
+  };
 
   const copyToClipboard = async () => {
     if (!qrUrl) {
@@ -78,52 +105,60 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
       return;
     }
 
-    // Create a canvas to render the QR code
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
+    const svgContainer = document.getElementById('qr-code-preview-container');
+    const svgElement = svgContainer ? svgContainer.querySelector('svg') : null;
 
-    // Set canvas size
-    canvas.width = qrSize;
-    canvas.height = qrSize;
-
-    // Get the SVG element
-    const svgElement = document.querySelector('#qr-code-svg') as SVGElement;
     if (!svgElement) {
-      toast.error('QR code not found');
+      toast.error('QR code SVG element not found for download.');
       return;
     }
 
-    // Convert SVG to image and download
-    const svgData = new XMLSerializer().serializeToString(svgElement);
+    // Clone the SVG to avoid modifying the displayed one
+    const svgClone = svgElement.cloneNode(true) as SVGElement;
+
+    // Ensure the SVG has the correct size attribute for proper rendering
+    svgClone.setAttribute('width', qrSize.toString());
+    svgClone.setAttribute('height', qrSize.toString());
+
+    // Serialize the SVG
+    const svgData = new XMLSerializer().serializeToString(svgClone);
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const svgUrl = URL.createObjectURL(svgBlob);
 
     const img = new Image();
     img.onload = () => {
-      ctx.drawImage(img, 0, 0);
+      const canvas = document.createElement('canvas');
+      canvas.width = qrSize;
+      canvas.height = qrSize;
+      const ctx = canvas.getContext('2d')!;
+
+      // Draw white background to ensure transparency doesn't create issues
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the SVG
+      ctx.drawImage(img, 0, 0, qrSize, qrSize);
       URL.revokeObjectURL(svgUrl);
 
-      // Download the canvas as PNG
       canvas.toBlob((blob) => {
         if (!blob) {
-          toast.error('Failed to generate download');
+          toast.error('Failed to generate download blob.');
           return;
         }
-
-        const url = URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
-        link.download = `qr-code-${designId}.png`;
+        link.href = blobUrl;
+        link.download = `qr-code-${designId}${selectedQrSample && selectedQrSample.id !== 'style-none' ? `-${selectedQrSample.id}` : ''}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blobUrl);
         toast.success('QR code downloaded!');
       });
     };
     img.onerror = () => {
       URL.revokeObjectURL(svgUrl);
-      toast.error('Failed to process QR code for download');
+      toast.error('Failed to process QR code image for download.');
     };
     img.src = svgUrl;
   };
@@ -157,6 +192,51 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
       copyToClipboard();
     }
   };
+
+  const actualQrToRender = useMemo(() => (
+    <QRCodeSVG
+      value={qrUrl}
+      size={selectedQrSample?.id === 'style-none' ? qrSize : STYLED_QR_INNER_SIZE}
+      level={qrLevel}
+      includeMargin={selectedQrSample?.id === 'style-none' ? includeMargin : false}
+      fgColor={qrColor}
+      bgColor={selectedQrSample?.id === 'style-none' ? bgColor : 'transparent'}
+    />
+  ), [qrUrl, qrSize, qrLevel, includeMargin, qrColor, bgColor, selectedQrSample, STYLED_QR_INNER_SIZE]);
+
+  const qrPreviewDisplay = useMemo(() => {
+    if (!qrUrl) {
+      return null;
+    }
+
+    if (selectedQrSample && selectedQrSample.id !== 'style-none' && selectedQrSample.svgWrapper) {
+      // Apply styled wrapper for non-plain QR codes
+      return selectedQrSample.svgWrapper(actualQrToRender);
+    }
+
+    // For plain QR or fallback, return the QR directly
+    return actualQrToRender;
+  }, [qrUrl, selectedQrSample, actualQrToRender]);
+
+  // Render QR code samples skeleton
+  const renderSamplesSkeleton = () => (
+    <div className="mb-4">
+      <div className="mb-3">
+        <div className="h-5 w-40 animate-pulse rounded bg-gray-200"></div>
+      </div>
+      <div className="flex space-x-3 overflow-x-auto pb-2">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="size-20 shrink-0 animate-pulse rounded-lg border border-gray-200 bg-gray-100 p-2"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="size-full rounded-md bg-gray-200"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-6xl p-6">
@@ -194,20 +274,64 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
             <CardContent>
               {qrUrl && (
                 <div className="space-y-6">
-                  {/* QR Code Display */}
                   <div className="flex justify-center">
-                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
-                      <QRCodeSVG
-                        id="qr-code-svg"
-                        value={qrUrl}
-                        size={qrSize}
-                        level={qrLevel}
-                        includeMargin={includeMargin}
-                        fgColor={qrColor}
-                        bgColor={bgColor}
-                      />
+                    {/* Main QR Code Display Area - Scaled by qrSize */}
+                    <div
+                      id="qr-code-preview-container" // ID for download function to find the SVG
+                      className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-lg"
+                      style={{ width: qrSize, height: qrSize }}
+                    >
+                      {isGenerating
+                        ? (
+                            <div className="flex size-full flex-col items-center justify-center">
+                              {/* QR Code Skeleton Animation */}
+                              <div className="relative mb-4 size-48 rounded-lg">
+                                <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200"></div>
+
+                                {/* Simulated QR code pattern */}
+                                <div className="absolute inset-4 grid grid-cols-8 gap-1">
+                                  {Array.from({ length: 64 }).map((_, index) => (
+                                    <div
+                                      key={index}
+                                      className={`rounded-sm ${Math.random() > 0.5 ? 'bg-gray-400' : 'bg-transparent'} opacity-40`}
+                                    >
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Corner markers */}
+                                <div className="absolute left-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                                <div className="absolute right-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                                <div className="absolute bottom-3 left-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                              </div>
+                              <p className="text-center text-sm font-medium text-blue-600">Generating your QR code...</p>
+                            </div>
+                          )
+                        : qrPreviewDisplay && (
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          >
+                            {qrPreviewDisplay}
+                          </div>
+                        )}
                     </div>
                   </div>
+
+                  {isGenerating
+                    ? (
+                        renderSamplesSkeleton()
+                      )
+                    : (
+                        <QrCodeSamples
+                          onSampleSelect={handleSampleSelect}
+                          currentSelectedId={selectedQrSample ? selectedQrSample.id : null}
+                        />
+                      )}
 
                   <Separator />
 
@@ -224,6 +348,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                         variant="outline"
                         onClick={copyToClipboard}
                         className="flex items-center space-x-2"
+                        disabled={isGenerating}
                       >
                         {copied
                           ? (
@@ -247,6 +372,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                     <Button
                       onClick={downloadQrCode}
                       className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                      disabled={isGenerating}
                     >
                       <Download className="size-4" />
                       <span>Download PNG</span>
@@ -256,6 +382,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                       variant="outline"
                       onClick={previewDesign}
                       className="flex items-center space-x-2"
+                      disabled={isGenerating}
                     >
                       <Eye className="size-4" />
                       <span>Preview</span>
@@ -265,6 +392,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                       variant="outline"
                       onClick={shareDesign}
                       className="flex items-center space-x-2"
+                      disabled={isGenerating}
                     >
                       <Share2 className="size-4" />
                       <span>Share</span>
@@ -294,6 +422,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                   placeholder="Give your design a title"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
+                  disabled={isGenerating}
                 />
               </div>
 
@@ -304,6 +433,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                   placeholder="Describe your design"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
+                  disabled={isGenerating}
                 />
               </div>
 
@@ -350,12 +480,17 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                   min={128}
                   step={32}
                   className="w-full"
+                  disabled={isGenerating}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="error-correction">Error Correction</Label>
-                <Select value={qrLevel} onValueChange={(value: 'L' | 'M' | 'Q' | 'H') => setQrLevel(value)}>
+                <Select
+                  value={qrLevel}
+                  onValueChange={(value: 'L' | 'M' | 'Q' | 'H') => setQrLevel(value)}
+                  disabled={isGenerating}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -377,6 +512,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                     value={qrColor}
                     onChange={e => setQrColor(e.target.value)}
                     className="h-10 w-full rounded border border-gray-300"
+                    disabled={isGenerating}
                   />
                 </div>
 
@@ -388,6 +524,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                     value={bgColor}
                     onChange={e => setBgColor(e.target.value)}
                     className="h-10 w-full rounded border border-gray-300"
+                    disabled={isGenerating}
                   />
                 </div>
               </div>
@@ -397,6 +534,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
                   id="margin"
                   checked={includeMargin}
                   onCheckedChange={setIncludeMargin}
+                  disabled={isGenerating}
                 />
                 <Label htmlFor="margin">Include margin</Label>
               </div>

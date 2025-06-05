@@ -41,19 +41,22 @@ export function SaveTemplateDialog({ open, onOpenChange, onSave }: SaveTemplateD
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!templateName.trim()) {
+    const trimmedName = templateName.trim();
+    if (!trimmedName) {
+      // Optionally, show a toast or validation message for empty name
       return;
     }
 
     setIsSaving(true);
     try {
-      await onSave(templateName.trim(), category, description.trim() || undefined);
+      await onSave(trimmedName, category || 'Custom', description.trim() || undefined);
       setTemplateName('');
       setCategory('Custom');
       setDescription('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving template:', error);
+      // Optionally, show an error toast to the user
     } finally {
       setIsSaving(false);
     }

@@ -64,9 +64,9 @@ export function DrawingTools({ canvas }: DrawingToolsProps) {
     if (!canvas) {
       return;
     }
-    canvas.clear();
+    canvas.clear?.();
     canvas.backgroundColor = '#ffffff';
-    canvas.renderAll();
+    canvas.renderAll?.();
   };
 
   return (

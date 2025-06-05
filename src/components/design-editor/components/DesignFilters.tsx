@@ -18,7 +18,7 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
   const [searchValue, setSearchValue] = useState(search || '');
 
   const handleCategoryChange = useCallback((newCategory: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
 
     if (newCategory === 'All Designs') {
       params.delete('category');
@@ -30,7 +30,7 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
   }, [router, searchParams]);
 
   const handleViewChange = useCallback((newView: 'grid' | 'list') => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('view', newView);
     router.push(`?${params.toString()}`);
   }, [router, searchParams]);
@@ -41,7 +41,7 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
 
   const handleSearchSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
 
     if (searchValue.trim()) {
       params.set('search', searchValue.trim());
@@ -169,8 +169,9 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
           {category && category !== 'All Designs' && (
             <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
               Category:
-              {' '}
-              {category}
+              {
+                category || ''
+              }
             </span>
           )}
           <button

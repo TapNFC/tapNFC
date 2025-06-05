@@ -54,7 +54,9 @@ export function LinkEditPopup({
   }, [isVisible, onClose]);
 
   const handleSave = () => {
-    onUpdateLink({ url: url.trim(), text: text.trim() });
+    if (linkObject) {
+      onUpdateLink({ url: url.trim(), text: text.trim() });
+    }
     onClose();
   };
 

@@ -27,21 +27,28 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
         designDB.getAllTemplates(),
       ]);
 
+      // Ensure designs and templates are arrays before processing
+      const validDesigns = Array.isArray(designs) ? designs : [];
+      const validTemplates = Array.isArray(templates) ? templates : [];
+
       // Count recent designs (last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const recentDesigns = designs.filter(d => d.updatedAt > weekAgo);
+      const recentDesigns = validDesigns.filter(d => d?.updatedAt && d.updatedAt > weekAgo);
 
       setStats({
-        totalDesigns: designs.length,
-        totalTemplates: templates.length,
+        totalDesigns: validDesigns.length,
+        totalTemplates: validTemplates.length,
         recentCount: recentDesigns.length,
       });
 
       // Show sample button if no data exists
-      setShowSampleButton(designs.length === 0 && templates.length === 0);
+      setShowSampleButton(validDesigns.length === 0 && validTemplates.length === 0);
     } catch (error) {
       console.error('Failed to load design statistics:', error);
+      // Optionally reset stats or set an error state
+      setStats({ totalDesigns: 0, totalTemplates: 0, recentCount: 0 });
+      setShowSampleButton(true); // Or based on error handling strategy
     }
   };
 
@@ -91,7 +98,7 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
                   <Folder className="size-4 text-blue-600" />
                 </div>
                 <div className="text-sm">
-                  <span className="font-semibold text-gray-900">{stats.totalDesigns}</span>
+                  <span className="font-semibold text-gray-900">{stats?.totalDesigns ?? 0}</span>
                   <span className="ml-1 text-gray-600">Designs</span>
                 </div>
               </div>
@@ -101,12 +108,12 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
                   <Star className="size-4 text-yellow-600" />
                 </div>
                 <div className="text-sm">
-                  <span className="font-semibold text-gray-900">{stats.totalTemplates}</span>
+                  <span className="font-semibold text-gray-900">{stats?.totalTemplates ?? 0}</span>
                   <span className="ml-1 text-gray-600">Templates</span>
                 </div>
               </div>
 
-              {stats.recentCount > 0 && (
+              {(stats?.recentCount ?? 0) > 0 && (
                 <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm">
                   <div className="rounded-lg bg-green-100 p-1.5">
                     <TrendingUp className="size-4 text-green-600" />

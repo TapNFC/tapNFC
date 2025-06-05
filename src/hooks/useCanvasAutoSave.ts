@@ -27,6 +27,7 @@ export function useCanvasAutoSave({
   const [history, setHistory] = useState<any[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadDesignRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCanvasStateRef = useRef<string>('');
   const isLoadingRef = useRef(false);
 
@@ -79,6 +80,24 @@ export function useCanvasAutoSave({
   const loadDesign = useCallback(async () => {
     if (!canvas || !designId || isLoadingRef.current) {
       return;
+    }
+
+    // Add a robust check for canvas context readiness
+    if (!canvas.contextContainer) {
+      console.warn('[useCanvasAutoSave] Canvas contextContainer not ready, delaying loadDesign.');
+      // Clear any existing retry timeout
+      if (loadDesignRetryTimeoutRef.current) {
+        clearTimeout(loadDesignRetryTimeoutRef.current);
+      }
+      loadDesignRetryTimeoutRef.current = setTimeout(() => {
+        if (canvas && canvas.contextContainer) {
+          loadDesign(); // Retry the load
+        } else {
+          console.error('[useCanvasAutoSave] Canvas contextContainer still not ready after delay. Aborting load in hook.');
+          isLoadingRef.current = false; // Ensure loading ref is reset
+        }
+      }, 150); // Delay for retry
+      return; // Exit and wait for retry
     }
 
     try {
@@ -232,6 +251,12 @@ export function useCanvasAutoSave({
     if (canvas && designId) {
       loadDesign();
     }
+    // Cleanup retry timeout on unmount or when dependencies change
+    return () => {
+      if (loadDesignRetryTimeoutRef.current) {
+        clearTimeout(loadDesignRetryTimeoutRef.current);
+      }
+    };
   }, [canvas, designId, loadDesign]);
 
   // Set up canvas event listeners

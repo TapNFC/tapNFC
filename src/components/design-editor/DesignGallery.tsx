@@ -50,48 +50,51 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
       setError(null);
 
       // Load both designs and templates
-      const [savedDesigns, savedTemplates] = await Promise.all([
+      const [savedDesignsData, savedTemplatesData] = await Promise.all([
         designDB.getAllDesigns(),
         designDB.getAllTemplates(),
       ]);
 
+      const savedDesigns = Array.isArray(savedDesignsData) ? savedDesignsData : [];
+      const savedTemplates = Array.isArray(savedTemplatesData) ? savedTemplatesData : [];
+
       // Convert designs to combined format
       const designItems: CombinedDesignItem[] = savedDesigns.map(design => ({
-        id: design.id,
-        name: design.metadata.title || `Design ${design.id.slice(-8)}`,
+        id: design?.id || `design-${Math.random().toString(36).substring(2, 11)}`,
+        name: design?.metadata?.title || `Design ${(design?.id || 'unknown').slice(-8)}`,
         category: 'My Designs',
-        createdAt: design.createdAt,
-        updatedAt: design.updatedAt,
+        createdAt: design?.createdAt ? new Date(design.createdAt) : new Date(),
+        updatedAt: design?.updatedAt ? new Date(design.updatedAt) : new Date(),
         type: 'design' as const,
         size: {
-          width: design.metadata.width,
-          height: design.metadata.height,
+          width: design?.metadata?.width || 0,
+          height: design?.metadata?.height || 0,
         },
-        backgroundColor: design.metadata.backgroundColor,
-        description: design.metadata.description,
-        data: design.canvasData,
+        backgroundColor: design?.metadata?.backgroundColor || '#ffffff',
+        description: design?.metadata?.description,
+        data: { ...(design?.canvasData || {}) },
       }));
 
       // Convert templates to combined format
       const templateItems: CombinedDesignItem[] = savedTemplates.map(template => ({
-        id: template.id,
-        name: template.name,
-        category: template.category,
-        createdAt: template.createdAt,
-        updatedAt: template.updatedAt,
+        id: template?.id || `template-${Math.random().toString(36).substring(2, 11)}`,
+        name: template?.name || 'Untitled Template',
+        category: template?.category || 'Uncategorized',
+        createdAt: template?.createdAt ? new Date(template.createdAt) : new Date(),
+        updatedAt: template?.updatedAt ? new Date(template.updatedAt) : new Date(),
         type: 'template' as const,
         size: {
-          width: template.canvasData?.width || 800,
-          height: template.canvasData?.height || 600,
+          width: template?.canvasData?.width || 800,
+          height: template?.canvasData?.height || 600,
         },
-        backgroundColor: template.canvasData?.background || '#ffffff',
-        description: template.description,
-        data: template.canvasData,
+        backgroundColor: template?.canvasData?.background || '#ffffff',
+        description: template?.description,
+        data: { ...(template?.canvasData || {}) },
       }));
 
       // Combine and sort by updated date (newest first)
       const allItems = [...designItems, ...templateItems]
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        .sort((a, b) => (b?.updatedAt?.getTime() || 0) - (a?.updatedAt?.getTime() || 0));
 
       setDesigns(allItems);
     } catch (error) {
@@ -111,22 +114,22 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
   // Filter designs based on search and category
   const filteredDesigns = designs.filter((design) => {
     const matchesSearch = !search
-      || design.name.toLowerCase().includes(search.toLowerCase())
-      || design.category.toLowerCase().includes(search.toLowerCase())
-      || design.description?.toLowerCase().includes(search.toLowerCase());
+      || (design?.name || '').toLowerCase().includes(search.toLowerCase())
+      || (design?.category || '').toLowerCase().includes(search.toLowerCase())
+      || (design?.description || '').toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory = !category
       || category === 'All Designs'
-      || design.category === category
-      || (category === 'My Designs' && design.type === 'design')
-      || (category === 'Templates' && design.type === 'template');
+      || design?.category === category
+      || (category === 'My Designs' && design?.type === 'design')
+      || (category === 'Templates' && design?.type === 'template');
 
     return matchesSearch && matchesCategory;
   });
 
   const handleDuplicate = useCallback(async (designId: string) => {
     try {
-      const designToDuplicate = designs.find(d => d.id === designId);
+      const designToDuplicate = designs.find(d => d?.id === designId);
       if (!designToDuplicate) {
         toast.error('Design not found');
         return;
@@ -134,19 +137,19 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
 
       // Generate new ID for the duplicate
       const newId = `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const duplicateName = `${designToDuplicate.name} (Copy)`;
+      const duplicateName = `${designToDuplicate?.name || 'Unnamed Design'} (Copy)`;
 
-      if (designToDuplicate.type === 'design') {
+      if (designToDuplicate?.type === 'design') {
         // Duplicate as a new design
         const duplicateDesignData: DesignData = {
           id: newId,
-          canvasData: { ...designToDuplicate.data },
+          canvasData: { ...(designToDuplicate?.data || {}) },
           metadata: {
-            width: designToDuplicate.size.width,
-            height: designToDuplicate.size.height,
-            backgroundColor: designToDuplicate.backgroundColor || '#ffffff',
+            width: designToDuplicate?.size?.width || 0,
+            height: designToDuplicate?.size?.height || 0,
+            backgroundColor: designToDuplicate?.backgroundColor || '#ffffff',
             title: duplicateName,
-            description: designToDuplicate.description,
+            description: designToDuplicate?.description,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -157,13 +160,13 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
         // Duplicate template as a new design
         const duplicateDesignData: DesignData = {
           id: newId,
-          canvasData: { ...designToDuplicate.data },
+          canvasData: { ...(designToDuplicate?.data || {}) },
           metadata: {
-            width: designToDuplicate.size.width,
-            height: designToDuplicate.size.height,
-            backgroundColor: designToDuplicate.backgroundColor || '#ffffff',
+            width: designToDuplicate?.size?.width || 0,
+            height: designToDuplicate?.size?.height || 0,
+            backgroundColor: designToDuplicate?.backgroundColor || '#ffffff',
             title: duplicateName,
-            description: designToDuplicate.description,
+            description: designToDuplicate?.description,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -182,13 +185,13 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
 
   const handleDelete = useCallback(async (designId: string) => {
     try {
-      const designToDelete = designs.find(d => d.id === designId);
+      const designToDelete = designs.find(d => d?.id === designId);
       if (!designToDelete) {
         toast.error('Design not found');
         return;
       }
 
-      if (designToDelete.type === 'design') {
+      if (designToDelete?.type === 'design') {
         await designDB.deleteDesign(designId);
       } else {
         await designDB.deleteTemplate(designId);
@@ -204,7 +207,7 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
 
   const handleDownload = useCallback(async (designId: string) => {
     try {
-      const design = designs.find(d => d.id === designId);
+      const design = designs.find(d => d?.id === designId);
       if (!design) {
         toast.error('Design not found');
         return;
@@ -212,16 +215,16 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
 
       // Create a JSON blob with the design data
       const designJson = JSON.stringify({
-        id: design.id,
-        name: design.name,
-        type: design.type,
-        canvasData: design.data,
+        id: design?.id,
+        name: design?.name || 'Untitled Design',
+        type: design?.type,
+        canvasData: design?.data || {},
         metadata: {
-          width: design.size.width,
-          height: design.size.height,
-          backgroundColor: design.backgroundColor,
-          title: design.name,
-          description: design.description,
+          width: design?.size?.width || 0,
+          height: design?.size?.height || 0,
+          backgroundColor: design?.backgroundColor || '#ffffff',
+          title: design?.name || 'Untitled Design',
+          description: design?.description,
         },
         exportedAt: new Date().toISOString(),
       }, null, 2);
@@ -231,7 +234,7 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${design.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+      link.download = `${(design?.name || 'design').replace(/[^a-z0-9]/gi, '_')}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -246,34 +249,25 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
 
   const handleShare = useCallback(async (designId: string) => {
     try {
-      const design = designs.find(d => d.id === designId);
+      const design = designs.find(d => d?.id === designId);
       if (!design) {
         toast.error('Design not found');
         return;
       }
 
-      // Create a shareable URL
-      const shareUrl = `${window.location.origin}/${locale}/preview/${designId}`;
-
-      if (navigator.share) {
-        // Use native share API if available
-        await navigator.share({
-          title: design.name,
-          text: design.description || 'Check out this design',
-          url: shareUrl,
-        });
-      } else {
-        // Fallback to copying to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Share link copied to clipboard');
-      }
+      const shareUrl = `${window.location.origin}/${locale}/preview/${design?.id || ''}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Share link copied to clipboard!');
     } catch (error) {
       console.error('Failed to share design:', error);
       toast.error('Failed to share design');
     }
   }, [designs, locale]);
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date?: Date) => {
+    if (!date) {
+      return 'N/A';
+    }
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -281,16 +275,22 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
     });
   };
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date?: Date) => {
+    if (!date) {
+      return 'N/A';
+    }
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
     if (days > 0) {
       return `${days} day${days > 1 ? 's' : ''} ago`;
     } else if (hours > 0) {
       return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     } else {
       return 'Recently';
     }

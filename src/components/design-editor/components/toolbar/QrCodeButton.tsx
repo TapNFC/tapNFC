@@ -23,19 +23,24 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
     // Save the current canvas data to IndexedDB before proceeding
     if (canvas) {
       try {
-        const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+        const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+
+        if (!canvasData) {
+          toast.error('Failed to get canvas data. Cannot proceed.');
+          return;
+        }
 
         // Add canvas dimensions and background to the saved data
-        canvasData.width = canvas.getWidth();
-        canvasData.height = canvas.getHeight();
+        canvasData.width = canvas.getWidth?.();
+        canvasData.height = canvas.getHeight?.();
         canvasData.background = canvas.backgroundColor || '#ffffff';
 
         const designData: DesignData = {
           id: designId,
           canvasData,
           metadata: {
-            width: canvas.getWidth(),
-            height: canvas.getHeight(),
+            width: canvas.getWidth?.() || 0,
+            height: canvas.getHeight?.() || 0,
             backgroundColor: canvas.backgroundColor || '#ffffff',
             title: `Design ${designId}`,
             description: 'Design ready for QR code generation',

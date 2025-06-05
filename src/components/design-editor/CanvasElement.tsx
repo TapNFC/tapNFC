@@ -39,7 +39,7 @@ export function CanvasElement({
         height: element.height,
       });
     }
-  }, [onSelect, element.x, element.y, element.width, element.height]);
+  }, [onSelect, element?.x, element?.y, element?.width, element?.height]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -54,8 +54,8 @@ export function CanvasElement({
       const deltaY = (e.clientY - dragStart.y) / zoom;
 
       onUpdate({
-        x: elementStart.x + deltaX,
-        y: elementStart.y + deltaY,
+        x: (elementStart?.x || 0) + deltaX,
+        y: (elementStart?.y || 0) + deltaY,
       });
     }
   }, [isDragging, isResizing, dragStart, elementStart, zoom, onUpdate]);
@@ -75,22 +75,22 @@ export function CanvasElement({
       width: element.width,
       height: element.height,
     });
-  }, [element.x, element.y, element.width, element.height]);
+  }, [element?.x, element?.y, element?.width, element?.height]);
 
   // Memoize the heavy renderElement function
   const renderedElement = useMemo(() => {
     const commonStyle = {
       position: 'absolute' as const,
-      left: element.x,
-      top: element.y,
-      width: element.width,
-      height: element.height,
-      transform: `rotate(${element.rotation}deg)`,
-      opacity: element.opacity,
-      visibility: (element.visible ? 'visible' : 'hidden') as 'visible' | 'hidden',
+      left: element?.x || 0,
+      top: element?.y || 0,
+      width: element?.width || 0,
+      height: element?.height || 0,
+      transform: `rotate(${element?.rotation || 0}deg)`,
+      opacity: element?.opacity ?? 1,
+      visibility: (element?.visible ? 'visible' : 'hidden') as 'visible' | 'hidden',
     };
 
-    switch (element.type) {
+    switch (element?.type) {
       case 'text': {
         return (
           <div
@@ -146,9 +146,9 @@ export function CanvasElement({
                 ...commonStyle,
                 width: 0,
                 height: 0,
-                borderLeft: `${element.width / 2}px solid transparent`,
-                borderRight: `${element.width / 2}px solid transparent`,
-                borderBottom: `${element.height}px solid ${element.shape?.fill || '#3b82f6'}`,
+                borderLeft: `${(element.width || 0) / 2}px solid transparent`,
+                borderRight: `${(element.width || 0) / 2}px solid transparent`,
+                borderBottom: `${element.height || 0}px solid ${element.shape?.fill || '#3b82f6'}`,
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: isDragging ? 'grabbing' : 'grab',
@@ -160,7 +160,7 @@ export function CanvasElement({
             <div
               style={{
                 ...shapeStyle,
-                transform: `rotate(${element.rotation}deg) rotate(45deg)`,
+                transform: `rotate(${element.rotation || 0}deg) rotate(45deg)`,
                 borderRadius: 4,
               }}
             />
@@ -316,10 +316,10 @@ export function CanvasElement({
       <div
         className="pointer-events-none absolute"
         style={{
-          left: element.x - 4,
-          top: element.y - 4,
-          width: element.width + 8,
-          height: element.height + 8,
+          left: (element?.x || 0) - 4,
+          top: (element?.y || 0) - 4,
+          width: (element?.width || 0) + 8,
+          height: (element?.height || 0) + 8,
           border: '2px solid #3b82f6',
           borderRadius: '4px',
         }}
@@ -377,7 +377,7 @@ export function CanvasElement({
         />
       </div>
     );
-  }, [isSelected, element.x, element.y, element.width, element.height, handleResizeMouseDown]);
+  }, [isSelected, element?.x, element?.y, element?.width, element?.height, handleResizeMouseDown]);
 
   return (
     <div

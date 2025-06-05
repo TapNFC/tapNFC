@@ -4,11 +4,19 @@ import { Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
+// Define a type for Fabric-like gradient objects that might be passed
+type FabricGradient = {
+  type?: string; // e.g., 'linear'
+  colorStops?: Array<{ offset: number; color: string }>;
+  coords?: { x1?: number; y1?: number; x2?: number; y2?: number };
+  // Add other potential gradient properties if needed
+};
+
 type RealTimePreviewProps = {
   canvasState: any;
   width: number;
   height: number;
-  backgroundColor: string;
+  backgroundColor: string | FabricGradient;
   className?: string;
 };
 
@@ -39,7 +47,7 @@ export function RealTimePreview({
 
     // Calculate the scale factor needed to fit the original canvas content
     // (dimensions: `width` x `height`) into the small preview container.
-    const scaleFactor = Math.min(smallPreviewContainerMaxWidth / width, smallPreviewContainerMaxHeight / height, 1);
+    const scaleFactor = Math.min(smallPreviewContainerMaxWidth / (width || 1), smallPreviewContainerMaxHeight / (height || 1), 1);
     return scaleFactor > 0 ? scaleFactor : 1; // Ensure scale is positive, default to 1 if width/height is 0
   }, [isFullscreen, width, height]);
 
@@ -52,13 +60,32 @@ export function RealTimePreview({
     };
   }, [width, height, getPreviewScale]);
 
+  const effectiveBackgroundStyle = useMemo(() => {
+    if (typeof backgroundColor === 'string') {
+      return { backgroundColor };
+    } else if (backgroundColor && typeof backgroundColor === 'object' && Array.isArray((backgroundColor as FabricGradient)?.colorStops)) {
+      const gradient = backgroundColor as FabricGradient;
+      // Defaulting to a diagonal gradient (135deg or to bottom right)
+      const direction = '135deg'; // Or 'to bottom right'
+      const stops = (gradient.colorStops || [])
+        .map(stop => `${stop?.color || '#FFFFFF'} ${stop?.offset !== undefined ? stop.offset * 100 : 0}%`)
+        .join(', ');
+      return { background: `linear-gradient(${direction}, ${stops})` };
+    }
+    return { backgroundColor: '#ffffff' }; // Fallback to white if format is unexpected
+  }, [backgroundColor]);
+
   // Memoize the heavy renderElements function to prevent recreation on every render
   const renderedElements = useMemo(() => {
-    if (!canvasState?.objects || canvasState.objects.length === 0) {
+    if (!canvasState?.objects || !Array.isArray(canvasState.objects) || canvasState.objects.length === 0) {
       return [];
     }
 
     return canvasState.objects.map((obj: any, index: number) => {
+      if (!obj) {
+        return null;
+      } // Null check for obj itself
+
       const objLeft = obj.left || 0;
       const objTop = obj.top || 0;
       const objWidth = (obj.width || 0);
@@ -86,6 +113,7 @@ export function RealTimePreview({
         zIndex: index + 1,
         pointerEvents: 'none', // Important for preview
         visibility: obj.visible !== false ? ('visible' as const) : ('hidden' as const),
+        boxSizing: 'border-box', // Ensure padding and borders are included in width/height
       };
 
       // Handle Button elements
@@ -226,8 +254,8 @@ export function RealTimePreview({
         } else {
           // For other polygons, use SVG for accurate rendering
           const svgPath = `${obj.points?.map((point: any, i: number) =>
-            `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`,
-          ).join(' ')} Z`;
+            `${i === 0 ? 'M' : 'L'} ${point?.x || 0} ${point?.y || 0}`,
+          ).join(' ') || ''} Z`;
 
           return (
             <div
@@ -466,8 +494,8 @@ export function RealTimePreview({
             alt="Design element"
             style={{
               ...baseStyle,
-              // objectFit: 'cover', // or 'contain', depending on desired behavior. Fabric default is like 'fill'
-              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover', // A common default
+              objectFit: obj.objectFit || 'contain', // Default to 'contain' to prevent cropping
+              objectPosition: 'center',
               boxSizing: 'border-box',
             }}
           />
@@ -490,7 +518,11 @@ export function RealTimePreview({
               // border: obj.stroke ? `${obj.strokeWidth}px solid ${obj.stroke}` : 'none',
             }}
           >
-            {obj.objects.map((groupObj: any, groupIndex: number) => {
+            {(Array.isArray(obj.objects) ? obj.objects : []).map((groupObj: any, groupIndex: number) => {
+              if (!groupObj) {
+                return null;
+              }
+
               const groupObjLeft = groupObj.left || 0;
               const groupObjTop = groupObj.top || 0;
               const groupObjWidth = (groupObj.width || 0) * (groupObj.scaleX || 1);
@@ -552,7 +584,8 @@ export function RealTimePreview({
                     alt="Grouped element"
                     style={{
                       ...groupObjStyle,
-                      objectFit: 'fill',
+                      objectFit: groupObj.objectFit || 'contain',
+                      objectPosition: 'center',
                       boxSizing: 'border-box',
                     }}
                   />
@@ -585,11 +618,19 @@ export function RealTimePreview({
     if (!isFullscreen && previewRef.current) {
       if (previewRef.current.requestFullscreen) {
         previewRef.current.requestFullscreen();
+      } else {
+        // Fallback for browsers that might not support it or have a different name
+        (previewRef.current as any).webkitRequestFullscreen?.();
+        (previewRef.current as any).mozRequestFullScreen?.();
+        (previewRef.current as any).msRequestFullscreen?.();
       }
     } else if (document.fullscreenElement) {
-      document.exitFullscreen();
+      document.exitFullscreen?.();
+      (document as any).webkitExitFullscreen?.();
+      (document as any).mozCancelFullScreen?.();
+      (document as any).msExitFullscreen?.();
     }
-    setIsFullscreen(!isFullscreen);
+    // Note: setIsFullscreen is handled by the fullscreenchange event listener
   }, [isFullscreen]);
 
   const handleShowPreview = useCallback(() => setIsVisible(true), []);
@@ -665,8 +706,8 @@ export function RealTimePreview({
 
         {/* Preview Content */}
         <div
-          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-4' : 'p-4'}`}
-          style={!isFullscreen ? { width: `${displayDimensions.width + 20}px`, height: `${displayDimensions.height + 10}px`, overflow: 'hidden' } : {}}
+          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-8' : 'p-4'}`}
+          style={!isFullscreen ? { width: `${displayDimensions.width + 40}px`, height: `${displayDimensions.height + 40}px`, overflow: 'hidden' } : {}}
         >
           <div
             className="relative border border-gray-300 shadow-sm"
@@ -674,10 +715,11 @@ export function RealTimePreview({
             style={{
               width: `${width}px`, // Use original canvas width
               height: `${height}px`, // Use original canvas height
-              backgroundColor,
+              ...effectiveBackgroundStyle,
               overflow: 'hidden',
               transform: `scale(${getPreviewScale})`,
               transformOrigin: 'top left',
+              margin: 'auto', // Center the canvas in the container
             }}
           >
             {renderedElements.length > 0

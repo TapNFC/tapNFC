@@ -70,11 +70,11 @@ export function DesignToolbar({
 
     try {
       setIsSaving(true);
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']) || {};
 
       // Add canvas dimensions and background
-      canvasData.width = canvas.getWidth();
-      canvasData.height = canvas.getHeight();
+      canvasData.width = canvas.getWidth?.() || 0;
+      canvasData.height = canvas.getHeight?.() || 0;
       canvasData.background = canvas.backgroundColor || '#ffffff';
 
       // Save directly to IndexedDB as a template
@@ -108,17 +108,17 @@ export function DesignToolbar({
       await onManualSave();
 
       // Also save to IndexedDB for the preview functionality
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
-      canvasData.width = canvas.getWidth();
-      canvasData.height = canvas.getHeight();
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']) || {};
+      canvasData.width = canvas.getWidth?.() || 0;
+      canvasData.height = canvas.getHeight?.() || 0;
       canvasData.background = canvas.backgroundColor || '#ffffff';
 
       const designData: DesignData = {
         id: designId,
         canvasData,
         metadata: {
-          width: canvas.getWidth(),
-          height: canvas.getHeight(),
+          width: canvas.getWidth?.() || 0,
+          height: canvas.getHeight?.() || 0,
           backgroundColor: canvas.backgroundColor || '#ffffff',
           title: `Design ${designId}`,
           description: 'Manual save from design editor',
@@ -165,24 +165,24 @@ export function DesignToolbar({
       }
 
       // Clear canvas first
-      canvas.clear();
+      canvas.clear?.();
 
       // Set canvas dimensions if available
-      if (dataToLoad.width && dataToLoad.height) {
-        canvas.setDimensions({
+      if (dataToLoad?.width && dataToLoad?.height) {
+        canvas.setDimensions?.({
           width: dataToLoad.width,
           height: dataToLoad.height,
         });
       }
 
       // Set background color
-      if (dataToLoad.background) {
+      if (dataToLoad?.background) {
         canvas.backgroundColor = dataToLoad.background;
       }
 
       // Load template/design data
-      canvas.loadFromJSON(dataToLoad, () => {
-        canvas.renderAll();
+      canvas.loadFromJSON?.(dataToLoad, () => {
+        canvas.renderAll?.();
         setCurrentTemplateName(name);
         toast.success(`${templateData ? 'Template' : 'Design'} "${name}" loaded successfully!`);
       });

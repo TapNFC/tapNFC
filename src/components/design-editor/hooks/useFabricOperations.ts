@@ -1,6 +1,19 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
+// Define types for Fabric.js gradient options, matching those in BackgroundsPanel.tsx
+type FabricColorStop = { offset: number; color: string };
+type FabricGradientOptionForOps = {
+  type: 'linear'; // Currently only supporting linear gradients
+  colorStops: FabricColorStop[];
+};
+
+// Type for the background input parameter, accommodating strings (solid colors) and gradient objects
+export type BackgroundInput =
+  | string
+  | { type: 'gradient'; value: FabricGradientOptionForOps }
+  | { type: string; value: string }; // For other potential object-based backgrounds (original structure)
+
 type UseFabricOperationsOptions = {
   canvas: any;
   fabric: any;
@@ -10,330 +23,384 @@ type UseFabricOperationsOptions = {
 export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOperationsOptions) {
   const handleAddText = useCallback((textType: string) => {
     if (!canvas || !fabric || !fabricReady) {
-      toast.error('Canvas not ready');
+      toast.error('Canvas or Fabric.js not ready');
       return;
     }
-
-    let textContent = 'New Text';
-    let fontSize = 16;
-
-    switch (textType) {
-      case 'add-text':
-      case 'heading': {
-        textContent = 'Heading';
-        fontSize = 32;
-        break;
+    try {
+      let textObject;
+      switch (textType) {
+        case 'add-text': // Heading
+          textObject = new fabric.Textbox('Heading Text', {
+            left: 50,
+            top: 50,
+            fontSize: 48,
+            fontWeight: 'bold',
+            fontFamily: 'Inter',
+            fill: '#333',
+            width: 300,
+            textAlign: 'center',
+          });
+          break;
+        case 'add-subheading':
+          textObject = new fabric.Textbox('Subheading Text', {
+            left: 50,
+            top: 120,
+            fontSize: 32,
+            fontWeight: 'normal',
+            fontFamily: 'Inter',
+            fill: '#555',
+            width: 250,
+            textAlign: 'center',
+          });
+          break;
+        case 'add-body':
+        default:
+          textObject = new fabric.Textbox('Body text lorem ipsum dolor sit amet.', {
+            left: 50,
+            top: 200,
+            fontSize: 16,
+            fontWeight: 'normal',
+            fontFamily: 'Inter',
+            fill: '#666',
+            width: 200,
+          });
+          break;
       }
-      case 'add-subheading':
-      case 'subheading': {
-        textContent = 'Subheading';
-        fontSize = 24;
-        break;
+      if (textObject) {
+        // Add custom property to identify text type later if needed
+        (textObject as any).elementType = 'text';
+        canvas.add(textObject);
+        canvas.setActiveObject?.(textObject);
+        canvas.renderAll?.();
+        toast.success(`${textType.replace('add-', '').replace('-', ' ')} added`);
       }
-      case 'add-body':
-      case 'body': {
-        textContent = 'Body text';
-        fontSize = 16;
-        break;
-      }
-      default: {
-        textContent = 'Text';
-        fontSize = 16;
-        break;
-      }
+    } catch (error) {
+      console.error('Error adding text:', error);
+      toast.error('Failed to add text');
     }
-
-    const text = new fabric.IText(textContent, {
-      left: 100,
-      top: 100,
-      fontSize,
-      fontFamily: 'Inter',
-      fill: '#000000',
-    });
-
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    canvas.renderAll();
   }, [canvas, fabric, fabricReady]);
 
-  const handleAddShape = useCallback((shapeType: string) => {
+  const handleBackgroundChange = useCallback((backgroundInput: BackgroundInput) => {
     if (!canvas || !fabric || !fabricReady) {
-      toast.error('Canvas not ready');
-      return;
-    }
-
-    let shape;
-
-    switch (shapeType) {
-      case 'rectangle': {
-        shape = new fabric.Rect({
-          left: 100,
-          top: 100,
-          width: 100,
-          height: 100,
-          fill: '#3b82f6',
-          stroke: '#1e40af',
-          strokeWidth: 2,
-          rx: 8,
-          ry: 8,
-        });
-        break;
-      }
-      case 'outlined-rectangle': {
-        shape = new fabric.Rect({
-          left: 100,
-          top: 100,
-          width: 100,
-          height: 100,
-          fill: 'transparent',
-          stroke: '#1e40af',
-          strokeWidth: 3,
-          rx: 8,
-          ry: 8,
-        });
-        break;
-      }
-      case 'circle': {
-        shape = new fabric.Circle({
-          left: 100,
-          top: 100,
-          radius: 50,
-          fill: '#10b981',
-          stroke: '#059669',
-          strokeWidth: 2,
-        });
-        break;
-      }
-      case 'outlined-circle': {
-        shape = new fabric.Circle({
-          left: 100,
-          top: 100,
-          radius: 50,
-          fill: 'transparent',
-          stroke: '#059669',
-          strokeWidth: 3,
-        });
-        break;
-      }
-      case 'triangle': {
-        shape = new fabric.Triangle({
-          left: 100,
-          top: 100,
-          width: 100,
-          height: 100,
-          fill: '#8b5cf6',
-          stroke: '#7c3aed',
-          strokeWidth: 2,
-        });
-        break;
-      }
-      case 'diamond': {
-        const points = [
-          { x: 50, y: 0 },
-          { x: 100, y: 50 },
-          { x: 50, y: 100 },
-          { x: 0, y: 50 },
-        ];
-
-        shape = new fabric.Polygon(points, {
-          left: 100,
-          top: 100,
-          fill: '#ec4899',
-          stroke: '#db2777',
-          strokeWidth: 2,
-          shapeType: 'diamond',
-        });
-        break;
-      }
-      case 'line': {
-        shape = new fabric.Line([0, 0, 100, 0], {
-          left: 100,
-          top: 100,
-          stroke: '#374151',
-          strokeWidth: 3,
-          strokeLineCap: 'round',
-        });
-        break;
-      }
-      default:
-        return;
-    }
-
-    if (shape) {
-      (shape as any).elementType = 'shape';
-      (shape as any).shapeData = {
-        type: shapeType === 'outlined-rectangle'
-          ? 'rectangle'
-          : shapeType === 'outlined-circle'
-            ? 'circle'
-            : shapeType,
-        fill: shape.fill,
-        stroke: shape.stroke,
-        strokeWidth: shape.strokeWidth,
-      };
-
-      canvas.add(shape);
-      canvas.setActiveObject(shape);
-      canvas.renderAll();
-
-      toast.success(`${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} added to canvas`);
-    }
-  }, [canvas, fabric, fabricReady]);
-
-  const handleBackgroundChange = useCallback((background: string | { type: string; value: string }) => {
-    if (!canvas) {
-      toast.error('Canvas not available');
+      toast.error('Canvas or Fabric.js not ready');
       return;
     }
 
     try {
-      let colorValue = '';
+      if (typeof backgroundInput === 'string') {
+        // Solid color or 'transparent'
+        const colorValue = backgroundInput;
+        if (colorValue.toLowerCase() === 'transparent') {
+          canvas.setBackgroundColor?.('rgba(0,0,0,0)', () => {
+            canvas.renderAll?.();
+          });
+        } else {
+          canvas.setBackgroundColor?.(colorValue, () => {
+            canvas.renderAll?.();
+          });
+        }
+      } else if (
+        backgroundInput?.type === 'gradient'
+        && typeof backgroundInput.value === 'object'
+        && backgroundInput.value !== null
+        && 'type' in backgroundInput.value
+        && backgroundInput.value.type === 'linear'
+      ) {
+        // Gradient object
+        const fabricOptions = backgroundInput.value as FabricGradientOptionForOps;
+        const canvasWidth = canvas.getWidth?.();
+        const canvasHeight = canvas.getHeight?.();
 
-      if (typeof background === 'string') {
-        colorValue = background;
-      } else {
-        colorValue = background.value;
-      }
+        if (canvasWidth === undefined || canvasHeight === undefined) {
+          toast.error('Canvas dimensions not available for gradient.');
+          return;
+        }
 
-      // Validate color format
-      if (!colorValue || colorValue.trim() === '') {
-        toast.error('Invalid color value');
-        return;
-      }
+        const gradientCoords = {
+          x1: 0,
+          y1: 0,
+          x2: canvasWidth,
+          y2: canvasHeight,
+        };
 
-      // Handle transparent background
-      if (colorValue.toLowerCase() === 'transparent') {
-        canvas.setBackgroundColor('rgba(0,0,0,0)', () => {
-          canvas.renderAll();
-          toast.success('Background set to transparent');
+        const gradient = new fabric.Gradient({
+          type: fabricOptions.type,
+          coords: gradientCoords,
+          colorStops: fabricOptions.colorStops,
         });
-        return;
-      }
 
-      // Set the background color
-      canvas.setBackgroundColor(colorValue, () => {
-        canvas.renderAll();
-      });
+        canvas.setBackgroundColor?.(gradient, () => {
+          canvas.renderAll?.();
+        });
+      } else if (typeof backgroundInput?.value === 'string') { // Check for the old structure { type: string, value: string }
+        canvas.setBackgroundColor?.(backgroundInput.value, () => {
+          canvas.renderAll?.();
+        });
+      } else {
+        toast.error('Invalid background type or format');
+      }
     } catch (error) {
-      console.error('Error changing background color:', error);
-      toast.error('Failed to change background color');
+      console.error('Error changing background:', error);
+      toast.error('Failed to change background');
     }
-  }, [canvas]);
+  }, [canvas, fabric, fabricReady]);
 
   const handleAddButton = useCallback(() => {
     if (!canvas || !fabric || !fabricReady) {
-      toast.error('Canvas not ready');
+      toast.error('Canvas or Fabric.js not ready for button');
       return;
     }
 
-    const buttonGroup = new fabric.Group([
-      new fabric.Rect({
-        width: 120,
-        height: 40,
-        fill: '#3b82f6',
-        rx: 8,
-        ry: 8,
-      }),
-      new fabric.IText('Button', {
-        fontSize: 14,
-        fill: '#ffffff',
-        fontFamily: 'Inter',
+    try {
+      const buttonText = 'Click Me';
+      const fontSize = 18;
+      const fontFamily = 'Inter';
+      const padding = { top: 10, right: 20, bottom: 10, left: 20 };
+      const backgroundColor = '#3b82f6';
+      const textColor = '#ffffff';
+      const borderRadius = 8;
+
+      // Create text object for measurement
+      const text = new fabric.Textbox(buttonText, {
+        fontSize,
+        fontFamily,
+        fill: textColor,
         textAlign: 'center',
+        // Ensure text width is not fixed here so it can be measured
+      });
+
+      // Calculate dimensions after text is rendered (important for accurate width)
+      // This is a bit of a hack. For perfect sizing, one might render off-screen or use DOM measurement.
+      // Fabric's text width calculation can be tricky before adding to canvas.
+      const textWidth = text.width || (buttonText.length * fontSize * 0.6); // Approximate width
+      const textHeight = text.height || fontSize; // Approximate height
+
+      const buttonWidth = textWidth + (padding?.left || 0) + (padding?.right || 0);
+      const buttonHeight = textHeight + (padding?.top || 0) + (padding?.bottom || 0);
+
+      // Create background rectangle
+      const bgRect = new fabric.Rect({
+        width: buttonWidth,
+        height: buttonHeight,
+        fill: backgroundColor,
+        rx: borderRadius,
+        ry: borderRadius,
         originX: 'center',
         originY: 'center',
-      }),
-    ], {
-      left: 100,
-      top: 100,
-    });
+      });
 
-    (buttonGroup as any).elementType = 'button';
-    (buttonGroup as any).buttonData = {
-      text: 'Button',
-      backgroundColor: '#3b82f6',
-      textColor: '#ffffff',
-      borderColor: '#1e40af',
-      borderWidth: 0,
-      borderRadius: 8,
-      fontSize: 14,
-      fontWeight: 'normal',
-      fontFamily: 'Inter',
-      padding: { top: 8, right: 16, bottom: 8, left: 16 },
-      action: { type: 'url', value: '' },
-    };
+      // Position text in the center of the button background
+      text.set({
+        originX: 'center',
+        originY: 'center',
+      });
 
-    canvas.add(buttonGroup);
-    canvas.setActiveObject(buttonGroup);
-    canvas.renderAll();
+      // Create a group for the button
+      const buttonGroup = new fabric.Group([bgRect, text], {
+        left: 100,
+        top: 100,
+        // Custom properties for button styling and behavior
+        buttonData: {
+          text: buttonText,
+          backgroundColor,
+          textColor,
+          borderColor: 'transparent', // Default border
+          borderWidth: 0,
+          borderRadius,
+          fontSize,
+          fontFamily,
+          fontWeight: 'normal',
+          padding,
+          hoverBackgroundColor: '#2563eb', // Example hover color
+          hoverTextColor: '#ffffff',
+          action: { type: 'url', value: '' }, // Default action
+        },
+        elementType: 'button', // Custom property to identify this as a button
+      });
 
-    toast.success('Button added to canvas');
+      canvas.add(buttonGroup);
+      canvas.setActiveObject?.(buttonGroup);
+      canvas.renderAll?.();
+
+      toast.success('Button added to canvas!');
+    } catch (error) {
+      console.error('Error adding button:', error);
+      toast.error('Failed to add button.');
+    }
+  }, [canvas, fabric, fabricReady]);
+
+  const handleAddShape = useCallback((shapeType: string) => {
+    if (!canvas || !fabric || !fabricReady) {
+      toast.error('Canvas or Fabric.js not ready for shape');
+      return;
+    }
+    try {
+      let shape;
+      const commonProps = {
+        left: 100,
+        top: 100,
+        fill: '#3b82f6', // Default fill blue-500
+        stroke: '#1e40af', // Default stroke blue-700
+        strokeWidth: 2,
+      };
+
+      const outlinedCommonProps = {
+        ...commonProps,
+        fill: 'transparent',
+        stroke: '#4f46e5', // Default stroke indigo-600 for outlined
+      };
+
+      switch (shapeType) {
+        case 'rectangle':
+          shape = new fabric.Rect({
+            ...commonProps,
+            width: 100,
+            height: 60,
+            rx: 8, // Rounded corners
+            ry: 8,
+          });
+          break;
+        case 'outlined-rectangle':
+          shape = new fabric.Rect({
+            ...outlinedCommonProps,
+            width: 100,
+            height: 60,
+            rx: 8,
+            ry: 8,
+          });
+          break;
+        case 'circle':
+          shape = new fabric.Circle({
+            ...commonProps,
+            radius: 40,
+          });
+          break;
+        case 'outlined-circle':
+          shape = new fabric.Circle({
+            ...outlinedCommonProps,
+            radius: 40,
+          });
+          break;
+        case 'triangle':
+          shape = new fabric.Triangle({
+            ...commonProps,
+            width: 80,
+            height: 70,
+          });
+          break;
+        case 'diamond':
+          // Fabric doesn't have a native diamond. We use a polygon or a rotated square.
+          // Using a rotated square for simplicity, can be adjusted to polygon for more control.
+          shape = new fabric.Rect({
+            ...commonProps,
+            width: 70,
+            height: 70,
+            angle: 45,
+          });
+          // To make it look more like a diamond, you might want to adjust stroke join, etc.
+          // Or define points for a fabric.Polygon
+          break;
+        case 'line':
+          shape = new fabric.Line([50, 100, 150, 100], {
+            left: 50,
+            top: 50,
+            stroke: commonProps.fill, // Use fill color for line stroke as per design
+            strokeWidth: 4,
+          });
+          break;
+        case 'star':
+          // Fabric doesn't have a native star. This requires a custom fabric.Polygon.
+          // Example points for a 5-point star. Adjust as needed.
+          shape = new fabric.Polygon([
+            { x: 0, y: -50 },
+            { x: 12, y: -15 },
+            { x: 48, y: -15 },
+            { x: 19, y: 10 },
+            { x: 29, y: 45 },
+            { x: 0, y: 25 },
+            { x: -29, y: 45 },
+            { x: -19, y: 10 },
+            { x: -48, y: -15 },
+            { x: -12, y: -15 },
+          ], {
+            ...commonProps,
+            left: 150,
+            top: 150,
+          });
+          break;
+        default:
+          toast(`Shape type "${shapeType}" not recognized.`);
+          return;
+      }
+
+      if (shape) {
+        // Add custom property to identify shape type later if needed
+        (shape as any).elementType = 'shape';
+        (shape as any).shapeType = shapeType; // Store the original shape type
+
+        canvas.add(shape);
+        canvas.setActiveObject?.(shape);
+        canvas.renderAll?.();
+        toast.success(`${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} added`);
+      }
+    } catch (error) {
+      console.error(`Error adding shape ${shapeType}:`, error);
+      toast.error('Failed to add shape.');
+    }
   }, [canvas, fabric, fabricReady]);
 
   const handleAddLink = useCallback(() => {
     if (!canvas || !fabric || !fabricReady) {
-      toast.error('Canvas not ready');
+      toast.error('Canvas or Fabric.js not ready for link');
       return;
     }
 
-    const linkText = 'Click me';
-    const linkUrl = 'https://example.com'; // Start with example URL to make testing easier
+    const linkText = 'Your Link Text';
+    const linkUrl = 'https://example.com';
 
-    // Create a more prominent link element
-    const link = new fabric.IText(linkText, {
+    const text = new fabric.Textbox(linkText, {
       left: 100,
-      top: 100,
+      top: 150,
       fontSize: 18,
-      fill: '#3b82f6',
       fontFamily: 'Inter',
-      underline: true,
-      selectable: true,
-      hoverCursor: 'pointer',
-      moveCursor: 'move',
-      textAlign: 'center',
-      width: 150, // Ensure width is set
-      height: 40, // Ensure height is set
-      stroke: '#3b82f6',
-      strokeWidth: 0,
-      backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    });
-
-    // Ensure the object has appropriate dimensions
-    link.set({
-      width: link.getScaledWidth() || 150,
-      height: link.getScaledHeight() || 40,
-    });
-
-    // Add custom properties for the link
-    (link as any).elementType = 'link';
-    (link as any).linkData = {
-      text: linkText,
-      url: linkUrl,
-      color: '#3b82f6',
-      hoverColor: '#1e40af',
-      fontSize: 18,
-      fontWeight: 'normal',
-      fontFamily: 'Inter',
+      fill: '#3b82f6', // Default link color
       textDecoration: 'underline',
-      target: '_blank',
-    };
+      cursor: 'pointer',
+      // Interactive properties for Fabric objects
+      selectable: true,
+      evented: true,
+      // Custom properties for link behavior
+      linkData: {
+        url: linkUrl,
+        text: linkText, // Store initial text
+        color: '#3b82f6',
+        hoverColor: '#1e40af',
+        fontSize: 18,
+        fontWeight: 'normal',
+        fontFamily: 'Inter',
+        textDecoration: 'underline',
+        target: '_blank',
+      },
+      elementType: 'link', // Custom property for identification
+    });
 
-    canvas.add(link);
-    canvas.setActiveObject(link);
-    canvas.renderAll();
+    canvas.add(text);
+    canvas.setActiveObject?.(text);
+    canvas.renderAll?.();
 
     toast.success('Link added! Double-click to edit its URL and text.');
   }, [canvas, fabric, fabricReady]);
 
   const updateButtonProperties = useCallback((buttonObject: any, updates: any) => {
-    if (!buttonObject || buttonObject.elementType !== 'button') {
+    if (!canvas || !buttonObject || buttonObject.elementType !== 'button' || !updates) {
       return;
     }
 
     try {
-      const buttonData = { ...buttonObject.buttonData, ...updates };
+      const buttonData = { ...(buttonObject.buttonData || {}), ...updates };
       buttonObject.set('buttonData', buttonData);
 
-      const [bgRect, textObj] = buttonObject.getObjects();
+      const [bgRect, textObj] = buttonObject.getObjects?.() || [];
 
       if (bgRect && updates.backgroundColor) {
         bgRect.set('fill', updates.backgroundColor);
@@ -344,6 +411,10 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       if (bgRect && updates.borderRadius !== undefined) {
         bgRect.set({ rx: updates.borderRadius, ry: updates.borderRadius });
       }
+      if (bgRect && updates.borderWidth !== undefined) {
+        bgRect.set('strokeWidth', updates.borderWidth);
+      }
+
       if (textObj && updates.text) {
         textObj.set('text', updates.text);
       }
@@ -353,50 +424,82 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       if (textObj && updates.fontSize) {
         textObj.set('fontSize', updates.fontSize);
       }
+      if (textObj && updates.fontFamily) {
+        textObj.set('fontFamily', updates.fontFamily);
+      }
+      if (textObj && updates.fontWeight) {
+        textObj.set('fontWeight', updates.fontWeight);
+      }
 
-      canvas.renderAll();
+      // Adjust group size if text or padding changes (simplified)
+      if ((updates.text || updates.padding || updates.fontSize) && textObj && bgRect) {
+        const padding = buttonData.padding || { top: 0, right: 0, bottom: 0, left: 0 };
+        const textWidth = textObj.width || ((buttonData.text?.length || 0) * (buttonData.fontSize || 16) * 0.6);
+        const textHeight = textObj.height || (buttonData.fontSize || 16);
+
+        const newWidth = textWidth + (padding.left || 0) + (padding.right || 0);
+        const newHeight = textHeight + (padding.top || 0) + (padding.bottom || 0);
+
+        bgRect.set({ width: newWidth, height: newHeight });
+
+        // Recalculate positions within the group if necessary for fabric.Group
+        // For basic groups, Fabric handles relative positioning, but explicit update might be needed.
+        buttonObject._restoreObjectsState?.(); // May help update layout
+        buttonObject.setCoords?.(); // Important for controls
+      }
+
+      canvas.renderAll?.();
+      toast.success('Button properties updated');
     } catch (error) {
       console.error('Error updating button properties:', error);
+      toast.error('Failed to update button.');
     }
   }, [canvas]);
 
   const updateLinkProperties = useCallback((linkObject: any, updates: any) => {
-    if (!linkObject || linkObject.elementType !== 'link') {
+    if (!canvas || !linkObject || linkObject.elementType !== 'link' || !updates) {
       return;
     }
-
     try {
-      const linkData = { ...linkObject.linkData, ...updates };
+      const linkData = { ...(linkObject.linkData || {}), ...updates };
       linkObject.set('linkData', linkData);
 
-      if (updates.text) {
+      if (updates.text !== undefined) {
         linkObject.set('text', updates.text);
       }
-      if (updates.color) {
+      if (updates.color !== undefined) {
         linkObject.set('fill', updates.color);
       }
-      if (updates.fontSize) {
+      if (updates.fontSize !== undefined) {
         linkObject.set('fontSize', updates.fontSize);
       }
-      if (updates.fontWeight) {
+      if (updates.fontFamily !== undefined) {
+        linkObject.set('fontFamily', updates.fontFamily);
+      }
+      if (updates.fontWeight !== undefined) {
         linkObject.set('fontWeight', updates.fontWeight);
       }
-      if (updates.textDecoration) {
+      if (updates.textDecoration !== undefined) {
+        linkObject.set('textDecoration', updates.textDecoration);
+        // Fabric's Textbox might also use underline, linethrough, overline boolean properties
         linkObject.set('underline', updates.textDecoration === 'underline');
         linkObject.set('linethrough', updates.textDecoration === 'line-through');
+        linkObject.set('overline', updates.textDecoration === 'overline');
       }
 
-      canvas.renderAll();
+      canvas.renderAll?.();
+      toast.success('Link properties updated');
     } catch (error) {
       console.error('Error updating link properties:', error);
+      toast.error('Failed to update link');
     }
   }, [canvas]);
 
   return {
     handleAddText,
-    handleAddShape,
     handleBackgroundChange,
     handleAddButton,
+    handleAddShape,
     handleAddLink,
     updateButtonProperties,
     updateLinkProperties,

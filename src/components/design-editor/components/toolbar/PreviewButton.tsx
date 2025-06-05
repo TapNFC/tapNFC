@@ -14,27 +14,31 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
   const handlePreview = () => {
     if (!canvas) {
       console.warn('Canvas not available for preview');
+      toast.error('Canvas not available. Please wait and try again.');
       return;
     }
 
     try {
       // Get canvas dimensions
-      const canvasWidth = canvas.getWidth();
-      const canvasHeight = canvas.getHeight();
+      const canvasWidth = canvas.getWidth?.() || 800;
+      const canvasHeight = canvas.getHeight?.() || 600;
       const canvasBackground = canvas.backgroundColor || '#ffffff';
 
       // Get all objects from canvas with custom properties
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
-      const objects = canvasData.objects || [];
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const objects = canvasData?.objects || [];
 
-      if (objects.length === 0) {
-        toast.error('No elements found on canvas. Add some elements first.');
+      if (!Array.isArray(objects) || objects.length === 0) {
+        toast.info('Canvas is empty. Add some elements to preview.');
         return;
       }
 
       // Convert Fabric.js objects to HTML elements
       const renderElements = () => {
         return objects.map((obj: any, index: number) => {
+          if (!obj) {
+            return '';
+          }
           try {
             const left = obj.left || 0;
             const top = obj.top || 0;
@@ -50,7 +54,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
               width: `${width}px`,
               height: `${height}px`,
               transform: `rotate(${angle}deg)`,
-              opacity: obj.opacity || 1,
+              opacity: obj.opacity ?? 1,
               visibility: obj.visible !== false ? 'visible' as const : 'hidden' as const,
             };
 
@@ -100,7 +104,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
             // Handle Link elements
             if (obj.elementType === 'link' && obj.linkData) {
               const linkData = obj.linkData;
-              const hasUrl = linkData.url && linkData.url.trim() !== '';
+              const hasUrl = linkData.url && String(linkData.url).trim() !== '';
 
               return `
                 <a
@@ -128,30 +132,9 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
             }
 
             // Handle text elements
-            if (obj.type === 'i-text' || obj.type === 'text') {
-              // Adjust text positioning to match Fabric.js canvas rendering
+            if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
               const fontSize = obj.fontSize || 16;
-              const textBaseline = obj.textBaseline || 'alphabetic';
-              let adjustedTop = top;
-
-              // More accurate baseline adjustment based on actual font metrics
-              if (textBaseline === 'alphabetic' || textBaseline === 'baseline') {
-                adjustedTop = top - fontSize * 0.75; // More accurate adjustment
-              } else if (textBaseline === 'middle') {
-                adjustedTop = top - fontSize * 0.4; // Adjust for middle baseline
-              } else if (textBaseline === 'bottom') {
-                adjustedTop = top - fontSize * 0.9; // Adjust for bottom baseline
-              } else if (textBaseline === 'top') {
-                adjustedTop = top; // No adjustment needed for top baseline
-              }
-
-              // Additional adjustment based on originY if present
-              const originY = obj.originY || 'top';
-              if (originY === 'center') {
-                adjustedTop = top - fontSize * 0.4;
-              } else if (originY === 'bottom') {
-                adjustedTop = top - fontSize * 0.8;
-              }
+              const adjustedTop = top;
 
               return `
                 <div
@@ -165,11 +148,11 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
                     text-align: ${obj.textAlign || 'left'};
                     white-space: pre-wrap;
                     pointer-events: none;
-                    line-height: 1.2;
+                    line-height: ${obj.lineHeight || 1.2};
                     display: flex;
                     align-items: flex-start;
                     justify-content: ${obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start'};
-                    min-height: ${fontSize * 1.2}px;
+                    min-height: ${fontSize * (obj.lineHeight || 1.2)}px;
                   "
                 >
                   ${obj.text || ''}
@@ -178,7 +161,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
             }
 
             // Handle shape elements
-            if (['rect', 'circle', 'triangle', 'polygon'].includes(obj.type)) {
+            if (obj.type && ['rect', 'circle', 'triangle', 'polygon'].includes(obj.type)) {
               if (obj.type === 'rect') {
                 return `
                   <div
@@ -347,7 +330,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
                     object-fit: cover;
                     pointer-events: none;
                   "
-                  alt=""
+                  alt="${obj.alt || 'Image'}"
                 />
               `;
             }
@@ -467,7 +450,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
         previewWindow.document.close();
         previewWindow.focus();
       } else {
-        toast.error('Please allow popups to view the preview');
+        toast.error('Please allow popups to view the preview. Your browser might be blocking new windows.');
       }
 
       // Call the onPreview callback if provided

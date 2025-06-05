@@ -122,11 +122,11 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
       return;
     }
 
-    canvas.setDimensions({
+    canvas.setDimensions?.({
       width: canvasWidth,
       height: canvasHeight,
     });
-    canvas.renderAll();
+    canvas.renderAll?.();
   }, [canvas, canvasWidth, canvasHeight]);
 
   const handleProceedToQrCode = useCallback(async () => {
@@ -137,19 +137,24 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
 
     try {
       // Save the current canvas data to IndexedDB before proceeding
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+
+      if (!canvasData) {
+        toast.error('Failed to serialize canvas data.');
+        return;
+      }
 
       // Add canvas dimensions and background to the saved data
-      canvasData.width = canvas.getWidth();
-      canvasData.height = canvas.getHeight();
+      canvasData.width = canvas.getWidth?.();
+      canvasData.height = canvas.getHeight?.();
       canvasData.background = canvas.backgroundColor || '#ffffff';
 
       const designData: DesignData = {
         id: designId,
         canvasData,
         metadata: {
-          width: canvas.getWidth(),
-          height: canvas.getHeight(),
+          width: canvas.getWidth?.() || 0,
+          height: canvas.getHeight?.() || 0,
           backgroundColor: canvas.backgroundColor || '#ffffff',
           title: `Design ${designId}`,
           description: 'Design created with canvas editor',
@@ -178,21 +183,24 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
     if (!canvas) {
       return;
     }
-    canvas.clear();
+    canvas.clear?.();
     canvas.backgroundColor = '#ffffff';
-    canvas.renderAll();
+    canvas.renderAll?.();
   }, [canvas]);
 
   // Memoize preset size handler to prevent recreation
   const handlePresetSizeClick = useCallback((preset: typeof presetSizes[0]) => {
+    if (!preset) {
+      return;
+    }
     setCanvasWidth(preset.width);
     setCanvasHeight(preset.height);
     if (canvas) {
-      canvas.setDimensions({
+      canvas.setDimensions?.({
         width: preset.width,
         height: preset.height,
       });
-      canvas.renderAll();
+      canvas.renderAll?.();
     }
   }, [canvas]);
 

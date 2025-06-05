@@ -53,48 +53,47 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
     const loadExistingDesign = async () => {
       try {
-        // Additional safety check to ensure canvas is fully initialized
-        const canvasElement = canvas.getElement();
-        if (!canvasElement || !canvas.getContext) {
-          console.warn('Canvas element not ready, retrying...');
+        // Ensure the canvas context is available before attempting to load or clear
+        if (!canvas.contextContainer) {
+          console.warn('Canvas contextContainer not ready, delaying loadExistingDesign.');
           setTimeout(() => {
-            if (!isDesignLoaded) {
+            if (!isDesignLoaded && isCanvasReady && canvas && canvas.contextContainer) {
               loadExistingDesign();
+            } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.contextContainer) {
+              console.error('Canvas contextContainer still not ready after delay. Aborting load.');
+              setIsDesignLoaded(true);
             }
-          }, 100);
+          }, 150);
           return;
         }
 
-        // Try to load design from IndexedDB first
         const existingDesign = await designDB.getDesign(designId);
 
-        if (existingDesign && existingDesign.canvasData) {
+        if (existingDesign?.canvasData) {
           console.warn('Loading existing design from IndexedDB:', designId);
 
-          // Validate canvas data before loading
-          if (!existingDesign.canvasData.objects) {
+          const canvasDataToLoad = existingDesign.canvasData;
+          if (!canvasDataToLoad.objects) {
             console.warn('Canvas data is missing objects array, creating empty array');
-            existingDesign.canvasData.objects = [];
+            canvasDataToLoad.objects = [];
           }
 
-          // Load the canvas data with error handling
           try {
-            canvas.loadFromJSON(existingDesign.canvasData, () => {
+            canvas.loadFromJSON?.(canvasDataToLoad, () => {
               try {
-                // Set canvas dimensions and background if available
-                if (existingDesign.metadata.width && existingDesign.metadata.height) {
-                  canvas.setDimensions({
+                if (existingDesign.metadata?.width && existingDesign.metadata?.height) {
+                  canvas.setDimensions?.({
                     width: existingDesign.metadata.width,
                     height: existingDesign.metadata.height,
                   });
                 }
 
-                if (existingDesign.metadata.backgroundColor) {
-                  canvas.setBackgroundColor(existingDesign.metadata.backgroundColor, () => {
-                    canvas.renderAll();
+                if (existingDesign.metadata?.backgroundColor) {
+                  canvas.setBackgroundColor?.(existingDesign.metadata.backgroundColor, () => {
+                    canvas.renderAll?.();
                   });
                 } else {
-                  canvas.renderAll();
+                  canvas.renderAll?.();
                 }
 
                 setIsDesignLoaded(true);
@@ -111,21 +110,19 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           return;
         }
 
-        // Fallback: try to load from localStorage (for backward compatibility)
         const savedData = localStorage.getItem(`design_${designId}`);
         if (savedData) {
           try {
             const canvasData = JSON.parse(savedData);
             console.warn('Loading existing design from localStorage:', designId);
 
-            // Validate localStorage data
-            if (!canvasData.objects) {
+            if (!canvasData?.objects) {
               canvasData.objects = [];
             }
 
-            canvas.loadFromJSON(canvasData, () => {
+            canvas.loadFromJSON?.(canvasData, () => {
               try {
-                canvas.renderAll();
+                canvas.renderAll?.();
                 setIsDesignLoaded(true);
                 console.warn('Design loaded successfully from localStorage');
               } catch (renderError) {
@@ -135,25 +132,19 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
             });
           } catch (error) {
             console.error('Error parsing saved design data:', error);
-            setIsDesignLoaded(true); // Set as loaded even if parsing fails
+            setIsDesignLoaded(true);
           }
         } else {
-          // No existing design found, start with empty canvas
           console.warn('No existing design found, starting with empty canvas');
           setIsDesignLoaded(true);
         }
       } catch (error) {
         console.error('Error loading existing design:', error);
-        setIsDesignLoaded(true); // Set as loaded even if loading fails
+        setIsDesignLoaded(true);
       }
     };
 
-    // Add a small delay to ensure canvas is fully ready
-    const timeoutId = setTimeout(() => {
-      loadExistingDesign();
-    }, 50);
-
-    return () => clearTimeout(timeoutId);
+    loadExistingDesign();
   }, [canvas, isCanvasReady, designId, isDesignLoaded]);
 
   // Auto-save and real-time state management
@@ -193,18 +184,22 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Handle link double-click to show edit popup
   const handleLinkDoubleClick = useCallback((linkObject: any, _event: any) => {
-    if (!canvas) {
+    if (!canvas || !linkObject) {
       return;
     }
 
-    const canvasElement = canvas.getElement();
+    const canvasElement = canvas.getElement?.();
+    if (!canvasElement) {
+      console.warn('Canvas element not found for link positioning.');
+      return;
+    }
     const rect = canvasElement.getBoundingClientRect();
-    const zoom = canvas.getZoom();
+    const zoom = canvas.getZoom?.() || 1;
 
     // Calculate position relative to viewport
     const position = {
-      x: rect.left + (linkObject.left + linkObject.width / 2) * zoom,
-      y: rect.top + (linkObject.top + linkObject.height) * zoom,
+      x: rect.left + ((linkObject.left || 0) + (linkObject.width || 0) / 2) * zoom,
+      y: rect.top + ((linkObject.top || 0) + (linkObject.height || 0)) * zoom,
     };
 
     setLinkEditPopup({
@@ -216,7 +211,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Update link properties
   const handleUpdateLink = useCallback((updates: { url?: string; text?: string }) => {
-    if (!linkEditPopup.linkObject || !canvas) {
+    if (!linkEditPopup.linkObject || !canvas || !updates) {
       return;
     }
 
@@ -224,18 +219,18 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
     // Update link data
     const linkData = {
-      ...linkObject.linkData,
+      ...(linkObject.linkData || {}),
       ...updates,
     };
 
-    linkObject.set({ linkData });
+    linkObject.set?.({ linkData });
 
     // If text changed, update the displayed text
     if (updates.text !== undefined) {
-      linkObject.set({ text: updates.text });
+      linkObject.set?.({ text: updates.text });
     }
 
-    canvas.renderAll();
+    canvas.renderAll?.();
   }, [linkEditPopup.linkObject, canvas]);
 
   // Close link edit popup
@@ -254,7 +249,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     }
 
     const handleDoubleClick = (e: any) => {
-      const target = e.target;
+      const target = e?.target;
       if (target && target.elementType === 'link') {
         handleLinkDoubleClick(target, e);
       }
@@ -264,7 +259,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
     // Cleanup function
     return () => {
-      canvas.off('mouse:dblclick', handleDoubleClick);
+      canvas.off?.('mouse:dblclick', handleDoubleClick);
     };
   }, [canvas, handleLinkDoubleClick]);
 
@@ -299,9 +294,11 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
     // Cleanup function
     return () => {
-      events.forEach((event) => {
-        canvas.off(event, handleCanvasUpdate);
-      });
+      if (canvas) {
+        events.forEach((event) => {
+          canvas.off?.(event, handleCanvasUpdate);
+        });
+      }
     };
   }, [canvas]);
 

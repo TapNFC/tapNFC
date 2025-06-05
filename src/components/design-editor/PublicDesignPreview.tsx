@@ -2,12 +2,19 @@
 
 import type { DesignData } from '@/lib/indexedDB';
 import { AlertTriangle, Eye, Share2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { designDB } from '@/lib/indexedDB';
 
 type PublicDesignPreviewProps = {
   designId: string;
+};
+
+// Define a type for Fabric-like gradient objects that might be passed
+type FabricGradient = {
+  type?: string;
+  colorStops?: Array<{ offset: number; color: string }>;
+  coords?: { x1?: number; y1?: number; x2?: number; y2?: number };
 };
 
 // Create a demo design fallback with interactive elements
@@ -121,6 +128,28 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
   const [designData, setDesignData] = useState<DesignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const effectiveBackgroundStyle = useMemo(() => {
+    const backgroundSource = designData?.metadata?.backgroundColor || designData?.canvasData?.background;
+    if (typeof backgroundSource === 'string') {
+      return { backgroundColor: backgroundSource };
+    } else if (
+      backgroundSource
+      && typeof backgroundSource === 'object'
+      && 'colorStops' in backgroundSource // More explicit check
+      && Array.isArray(backgroundSource.colorStops)
+      && backgroundSource.colorStops.length > 0 // Ensure not empty
+    ) {
+      const gradient = backgroundSource as FabricGradient; // Type assertion is okay here after checks
+      const direction = '135deg';
+      // Ensure colorStops is definitely an array before mapping
+      const stops = (gradient.colorStops || [])
+        .map(stop => `${stop.color} ${stop.offset * 100}%`)
+        .join(', ');
+      return { background: `linear-gradient(${direction}, ${stops})` };
+    }
+    return { backgroundColor: '#ffffff' }; // Fallback
+  }, [designData]);
 
   // Load design data from IndexedDB
   useEffect(() => {
@@ -573,7 +602,7 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
             ref={containerRef}
             className="relative size-full"
             style={{
-              backgroundColor: designData.metadata.backgroundColor || '#ffffff',
+              ...effectiveBackgroundStyle, // Apply the dynamic background style
               width: `${designData.metadata.width}px`,
               height: `${designData.metadata.height}px`,
               position: 'relative',

@@ -1,5 +1,6 @@
 'use client';
 
+import type { BackgroundInput } from './hooks/useFabricOperations';
 import {
   ChevronRight,
   Image,
@@ -167,8 +168,8 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
   });
 
   // Memoize callbacks to prevent recreation on every render
-  const memoizedHandleBackgroundChange = useCallback((color: string) => {
-    handleBackgroundChange(color);
+  const memoizedHandleBackgroundChange = useCallback((background: BackgroundInput) => {
+    handleBackgroundChange(background);
   }, [handleBackgroundChange]);
 
   const handleSectionClick = useCallback((sectionId: string) => {
