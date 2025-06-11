@@ -76,411 +76,107 @@ export function RealTimePreview({
   }, [backgroundColor]);
 
   // Memoize the heavy renderElements function to prevent recreation on every render
-  const renderedElements = useMemo(() => {
-    if (!canvasState?.objects || !Array.isArray(canvasState.objects) || canvasState.objects.length === 0) {
-      return [];
+  const renderCanvasObjects = useMemo(() => {
+    if (!canvasState?.objects || !Array.isArray(canvasState.objects)) {
+      return null;
     }
 
     return canvasState.objects.map((obj: any, index: number) => {
       if (!obj) {
         return null;
-      } // Null check for obj itself
+      }
 
-      const objLeft = obj.left || 0;
-      const objTop = obj.top || 0;
-      const objWidth = (obj.width || 0);
-      const objHeight = (obj.height || 0);
-      const objScaleX = obj.scaleX || 1;
-      const objScaleY = obj.scaleY || 1;
+      // Common properties that apply to most objects
+      const left = obj.left || 0;
+      const top = obj.top || 0;
+      const width = (obj.width || 0) * (obj.scaleX || 1);
+      const height = (obj.height || 0) * (obj.scaleY || 1);
       const angle = obj.angle || 0;
-      const opacity = obj.opacity !== undefined ? obj.opacity : 1;
 
-      // Calculate actual dimensions after scaling, these are the dimensions on the *original* canvas
-      const actualWidth = objWidth * objScaleX;
-      const actualHeight = objHeight * objScaleY;
-
-      // Base styles for all elements - positions and dimensions are now relative to the original canvas,
-      // the `scale` will be applied by the parent container's transform.
       const baseStyle: React.CSSProperties = {
         position: 'absolute',
-        left: `${objLeft}px`,
-        top: `${objTop}px`,
-        width: `${actualWidth}px`,
-        height: `${actualHeight}px`,
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`,
         transform: `rotate(${angle}deg)`,
-        transformOrigin: 'center center', // Fabric.js typically uses center origin for rotation
-        opacity,
-        zIndex: index + 1,
-        pointerEvents: 'none', // Important for preview
-        visibility: obj.visible !== false ? ('visible' as const) : ('hidden' as const),
+        transformOrigin: 'center center',
+        opacity: obj.opacity !== undefined ? obj.opacity : 1,
+        zIndex: index + 1, // Stacking order based on array index (fabric's default order)
       };
 
-      // Handle Button elements
-      if (obj.elementType === 'button' && obj.buttonData) {
-        const buttonData = obj.buttonData;
+      // Handle Text elements
+      if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
+        const fontSize = obj.fontSize || 16;
+        const textStyle: React.CSSProperties = {
+          ...baseStyle,
+          color: obj.fill || '#000000',
+          fontFamily: obj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          fontSize: `${fontSize}px`,
+          fontWeight: obj.fontWeight || 'normal',
+          textAlign: obj.textAlign || 'left',
+          whiteSpace: 'pre-wrap',
+          lineHeight: obj.lineHeight || 1.2,
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'flex-start',
+        };
+
         return (
-          <div
-            key={index}
-            style={{
-              ...baseStyle,
-              // Override width/height if buttonData has padding, as baseStyle uses scaled dimensions
-              // HTML button/div with text will auto-size based on content and padding.
-              // Forcing width/height here might conflict with padding.
-              // Let's rely on the width/height from baseStyle for now.
-              backgroundColor: buttonData.backgroundColor || '#3b82f6',
-              color: buttonData.textColor || '#ffffff',
-              border: `${buttonData.borderWidth || 1}px solid ${buttonData.borderColor || 'transparent'}`,
-              borderRadius: `${buttonData.borderRadius || 8}px`,
-              fontSize: `${buttonData.fontSize || 14}px`,
-              fontWeight: buttonData.fontWeight || 'normal',
-              fontFamily: buttonData.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-              padding: `${buttonData.padding?.top || 8}px ${buttonData.padding?.right || 16}px ${buttonData.padding?.bottom || 8}px ${buttonData.padding?.left || 16}px`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxSizing: 'border-box',
-              cursor: 'default', // No interaction in preview
-            }}
-          >
-            {buttonData.text || 'Button'}
+          <div key={`canvas-text-${obj.id || index}`} style={textStyle}>
+            {obj.text || ''}
           </div>
         );
       }
 
-      // Handle Link elements
-      if (obj.elementType === 'link' && obj.linkData) {
-        const linkData = obj.linkData;
-        return (
-          <div
-            key={index}
-            style={{
-              ...baseStyle,
-              color: linkData.color || '#3b82f6',
-              fontSize: `${linkData.fontSize || 16}px`,
-              fontWeight: linkData.fontWeight || 'normal',
-              fontFamily: linkData.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-              textDecoration: linkData.textDecoration || 'underline',
-              display: 'flex', // Use flex to better align text
-              alignItems: 'center', // Vertically center
-              justifyContent: 'flex-start', // Align text to start
-              boxSizing: 'border-box',
-              cursor: 'default',
-            }}
-          >
-            {linkData.text || 'Link'}
-          </div>
-        );
-      }
-
-      // Handle Rectangle shapes
+      // Handle Rect elements
       if (obj.type === 'rect') {
         return (
           <div
-            key={index}
+            key={`canvas-rect-${obj.id || index}`}
             style={{
               ...baseStyle,
               backgroundColor: obj.fill || '#cccccc',
+              borderRadius: `${obj.rx || 0}px`,
               border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
-              borderRadius: `${obj.rx || 0}px`, // rx and ry for rounded corners
               boxSizing: 'border-box',
             }}
           />
         );
       }
 
-      // Handle Circle shapes
+      // Handle Circle elements
       if (obj.type === 'circle') {
-        // For circles, FabricJS left/top is center of bounding box. HTML needs top-left.
-        // However, baseStyle already uses obj.left and obj.top.
-        // The width/height in baseStyle are diameter.
         return (
           <div
-            key={index}
+            key={`canvas-circle-${obj.id || index}`}
             style={{
               ...baseStyle,
               backgroundColor: obj.fill || '#cccccc',
-              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
               borderRadius: '50%',
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
               boxSizing: 'border-box',
             }}
           />
         );
       }
 
-      // Handle Triangle shapes
+      // Handle Triangle elements
       if (obj.type === 'triangle') {
-        // Triangles with borders are tricky with CSS. This creates a filled triangle.
-        // For CSS triangles, width and height are used differently in border properties.
-        // We'll use a simple div with background for fill, border handling might be imperfect.
+        // For triangle, we'll use a div with a pseudo-element for the triangle shape
+        // Since CSS can't directly render triangles, we'd use a clever technique
+        // Here we're using a simplified approach with just coloring the div
         return (
           <div
-            key={index}
+            key={`canvas-triangle-${obj.id || index}`}
             style={{
               ...baseStyle,
-              width: 0, // CSS triangle trick
-              height: 0, // CSS triangle trick
-              borderLeft: `${actualWidth / 2}px solid transparent`,
-              borderRight: `${actualWidth / 2}px solid transparent`,
-              borderBottom: `${actualHeight}px solid ${obj.fill || '#cccccc'}`,
-              // Reset background and border from baseStyle if they interfere
-              backgroundColor: 'transparent',
-              border: 'none',
+              backgroundColor: obj.fill || '#cccccc',
+              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+              boxSizing: 'border-box',
             }}
           />
-        );
-      }
-
-      // Handle Polygon shapes (including diamond)
-      if (obj.type === 'polygon') {
-        const isStandardDiamond = obj.shapeType === 'diamond'
-          || (obj.points && obj.points.length === 4);
-
-        if (isStandardDiamond) {
-          // Render diamond using CSS transform
-          return (
-            <div
-              key={index}
-              style={{
-                ...baseStyle,
-                backgroundColor: obj.fill || '#cccccc',
-                border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
-                transform: `${baseStyle.transform} rotate(45deg)`,
-                borderRadius: '4px', // Small radius for better appearance
-                boxSizing: 'border-box',
-              }}
-            />
-          );
-        } else {
-          // For other polygons, use SVG for accurate rendering
-          const svgPath = `${obj.points?.map((point: any, i: number) =>
-            `${i === 0 ? 'M' : 'L'} ${point?.x || 0} ${point?.y || 0}`,
-          ).join(' ') || ''} Z`;
-
-          return (
-            <div
-              key={index}
-              style={{
-                ...baseStyle,
-                overflow: 'visible',
-              }}
-            >
-              <svg
-                width={actualWidth}
-                height={actualHeight}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  height: '100%',
-                }}
-              >
-                <path
-                  d={svgPath}
-                  fill={obj.fill || '#cccccc'}
-                  stroke={obj.stroke || 'transparent'}
-                  strokeWidth={obj.strokeWidth || 0}
-                />
-              </svg>
-            </div>
-          );
-        }
-      }
-
-      // Handle Line shapes
-      if (obj.type === 'line') {
-        const x1 = obj.x1 || 0;
-        const y1 = obj.y1 || 0;
-        const x2 = obj.x2 || actualWidth;
-        const y2 = obj.y2 || 0;
-
-        return (
-          <div
-            key={index}
-            style={{
-              ...baseStyle,
-              overflow: 'visible',
-            }}
-          >
-            <svg
-              width={actualWidth}
-              height={actualHeight}
-              style={{
-                display: 'block',
-                width: '100%',
-                height: '100%',
-              }}
-            >
-              <line
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke={obj.stroke || '#000000'}
-                strokeWidth={obj.strokeWidth || 1}
-                strokeLinecap={obj.strokeLineCap || 'round'}
-              />
-            </svg>
-          </div>
-        );
-      }
-
-      // Handle custom shape elements (from our shape system)
-      if (obj.elementType === 'shape' && obj.shapeData) {
-        const shapeData = obj.shapeData;
-
-        switch (shapeData.type) {
-          case 'rectangle':
-            return (
-              <div
-                key={index}
-                style={{
-                  ...baseStyle,
-                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
-                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
-                  borderRadius: `${obj.rx || 8}px`,
-                  boxSizing: 'border-box',
-                }}
-              />
-            );
-
-          case 'circle':
-            return (
-              <div
-                key={index}
-                style={{
-                  ...baseStyle,
-                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
-                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
-                  borderRadius: '50%',
-                  boxSizing: 'border-box',
-                }}
-              />
-            );
-
-          case 'triangle':
-            return (
-              <div
-                key={index}
-                style={{
-                  ...baseStyle,
-                  width: 0,
-                  height: 0,
-                  borderLeft: `${actualWidth / 2}px solid transparent`,
-                  borderRight: `${actualWidth / 2}px solid transparent`,
-                  borderBottom: `${actualHeight}px solid ${shapeData.fill || obj.fill || '#cccccc'}`,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                }}
-              />
-            );
-
-          case 'diamond':
-            return (
-              <div
-                key={index}
-                style={{
-                  ...baseStyle,
-                  backgroundColor: shapeData.fill || obj.fill || '#cccccc',
-                  border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
-                  transform: `${baseStyle.transform} rotate(45deg)`,
-                  borderRadius: '4px',
-                  boxSizing: 'border-box',
-                }}
-              />
-            );
-
-          case 'line':
-            return (
-              <div
-                key={index}
-                style={{
-                  ...baseStyle,
-                  backgroundColor: shapeData.stroke || obj.stroke || '#000000',
-                  border: 'none',
-                  height: `${shapeData.strokeWidth || obj.strokeWidth || 2}px`,
-                  borderRadius: '1px',
-                }}
-              />
-            );
-
-          default:
-            break;
-        }
-      }
-
-      // Handle Text elements (i-text, text, textbox)
-      if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
-        const fontSize = obj.fontSize || 16;
-        // Fabric's (left, top) can be affected by originX, originY.
-        // PreviewButton's logic for text was more accurate.
-        let adjustedTop = objTop;
-        let adjustedLeft = objLeft; // Start with object's left
-
-        // Handle originX for left positioning (PreviewButton doesn't explicitly do this for `left`)
-        // Fabric's default originX for IText is 'left'.
-        // If originX is 'center', left is the center. For HTML, we need the actual left edge.
-        if (obj.originX === 'center') {
-          adjustedLeft = objLeft - actualWidth / 2;
-        } else if (obj.originX === 'right') {
-          adjustedLeft = objLeft - actualWidth;
-        }
-        // If originX is 'left', objLeft is already the left edge.
-
-        // Handle originY and textBaseline for top positioning
-        // This logic is similar to PreviewButton
-        if (obj.originY === 'center') {
-          adjustedTop = objTop - actualHeight / 2;
-        } else if (obj.originY === 'bottom') {
-          adjustedTop = objTop - actualHeight;
-        }
-        // If originY is 'top', objTop is already the top edge.
-
-        // Further baseline adjustment for text (inspired by PreviewButton)
-        // Note: Fabric's `top` for text also depends on `textBaseline`
-        // This might need fine-tuning depending on how Fabric calculates `obj.top` with `textBaseline`
-        const textBaseline = obj.textBaseline || 'alphabetic';
-        if (textBaseline === 'alphabetic' || textBaseline === 'baseline') {
-          // Approximation: Fabric's top is baseline; HTML div top is top.
-          // No major adjustment needed if originY is 'top'.
-          // If originY is center/bottom, it's already handled.
-        } else if (textBaseline === 'middle') {
-          // adjustedTop += fontSize * 0.1; // Example fine-tune
-        }
-
-        const textStyle: React.CSSProperties = {
-          ...baseStyle,
-          left: `${adjustedLeft}px`,
-          top: `${adjustedTop}px`,
-          // For text, width/height from baseStyle might need to be 'auto'
-          // if the text content dictates the size. FabricJS text objects can have fixed width/height (Textbox)
-          // or be sized by content (IText).
-          width: obj.type === 'textbox' ? `${actualWidth}px` : 'auto',
-          height: obj.type === 'textbox' ? `${actualHeight}px` : 'auto',
-          color: obj.fill || '#000000',
-          fontFamily: obj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', // Match RealTimePreview default
-          fontSize: `${fontSize}px`, // Use original font size, parent scales
-          fontWeight: obj.fontWeight || 'normal',
-          fontStyle: obj.fontStyle || 'normal',
-          textAlign: obj.textAlign || 'left',
-          textDecoration: obj.underline ? 'underline' : obj.linethrough ? 'line-through' : 'none',
-          lineHeight: obj.lineHeight || 1.2,
-          whiteSpace: 'pre-wrap', // Important for respecting newlines in text
-          boxSizing: 'border-box',
-          display: 'flex', // Helps with vertical alignment if needed
-          alignItems: 'flex-start', // Default for text
-          // justifyContent: handled by textAlign
-        };
-        if (textStyle.textAlign === 'center') {
-          textStyle.justifyContent = 'center';
-        } else if (textStyle.textAlign === 'right') {
-          textStyle.justifyContent = 'flex-end';
-        } else {
-          textStyle.justifyContent = 'flex-start';
-        }
-
-        return (
-          <div key={index} style={textStyle}>
-            {obj.text || ''}
-          </div>
         );
       }
 
@@ -488,7 +184,7 @@ export function RealTimePreview({
       if (obj.type === 'image') {
         return (
           <img
-            key={index}
+            key={`canvas-image-${obj.id || index}`}
             src={obj.src || ''}
             alt="Design element"
             style={{
@@ -509,7 +205,7 @@ export function RealTimePreview({
         // The baseStyle applies to the group container.
         return (
           <div
-            key={index}
+            key={`canvas-group-${obj.id || index}`}
             style={{
               ...baseStyle,
               // Group's own background/border usually transparent unless specified
@@ -543,7 +239,7 @@ export function RealTimePreview({
               if (groupObj.type === 'rect') {
                 return (
                   <div
-                    key={`${index}-${groupIndex}`}
+                    key={`group-${obj.id || index}-rect-${groupObj.id || groupIndex}`}
                     style={{
                       ...groupObjStyle,
                       backgroundColor: groupObj.fill || '#cccccc',
@@ -557,7 +253,7 @@ export function RealTimePreview({
                 const groupTextFontSize = groupObj.fontSize || 16;
                 return (
                   <div
-                    key={`${index}-${groupIndex}`}
+                    key={`group-${obj.id || index}-text-${groupObj.id || groupIndex}`}
                     style={{
                       ...groupObjStyle,
                       color: groupObj.fill || '#000000',
@@ -578,7 +274,7 @@ export function RealTimePreview({
               } else if (groupObj.type === 'image') {
                 return (
                   <img
-                    key={`${index}-${groupIndex}`}
+                    key={`group-${obj.id || index}-image-${groupObj.id || groupIndex}`}
                     src={groupObj.src || ''}
                     alt="Grouped element"
                     style={{
@@ -599,7 +295,7 @@ export function RealTimePreview({
       // Default fallback (simple div with background) - useful for unknown types or basic shapes
       return (
         <div
-          key={index}
+          key={`canvas-element-${obj.id || index}`}
           style={{
             ...baseStyle,
             backgroundColor: obj.fill || '#cccccc', // Default fill
@@ -719,9 +415,9 @@ export function RealTimePreview({
               transformOrigin: 'top left',
             }}
           >
-            {renderedElements.length > 0
+            {renderCanvasObjects.length > 0
               ? (
-                  renderedElements
+                  renderCanvasObjects
                 )
               : (
                   <div className="flex h-full items-center justify-center text-gray-400">

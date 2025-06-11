@@ -109,7 +109,7 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
             ? (
                 <div className="space-y-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 rounded-lg border p-3">
+                    <div key={`loading-skeleton-${i}`} className="flex items-center space-x-4 rounded-lg border p-3">
                       <div className="h-12 w-16 animate-pulse rounded bg-gray-200"></div>
                       <div className="flex-1">
                         <div className="h-4 w-32 animate-pulse rounded bg-gray-200"></div>

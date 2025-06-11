@@ -137,7 +137,7 @@ export function DataTable<T extends Record<string, any>>({
             </span>
             {bulkActions.map((action, index) => (
               <Button
-                key={index}
+                key={`bulk-action-${index}`}
                 variant={action.variant === 'destructive' ? 'danger' : 'secondary'}
                 size="sm"
                 onClick={() => action.onClick(selectedRowData)}

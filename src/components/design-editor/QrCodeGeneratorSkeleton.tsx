@@ -39,7 +39,7 @@ export function QrCodeGeneratorSkeleton() {
                   <div className="absolute inset-4 grid grid-cols-8 gap-1">
                     {Array.from({ length: 64 }).map((_, index) => (
                       <div
-                        key={index}
+                        key={`qr-skeleton-${index}`}
                         className={`rounded-sm ${Math.random() > 0.5 ? 'bg-gray-400' : 'bg-transparent'} opacity-40`}
                       >
                       </div>
@@ -56,14 +56,12 @@ export function QrCodeGeneratorSkeleton() {
             </div>
 
             {/* QR Code Samples Skeleton */}
-            <div className="mb-6">
-              <div className="mb-3">
-                <div className="h-5 w-40 animate-pulse rounded bg-gray-200"></div>
-              </div>
+            <div className="mb-4">
+              <div className="mb-3 h-4 w-40 animate-pulse rounded bg-gray-200"></div>
               <div className="flex space-x-3 overflow-x-auto pb-2">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div
-                    key={index}
+                    key={`qr-sample-skeleton-${index}`}
                     className="size-20 shrink-0 animate-pulse rounded-lg border border-gray-200 bg-gray-100 p-2"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
@@ -91,16 +89,15 @@ export function QrCodeGeneratorSkeleton() {
             </div>
 
             {/* Action Buttons Skeleton */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="relative h-10 overflow-hidden rounded-md bg-blue-200">
-                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-              </div>
-              <div className="relative h-10 overflow-hidden rounded-md bg-gray-200">
-                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite_0.5s] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-              </div>
-              <div className="relative h-10 overflow-hidden rounded-md bg-gray-200">
-                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite_1s] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-              </div>
+            <div className="flex flex-wrap gap-4 pt-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`action-button-skeleton-${index}`}
+                  className="h-10 w-32 animate-pulse rounded-md bg-gray-200"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -119,8 +116,8 @@ export function QrCodeGeneratorSkeleton() {
             </div>
 
             <div className="space-y-4">
-              {['Title', 'Description'].map((_, i) => (
-                <div key={i} className="space-y-2">
+              {['Title', 'Description'].map((label, i) => (
+                <div key={`input-field-${label}-${i}`} className="space-y-2">
                   <div className="relative h-4 w-20 overflow-hidden rounded bg-gray-200">
                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" style={{ animationDelay: `${i * 0.2}s` }}></div>
                   </div>
@@ -200,6 +197,18 @@ export function QrCodeGeneratorSkeleton() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Shape Skeleton */}
+      <div className="grid animate-pulse grid-cols-2 gap-2">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={`shape-skeleton-${index}`}
+            className="h-12 rounded-md bg-gray-200"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -27,6 +27,8 @@ export type DesignData = {
     backgroundColor: string;
     title?: string;
     description?: string;
+    imageUrl?: string;
+    designType?: string;
   };
   createdAt: Date;
   updatedAt: Date;

@@ -1,9 +1,9 @@
 'use client';
 
 import { Database, Folder, Plus, Sparkles, Star, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { DesignTypeDialog } from '@/components/design-editor/components/dialogs/DesignTypeDialog';
 import { Button } from '@/components/ui/button';
 import { designDB } from '@/lib/indexedDB';
 import { createSampleDesigns } from '@/lib/sampleDesigns';
@@ -19,6 +19,7 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
     recentCount: 0,
   });
   const [showSampleButton, setShowSampleButton] = useState(false);
+  const [designTypeDialogOpen, setDesignTypeDialogOpen] = useState(false);
 
   const loadStats = async () => {
     try {
@@ -142,20 +143,28 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
             )}
 
             {/* Create Button */}
-            <Link href={`/${locale}/design/new`}>
-              <Button className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 px-8 py-4 text-lg shadow-xl shadow-blue-500/25 transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 hover:shadow-2xl hover:shadow-blue-500/30">
-                {/* Button shine effect */}
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
+            <Button
+              onClick={() => setDesignTypeDialogOpen(true)}
+              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 px-8 py-4 text-lg shadow-xl shadow-blue-500/25 transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 hover:shadow-2xl hover:shadow-blue-500/30"
+            >
+              {/* Button shine effect */}
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
 
-                <div className="relative flex items-center gap-3">
-                  <Plus className="size-6" />
-                  <span className="font-semibold">Create New Design</span>
-                </div>
-              </Button>
-            </Link>
+              <div className="relative flex items-center gap-3">
+                <Plus className="size-6" />
+                <span className="font-semibold">Create New Design</span>
+              </div>
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Design Type Dialog */}
+      <DesignTypeDialog
+        open={designTypeDialogOpen}
+        onOpenChange={setDesignTypeDialogOpen}
+        locale={locale}
+      />
     </div>
   );
 }

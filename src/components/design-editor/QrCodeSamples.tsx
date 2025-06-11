@@ -1,6 +1,34 @@
 'use client';
 
-import { QrCode } from 'lucide-react';
+import { Check, QrCode } from 'lucide-react';
+import {
+  FaApple,
+  FaBluetoothB,
+  FaCar,
+  FaDiscord,
+  FaEnvelope,
+  FaFacebook,
+  FaFacebookMessenger,
+  FaHome,
+  FaInstagram,
+  FaLinkedin,
+  FaPaypal,
+  FaPinterest,
+  FaReddit,
+  FaSnapchat,
+
+  FaSoundcloud,
+  FaSpotify,
+  FaTelegram,
+  FaTiktok,
+  FaWeixin,
+  FaWhatsapp,
+  FaWifi,
+  FaYelp,
+  FaYoutube,
+} from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
+import { SiGoogle, SiTripadvisor, SiTrustpilot, SiVenmo } from 'react-icons/si';
 
 export type QrSampleProps = {
   id: string;
@@ -18,8 +46,85 @@ const QrCodePlaceholder = ({ size = 40 }: { size?: number }) => (
 );
 
 // The center position for QR codes within the SVG wrapper
-const qrX = 20;
-const qrY = 20;
+const qrX = 15;
+const qrY = 15;
+
+const createSocialStyle = ({
+  id,
+  name,
+  color,
+  IconComponent,
+  bgColor = 'white',
+  qrBg = 'transparent',
+}: {
+  id: string;
+  name: string;
+  color: string;
+  IconComponent: React.ElementType;
+  bgColor?: string;
+  qrBg?: string;
+}): QrSampleProps => ({
+  id,
+  name,
+  svgWrapper: qrCodeElement => (
+    <svg viewBox="-5 -5 90 90" className="size-full">
+      <defs>
+        <filter id={`shadow_${id}`} x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="1" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.15" />
+        </filter>
+      </defs>
+      <rect
+        x="5"
+        y="10"
+        width="70"
+        height="70"
+        rx="15"
+        stroke={color}
+        strokeWidth="3"
+        fill={bgColor}
+        filter={`url(#shadow_${id})`}
+      />
+      {qrBg !== 'transparent' && <rect x="14" y="19" width="52" height="52" rx="4" fill={qrBg} />}
+      <g transform={`translate(${qrX}, ${qrY + 5})`}>{qrCodeElement}</g>
+      <circle cx="40" cy="10" r="10" fill={bgColor} />
+      <g transform="translate(32, 2)">
+        <IconComponent color={color} size={16} />
+      </g>
+    </svg>
+  ),
+});
+
+const socialStylesData = [
+  { id: 'instagram-style', name: 'Instagram', color: '#833ab4', IconComponent: FaInstagram },
+  { id: 'facebook-style', name: 'Facebook', color: '#1877F2', IconComponent: FaFacebook },
+  { id: 'whatsapp-style', name: 'WhatsApp', color: '#25D366', IconComponent: FaWhatsapp },
+  { id: 'messenger-style', name: 'Messenger', color: '#00B2FF', IconComponent: FaFacebookMessenger },
+  { id: 'x-style', name: 'X (Twitter)', color: '#000000', IconComponent: FaXTwitter },
+  { id: 'snapchat-style', name: 'Snapchat', color: '#FFFC00', IconComponent: FaSnapchat, bgColor: '#1A1A1A', qrBg: 'white' },
+  { id: 'tiktok-style', name: 'TikTok', color: '#000000', IconComponent: FaTiktok },
+  { id: 'linkedin-style', name: 'LinkedIn', color: '#0A66C2', IconComponent: FaLinkedin },
+  { id: 'youtube-style', name: 'YouTube', color: '#FF0000', IconComponent: FaYoutube },
+  { id: 'spotify-style', name: 'Spotify', color: '#1DB954', IconComponent: FaSpotify },
+  { id: 'soundcloud-style', name: 'SoundCloud', color: '#ff7700', IconComponent: FaSoundcloud },
+  { id: 'apple-music-style', name: 'Apple Music', color: '#FF2D55', IconComponent: FaApple },
+  { id: 'paypal-style', name: 'PayPal', color: '#00457C', IconComponent: FaPaypal },
+  { id: 'venmo-style', name: 'Venmo', color: '#008CFF', IconComponent: SiVenmo },
+  { id: 'telegram-style', name: 'Telegram', color: '#24A1DE', IconComponent: FaTelegram },
+  { id: 'discord-style', name: 'Discord', color: '#5865F2', IconComponent: FaDiscord },
+  { id: 'pinterest-style', name: 'Pinterest', color: '#E60023', IconComponent: FaPinterest },
+  { id: 'reddit-style', name: 'Reddit', color: '#FF4500', IconComponent: FaReddit },
+  { id: 'wechat-style', name: 'WeChat', color: '#07C160', IconComponent: FaWeixin },
+  { id: 'google-style', name: 'Google', color: '#4285F4', IconComponent: SiGoogle },
+  { id: 'trustpilot-style', name: 'Trustpilot', color: '#00B67A', IconComponent: SiTrustpilot },
+  { id: 'yelp-style', name: 'Yelp', color: '#D32323', IconComponent: FaYelp },
+  { id: 'tripadvisor-style', name: 'Tripadvisor', color: '#34E0A1', IconComponent: SiTripadvisor },
+  { id: 'wifi-style', name: 'WiFi', color: '#000000', IconComponent: FaWifi },
+  { id: 'bluetooth-style', name: 'Bluetooth', color: '#000000', IconComponent: FaBluetoothB },
+  { id: 'email-style', name: 'Email', color: '#000000', IconComponent: FaEnvelope },
+  { id: 'home-style', name: 'Home', color: '#000000', IconComponent: FaHome },
+  { id: 'car-style', name: 'Car', color: '#000000', IconComponent: FaCar },
+  { id: 'apple-style', name: 'Apple', color: '#000000', IconComponent: FaApple },
+];
 
 export const sampleQrDesigns: QrSampleProps[] = [
   {
@@ -387,6 +492,7 @@ export const sampleQrDesigns: QrSampleProps[] = [
       </svg>
     ),
   },
+  ...socialStylesData.map(createSocialStyle),
 ];
 
 type QrCodeSamplesProps = {
@@ -416,31 +522,33 @@ export function QrCodeSamples({ onSampleSelect, currentSelectedId }: QrCodeSampl
   };
 
   return (
-    <div className="mb-6">
-      <h4 className="mb-3 text-center font-semibold text-gray-700">Choose a Style</h4>
-      <div className="grid grid-cols-4 gap-3 gap-y-6 sm:grid-cols-4 lg:grid-cols-5">
-        {sampleQrDesigns.map((sample) => {
-          const isSelected = currentSelectedId === sample.id;
-          return (
-            <button
-              key={sample.id}
-              type="button"
-              title={sample.name}
-              className={`group relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 bg-white p-1.5 shadow-sm transition-all duration-200 hover:border-blue-400 hover:shadow-md focus:outline-none ${isSelected ? 'border-blue-600 shadow-lg ring-2 ring-blue-300' : 'border-gray-200'}`}
-              onClick={() => handleSelect(sample)}
-            >
-              <div className="absolute inset-0 flex size-full scale-90 items-center justify-center p-0.5 transition-transform group-hover:scale-100">
-                {renderSampleContent(sample)}
-              </div>
-              <span
-                className={`absolute inset-x-0 -bottom-5 py-0.5 text-center text-[10px] font-medium transition-all duration-200 ${isSelected ? 'text-blue-700 opacity-100' : 'text-gray-600 opacity-0 group-hover:opacity-100'}`}
-              >
-                {sample.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="mb-4 space-y-4">
+      {sampleQrDesigns.map(sample => (
+        <button
+          key={`qr-sample-${sample.id}`}
+          type="button"
+          title={sample.name}
+          className={`relative flex w-full items-center gap-2 rounded-lg border p-2 transition-all duration-200 ${
+            sample.id === currentSelectedId
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+          }`}
+          onClick={() => handleSelect(sample)}
+        >
+          <div className="size-12 shrink-0 overflow-hidden rounded">
+            {renderSampleContent(sample)}
+          </div>
+          <span className="text-sm font-medium text-gray-700">
+            {sample.name}
+          </span>
+          {sample.id === currentSelectedId && (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-blue-500 p-0.5">
+              <Check className="size-3 text-white" />
+            </div>
+          )}
+        </button>
+      ),
+      )}
     </div>
   );
 }
