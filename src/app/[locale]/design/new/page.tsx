@@ -1,40 +1,26 @@
-'use client';
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { NewDesignClient } from '@/components/design-editor/new-design-client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { generateDesignId } from '@/lib/indexedDB';
-
-type NewDesignPageProps = {
-  params: {
-    locale: string;
-  };
+export const metadata: Metadata = {
+  title: 'Create New Design',
+  description: 'Start creating a new design template',
 };
 
-export default function NewDesignPage({ params }: NewDesignPageProps) {
-  const { locale } = params;
-  const router = useRouter();
-
-  useEffect(() => {
-    // Generate a unique design ID using our utility function
-    const designId = generateDesignId();
-
-    // Redirect to the design editor with the new ID
-    router.push(`/${locale}/design/${designId}`);
-  }, [locale, router]);
+export default async function NewDesignPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-pulse text-center">
-        <div className="text-xl font-medium">Creating your new design...</div>
-        <div className="mt-2 text-sm text-gray-500">You will be redirected shortly</div>
+    <Suspense fallback={(
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="text-xl font-medium">Preparing your design canvas...</div>
+          <div className="mt-2 text-sm text-gray-500">Please wait</div>
+        </div>
       </div>
-    </div>
+    )}
+    >
+      <NewDesignClient locale={locale} />
+    </Suspense>
   );
-}
-
-export async function generateMetadata() {
-  return {
-    title: 'Create New Design',
-    description: 'Start creating a new design template',
-  };
 }

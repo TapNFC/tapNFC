@@ -2,10 +2,8 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BarChart3,
   ChevronLeft,
   ChevronRight,
-  HelpCircle,
   LayoutDashboard,
   Palette,
   QrCode,
@@ -56,13 +54,6 @@ const navigationGroups: NavGroup[] = [
         href: '/dashboard/qr-codes',
         icon: <QrCode className="size-5" />,
       },
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        href: '/dashboard/analytics',
-        icon: <BarChart3 className="size-5" />,
-        badge: '2',
-      },
     ],
   },
   {
@@ -93,12 +84,6 @@ const navigationGroups: NavGroup[] = [
         label: 'Account',
         href: '/dashboard/settings',
         icon: <Settings className="size-5" />,
-      },
-      {
-        id: 'help',
-        label: 'Help & Support',
-        href: '/help',
-        icon: <HelpCircle className="size-5" />,
       },
     ],
   },
@@ -196,7 +181,17 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
 
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  // Fix for multiple items being highlighted - check for exact match or if child route of this item
+                  // but only when this isn't a parent of another menu item's path
+                  const isActive
+                    = pathname === item.href
+                      || (pathname.startsWith(`${item.href}/`)
+                        && !navigationGroups.some(g =>
+                          g.items.some(i =>
+                            i.href !== item.href
+                            && i.href.startsWith(`${item.href}/`),
+                          ),
+                        ));
 
                   return (
                     <motion.div

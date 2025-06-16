@@ -32,7 +32,7 @@ const quickActions: QuickAction[] = [
     description: 'Generate a new QR code with custom design',
     icon: <QrCode className="size-6" />,
     gradient: 'from-blue-500 to-cyan-500',
-    href: '/dashboard/qr-codes/create',
+    href: '/design',
     isPopular: true,
   },
   {
@@ -41,7 +41,7 @@ const quickActions: QuickAction[] = [
     description: 'Create custom templates for your QR codes',
     icon: <Palette className="size-6" />,
     gradient: 'from-purple-500 to-pink-500',
-    href: '/dashboard/templates/create',
+    href: '/design',
     isNew: true,
   },
   {

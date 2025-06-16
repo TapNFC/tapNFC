@@ -78,7 +78,7 @@ export function RealTimePreview({
   // Memoize the heavy renderElements function to prevent recreation on every render
   const renderCanvasObjects = useMemo(() => {
     if (!canvasState?.objects || !Array.isArray(canvasState.objects)) {
-      return null;
+      return [];
     }
 
     return canvasState.objects.map((obj: any, index: number) => {
@@ -415,7 +415,7 @@ export function RealTimePreview({
               transformOrigin: 'top left',
             }}
           >
-            {renderCanvasObjects.length > 0
+            {Array.isArray(renderCanvasObjects) && renderCanvasObjects.length > 0
               ? (
                   renderCanvasObjects
                 )

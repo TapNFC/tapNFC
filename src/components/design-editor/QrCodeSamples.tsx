@@ -522,33 +522,34 @@ export function QrCodeSamples({ onSampleSelect, currentSelectedId }: QrCodeSampl
   };
 
   return (
-    <div className="mb-4 space-y-4">
-      {sampleQrDesigns.map(sample => (
-        <button
-          key={`qr-sample-${sample.id}`}
-          type="button"
-          title={sample.name}
-          className={`relative flex w-full items-center gap-2 rounded-lg border p-2 transition-all duration-200 ${
-            sample.id === currentSelectedId
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-          }`}
-          onClick={() => handleSelect(sample)}
-        >
-          <div className="size-12 shrink-0 overflow-hidden rounded">
-            {renderSampleContent(sample)}
-          </div>
-          <span className="text-sm font-medium text-gray-700">
-            {sample.name}
-          </span>
-          {sample.id === currentSelectedId && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-blue-500 p-0.5">
-              <Check className="size-3 text-white" />
+    <div className="mb-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {sampleQrDesigns.map(sample => (
+          <button
+            key={`qr-sample-${sample.id}`}
+            type="button"
+            title={sample.name}
+            className={`relative flex flex-col items-center rounded-lg border p-2 transition-all duration-200 ${
+              sample.id === currentSelectedId
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => handleSelect(sample)}
+          >
+            <div className="mb-2 size-16 overflow-hidden rounded">
+              {renderSampleContent(sample)}
             </div>
-          )}
-        </button>
-      ),
-      )}
+            <span className="w-full truncate text-center text-xs font-medium text-gray-700">
+              {sample.name}
+            </span>
+            {sample.id === currentSelectedId && (
+              <div className="absolute right-1 top-1 rounded-full bg-blue-500 p-0.5">
+                <Check className="size-3 text-white" />
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
