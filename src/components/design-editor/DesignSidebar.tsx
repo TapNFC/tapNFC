@@ -5,7 +5,6 @@ import {
   Image,
   Layout,
   Palette,
-  PenTool,
   Settings,
   Shapes,
   Type,
@@ -17,7 +16,6 @@ import { CanvasSettings } from './CanvasSettings';
 import { BackgroundsPanel } from './components/sidebar/BackgroundsPanel';
 import { ElementsPanel } from './components/sidebar/ElementsPanel';
 import { SidebarSection } from './components/sidebar/SidebarSection';
-import { DrawingTools } from './DrawingTools';
 import { useFabricOperations } from './hooks/useFabricOperations';
 import { ImageUpload } from './ImageUpload';
 import { TemplateGallery } from './TemplateGallery';
@@ -96,7 +94,7 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
       description: 'Shapes & graphics',
       items: [
         { id: 'shapes', label: 'Shapes', icon: Shapes, description: 'Basic shapes' },
-        { id: 'lines', label: 'Lines', icon: PenTool, description: 'Lines & arrows' },
+        { id: 'lines', label: 'Lines', icon: Shapes, description: 'Lines & arrows' },
         { id: 'icons', label: 'Icons', icon: Shapes, description: 'Icon library' },
         { id: 'stickers', label: 'Stickers', icon: Shapes, description: 'Fun stickers' },
       ],
@@ -123,18 +121,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
         { id: 'upload', label: 'Upload', icon: Image, description: 'Your photos' },
         { id: 'search', label: 'Search', icon: Image, description: 'Stock photos' },
         { id: 'photos', label: 'Photos', icon: Image, description: 'Photo library' },
-      ],
-    },
-    {
-      id: 'draw',
-      label: 'Draw',
-      icon: PenTool,
-      gradient: 'from-pink-500 to-rose-600',
-      description: 'Drawing tools',
-      items: [
-        { id: 'brush', label: 'Brush', icon: PenTool, description: 'Freehand drawing' },
-        { id: 'pen', label: 'Pen', icon: PenTool, description: 'Precise lines' },
-        { id: 'eraser', label: 'Eraser', icon: PenTool, description: 'Remove parts' },
       ],
     },
     {
@@ -208,8 +194,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
       // Keep backgrounds panel open
     } else if (sectionId === 'images') {
       // Keep images panel open
-    } else if (sectionId === 'draw') {
-      // Keep draw panel open
     } else if (sectionId === 'settings') {
       // Keep settings panel open
     }
@@ -356,21 +340,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
               <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
                 <SidebarSection title="Images">
                   <ImageUpload canvas={canvas} />
-                </SidebarSection>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'draw' && (
-            <div
-              className="transition-all  delay-200 duration-300 ease-out"
-              style={{
-                animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
-              }}
-            >
-              <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
-                <SidebarSection title="Drawing">
-                  <DrawingTools canvas={canvas} />
                 </SidebarSection>
               </div>
             </div>

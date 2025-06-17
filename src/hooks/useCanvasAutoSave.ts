@@ -275,6 +275,7 @@ export function useCanvasAutoSave({
       'object:skewing',
       'path:created',
       'text:changed',
+      'canvas:background:changed',
     ];
 
     events.forEach((event) => {

@@ -286,6 +286,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       'object:moving',
       'object:scaling',
       'object:rotating',
+      'canvas:background:changed',
     ];
 
     events.forEach((event) => {

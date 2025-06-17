@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { generateDesignId } from '@/lib/indexedDB';
+import { useEffect, useState } from 'react';
+import { DesignTypeDialog } from '@/components/design-editor/components/dialogs/DesignTypeDialog';
 
 type NewDesignClientProps = {
   locale: string;
@@ -10,21 +10,31 @@ type NewDesignClientProps = {
 
 export function NewDesignClient({ locale }: NewDesignClientProps) {
   const router = useRouter();
+  const [designTypeDialogOpen, setDesignTypeDialogOpen] = useState(true);
 
-  useEffect(() => {
-    // Generate a unique design ID using our utility function
-    const designId = generateDesignId();
-
-    // Redirect to the design editor with the new ID
-    router.push(`/${locale}/design/${designId}`);
-  }, [locale, router]);
+  // If dialog is closed without selection, redirect back to designs page
+  const handleOpenChange = (open: boolean) => {
+    setDesignTypeDialogOpen(open);
+    if (!open) {
+      router.push(`/${locale}/design`);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-pulse text-center">
-        <div className="text-xl font-medium">Creating your new design...</div>
-        <div className="mt-2 text-sm text-gray-500">You will be redirected shortly</div>
+    <>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="text-xl font-medium">Preparing design options...</div>
+          <div className="mt-2 text-sm text-gray-500">Please select a design type</div>
+        </div>
       </div>
-    </div>
+      
+      {/* Design Type Dialog */}
+      <DesignTypeDialog
+        open={designTypeDialogOpen}
+        onOpenChange={handleOpenChange}
+        locale={locale}
+      />
+    </>
   );
 }

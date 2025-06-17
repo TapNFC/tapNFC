@@ -13,7 +13,6 @@ import { designDB, formatDesignTitle, generateTemplateId } from '@/lib/indexedDB
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { FileMenu } from './components/toolbar/FileMenu';
-import { PreviewButton } from './components/toolbar/PreviewButton';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { StatusIndicator } from './components/toolbar/StatusIndicator';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
@@ -236,10 +235,6 @@ export function DesignToolbar({
     }
   };
 
-  const handlePreview = () => {
-    // PreviewButton component handles the preview logic
-  };
-
   const handleUndo = () => {
     if (onUndo) {
       onUndo();
@@ -392,12 +387,6 @@ export function DesignToolbar({
                   <span className="font-medium">Save Now</span>
                 )}
           </Button>
-
-          <PreviewButton
-            canvas={canvas}
-            onPreview={handlePreview}
-            hasUnsavedChanges={hasUnsavedChanges}
-          />
 
           <QrCodeButton
             designId={designId}

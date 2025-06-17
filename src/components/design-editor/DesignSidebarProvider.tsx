@@ -3,7 +3,6 @@
 import {
   Image,
   Layout,
-  PenTool,
   Settings,
   Shapes,
   Sparkles,
@@ -21,7 +20,6 @@ import { CanvasSettings } from './CanvasSettings';
 import { BackgroundsPanel } from './components/sidebar/BackgroundsPanel';
 import { ShapesPanel } from './components/sidebar/ShapesPanel';
 import { SidebarSection } from './components/sidebar/SidebarSection';
-import { DrawingTools } from './DrawingTools';
 import { useFabricOperations } from './hooks/useFabricOperations';
 import { ImageUpload } from './ImageUpload';
 import { TemplateGallery } from './TemplateGallery';
@@ -67,7 +65,7 @@ const sidebarSections = [
     description: 'Shapes & graphics',
     items: [
       { id: 'shapes', label: 'Shapes', icon: Shapes, description: 'Basic shapes' },
-      { id: 'lines', label: 'Lines', icon: PenTool, description: 'Lines & arrows' },
+      { id: 'lines', label: 'Lines', icon: Shapes, description: 'Lines & arrows' },
       { id: 'icons', label: 'Icons', icon: Shapes, description: 'Icon library' },
       { id: 'stickers', label: 'Stickers', icon: Shapes, description: 'Fun stickers' },
     ],
@@ -92,17 +90,6 @@ const sidebarSections = [
       { id: 'upload', label: 'Upload images', icon: Image, description: 'Your photos' },
       { id: 'search', label: 'Search images', icon: Image, description: 'Stock photos' },
       { id: 'photos', label: 'Photos', icon: Image, description: 'Photo library' },
-    ],
-  },
-  {
-    id: 'draw',
-    label: 'Draw',
-    icon: PenTool,
-    description: 'Drawing tools',
-    items: [
-      { id: 'brush', label: 'Brush', icon: PenTool, description: 'Freehand drawing' },
-      { id: 'pen', label: 'Pen', icon: PenTool, description: 'Precise lines' },
-      { id: 'eraser', label: 'Eraser', icon: PenTool, description: 'Remove parts' },
     ],
   },
   {
@@ -170,8 +157,6 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
       setActiveSection('backgrounds');
     } else if (sectionId === 'images') {
       setActiveSection('images');
-    } else if (sectionId === 'draw') {
-      setActiveSection('draw');
     } else if (sectionId === 'settings') {
       setActiveSection('settings');
     } else {
@@ -214,14 +199,6 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
           </div>
         )}
 
-        {activeSection === 'draw' && (
-          <div className="p-4">
-            <SidebarSection title="Drawing Tools">
-              <DrawingTools canvas={canvas} />
-            </SidebarSection>
-          </div>
-        )}
-
         {activeSection === 'settings' && (
           <div className="p-4">
             <SidebarSection title="Settings">
@@ -231,7 +208,7 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
         )}
 
         {/* Default section content */}
-        {section && !['shapes', 'templates', 'backgrounds', 'images', 'draw', 'settings'].includes(activeSection) && (
+        {section && !['shapes', 'templates', 'backgrounds', 'images', 'settings'].includes(activeSection) && (
           <div className="p-4">
             <div className="mb-6">
               <h3 className="mb-2 text-lg font-semibold text-primary">{section.label}</h3>

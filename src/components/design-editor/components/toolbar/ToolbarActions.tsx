@@ -26,7 +26,7 @@ export function ToolbarActions({
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0 hover:bg-white/10  hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="size-8 p-0 hover:bg-white/10  hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onUndo}
           title="Undo (Ctrl+Z)"
           disabled={!canUndo}
@@ -36,7 +36,7 @@ export function ToolbarActions({
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0  hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="size-8 p-0  hover:bg-white/10 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onRedo}
           title="Redo (Ctrl+Y)"
           disabled={!canRedo}
@@ -51,7 +51,7 @@ export function ToolbarActions({
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0  hover:bg-white/10 hover:text-white"
+          className="size-8 p-0  hover:bg-white/10 hover:text-black"
           onClick={onRotateLeft}
           title="Rotate Left"
         >
@@ -60,7 +60,7 @@ export function ToolbarActions({
         <Button
           variant="ghost"
           size="sm"
-          className="size-8 p-0 hover:bg-white/10 hover:text-white"
+          className="size-8 p-0 hover:bg-white/10 hover:text-black"
           onClick={onRotateRight}
           title="Rotate Right"
         >
