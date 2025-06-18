@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DesignTypeDialog } from '@/components/design-editor/components/dialogs/DesignTypeDialog';
 
 type NewDesignClientProps = {
@@ -28,7 +28,7 @@ export function NewDesignClient({ locale }: NewDesignClientProps) {
           <div className="mt-2 text-sm text-gray-500">Please select a design type</div>
         </div>
       </div>
-      
+
       {/* Design Type Dialog */}
       <DesignTypeDialog
         open={designTypeDialogOpen}
