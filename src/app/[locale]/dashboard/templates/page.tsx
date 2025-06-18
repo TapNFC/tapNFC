@@ -18,10 +18,10 @@ function TemplatesSkeleton() {
         </div>
         <div className="h-9 w-36 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
       </div>
-      
+
       {/* Controls bar skeleton */}
       <div className="flex flex-wrap gap-2 rounded-xl border p-2 sm:flex-nowrap">
-        <div className="h-9 flex-grow animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
+        <div className="h-9 grow animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
         <div className="h-9 w-24 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
         <div className="h-9 w-24 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
         <div className="flex h-9 w-28 items-center rounded-md border p-1">
@@ -35,9 +35,9 @@ function TemplatesSkeleton() {
       <div className="mb-4 mt-2 overflow-x-auto">
         <div className="flex gap-1 rounded-xl bg-white/80 p-1 backdrop-blur-lg dark:bg-slate-800/80">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div 
-              key={i} 
-              className="h-9 w-24 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700" 
+            <div
+              key={i}
+              className="h-9 w-24 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"
             />
           ))}
         </div>
@@ -46,8 +46,8 @@ function TemplatesSkeleton() {
       {/* Grid skeleton */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="overflow-hidden rounded-lg border border-slate-200/60 bg-white/80 dark:border-slate-700/60 dark:bg-slate-800/80"
           >
             {/* Thumbnail */}
@@ -56,32 +56,33 @@ function TemplatesSkeleton() {
                 <div className="h-5 w-20 rounded-full bg-slate-300/80 dark:bg-slate-600/80"></div>
               </div>
             </div>
-            
+
             {/* Content */}
-            <div className="p-4 space-y-3">
+            <div className="space-y-3 p-4">
               <div className="flex items-center justify-between">
                 <div className="h-5 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
                 <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"></div>
               </div>
-              
+
               <div className="h-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
-              
+
               <div className="flex flex-wrap gap-1">
                 {Array.from({ length: 3 }).map((_, j) => (
                   <div
                     key={j}
                     className="h-5 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"
-                  ></div>
+                  >
+                  </div>
                 ))}
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-4 w-14 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
                   <div className="h-4 w-14 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
                 </div>
               </div>
-              
+
               <div className="h-9 w-full animate-pulse rounded-md bg-slate-200 dark:bg-slate-700"></div>
             </div>
           </div>

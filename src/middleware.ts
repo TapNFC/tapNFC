@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
+import { NextResponse } from 'next/server';
 import { routing } from './libs/i18nNavigation';
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -13,7 +13,7 @@ export default async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname === '/') {
     // Get the locale from the request or use the default
     const locale = req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || routing.defaultLocale;
-    
+
     // Redirect to the dashboard with the appropriate locale
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, req.url));
   }

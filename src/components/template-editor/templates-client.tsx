@@ -15,7 +15,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Share2,
   Sparkles,
   Star,
   Tag,
@@ -29,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 type Template = {
@@ -156,20 +155,20 @@ export function TemplatesClient() {
   // Derived state
   const filteredTemplates = useMemo(() => {
     // Filter by search query and category
-    let filtered = mockTemplates.filter(template => {
-      const matchesSearch = !searchQuery || 
-        template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === 'all' || 
-        template.category.toLowerCase().includes(selectedCategory.toLowerCase());
-      
+    const filtered = mockTemplates.filter((template) => {
+      const matchesSearch = !searchQuery
+        || template.name.toLowerCase().includes(searchQuery.toLowerCase())
+        || template.description.toLowerCase().includes(searchQuery.toLowerCase())
+        || template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesCategory = selectedCategory === 'all'
+        || template.category.toLowerCase().includes(selectedCategory.toLowerCase());
+
       // Additional filter logic would go here
-      const matchesActiveFilters = !activeFilters.length || 
-        (template.isPremium && activeFilters.includes('premium')) || 
-        (template.isPopular && activeFilters.includes('popular'));
-      
+      const matchesActiveFilters = !activeFilters.length
+        || (template.isPremium && activeFilters.includes('premium'))
+        || (template.isPopular && activeFilters.includes('popular'));
+
       return matchesSearch && matchesCategory && (activeFilters.length ? matchesActiveFilters : true);
     });
 
@@ -224,7 +223,9 @@ export function TemplatesClient() {
             QR Templates
           </h1>
           <Badge variant="outline" className="h-6 rounded-xl">
-            {filteredTemplates.length} templates
+            {filteredTemplates.length}
+            {' '}
+            templates
           </Badge>
         </div>
 
@@ -250,7 +251,7 @@ export function TemplatesClient() {
         className="sticky top-0 z-20 flex flex-wrap gap-2 rounded-xl border bg-white/90 p-2 backdrop-blur-lg dark:border-slate-700 dark:bg-slate-900/90 sm:flex-nowrap"
       >
         {/* Search */}
-        <div className="relative min-w-[180px] flex-grow">
+        <div className="relative min-w-[180px] grow">
           <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search templates..."
@@ -259,10 +260,10 @@ export function TemplatesClient() {
             className="h-9 bg-transparent pl-8"
           />
           {searchQuery && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-1 top-1/2 size-7 -translate-y-1/2" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
               onClick={() => handleSearch('')}
             >
               <X className="size-3" />
@@ -286,15 +287,17 @@ export function TemplatesClient() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex items-center justify-between" onClick={() => toggleFilter('premium')}>
               Premium
-              <Star className={cn("size-4", activeFilters.includes('premium') ? "text-yellow-400" : "text-slate-400")} />
+              <Star className={cn('size-4', activeFilters.includes('premium') ? 'text-yellow-400' : 'text-slate-400')} />
             </DropdownMenuItem>
             <DropdownMenuItem className="flex items-center justify-between" onClick={() => toggleFilter('popular')}>
               Popular
-              <Sparkles className={cn("size-4", activeFilters.includes('popular') ? "text-purple-400" : "text-slate-400")} />
+              <Sparkles className={cn('size-4', activeFilters.includes('popular') ? 'text-purple-400' : 'text-slate-400')} />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={resetFilters} disabled={!searchQuery && selectedCategory === 'all' && !activeFilters.length}>
-              <RefreshCw className="mr-2 size-4" /> Reset Filters
+              <RefreshCw className="mr-2 size-4" />
+              {' '}
+              Reset Filters
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -329,26 +332,26 @@ export function TemplatesClient() {
 
         {/* View mode switch */}
         <div className="flex h-9 items-center rounded-md border p-1">
-          <Button 
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-            size="icon" 
-            className="size-7" 
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="size-7"
             onClick={() => setViewMode('grid')}
           >
             <Grid className="size-4" />
           </Button>
-          <Button 
-            variant={viewMode === 'compact' ? 'secondary' : 'ghost'} 
-            size="icon" 
-            className="size-7" 
+          <Button
+            variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="size-7"
             onClick={() => setViewMode('compact')}
           >
             <LayoutGrid className="size-4" />
           </Button>
-          <Button 
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
-            size="icon" 
-            className="size-7" 
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="size-7"
             onClick={() => setViewMode('list')}
           >
             <List className="size-4" />
@@ -362,15 +365,15 @@ export function TemplatesClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <Tabs 
-          value={selectedCategory} 
-          onValueChange={handleCategoryChange} 
+        <Tabs
+          value={selectedCategory}
+          onValueChange={handleCategoryChange}
           className="w-full"
         >
           <TabsList className="mb-4 grid w-full auto-cols-fr grid-flow-col overflow-x-auto rounded-xl bg-white/80 p-1 backdrop-blur-lg dark:bg-slate-800/80">
-            {categories.map((category) => (
-              <TabsTrigger 
-                key={category.id} 
+            {categories.map(category => (
+              <TabsTrigger
+                key={category.id}
                 value={category.id}
                 className="flex items-center gap-2 px-3"
               >
@@ -393,213 +396,231 @@ export function TemplatesClient() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {viewMode === 'list' ? (
-            // List View
-            <div className="rounded-lg border bg-white/50 dark:border-slate-700 dark:bg-slate-800/50">
-              {filteredTemplates.map((template, index) => (
-                <motion.div
-                  key={template.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 * index }}
-                  className="group flex items-center justify-between border-b p-3 last:border-0 dark:border-slate-700"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-16 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-700">
-                      {template.isPremium && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="flex items-center font-medium">
-                        {template.name}
-                        {template.isPremium && <Star className="ml-1 size-3 text-yellow-400" />}
-                        {template.isPopular && <Sparkles className="ml-1 size-3 text-purple-400" />}
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span>{template.category}</span>
-                        <span className="flex items-center">
-                          <Star className="mr-1 size-3 text-yellow-400" /> {template.rating}
-                        </span>
-                        <span>{template.downloads.toLocaleString()} uses</span>
+          {viewMode === 'list'
+            ? (
+              // List View
+                <div className="rounded-lg border bg-white/50 dark:border-slate-700 dark:bg-slate-800/50">
+                  {filteredTemplates.map((template, index) => (
+                    <motion.div
+                      key={template.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: 0.05 * index }}
+                      className="group flex items-center justify-between border-b p-3 last:border-0 dark:border-slate-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-12 w-16 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-700">
+                          {template.isPremium && (
+                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="flex items-center font-medium">
+                            {template.name}
+                            {template.isPremium && <Star className="ml-1 size-3 text-yellow-400" />}
+                            {template.isPopular && <Sparkles className="ml-1 size-3 text-purple-400" />}
+                          </h3>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span>{template.category}</span>
+                            <span className="flex items-center">
+                              <Star className="mr-1 size-3 text-yellow-400" />
+                              {' '}
+                              {template.rating}
+                            </span>
+                            <span>
+                              {template.downloads.toLocaleString()}
+                              {' '}
+                              uses
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                      <Eye className="size-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                      <Heart className="size-4" />
-                    </Button>
-                    <Button size="sm" variant="default" className="h-8">
-                      <Copy className="mr-1 size-3" />
-                      Use
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : viewMode === 'compact' ? (
-            // Compact Grid View
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredTemplates.map((template, index) => (
-                <motion.div
-                  key={template.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 * index }}
-                  className="group relative"
-                >
-                  <Card className="overflow-hidden border-slate-200/60 bg-white/80 transition-all duration-150 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
-                    {/* Thumbnail */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-700">
-                      {/* Premium/Popular indicators */}
-                      <div className="absolute left-2 top-2 z-10 flex gap-1">
-                        {template.isPremium && (
-                          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
-                            <Star className="mr-1 size-3" />
-                            Pro
-                          </Badge>
-                        )}
-                        {template.isPopular && !template.isPremium && (
-                          <Badge className="bg-gradient-to-r from-purple-400 to-indigo-400 text-white">
-                            <Sparkles className="mr-1 size-3" />
-                            Popular
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {/* Quick actions overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                        <Button size="sm" variant="secondary">
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" className="size-8 p-0">
                           <Eye className="size-4" />
                         </Button>
-                        <Button size="sm" variant="secondary">
-                          <Edit className="size-4" />
+                        <Button size="sm" variant="ghost" className="size-8 p-0">
+                          <Heart className="size-4" />
+                        </Button>
+                        <Button size="sm" variant="primary" className="h-8">
+                          <Copy className="mr-1 size-3" />
+                          Use
                         </Button>
                       </div>
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="p-3">
-                      <div className="mb-2">
-                        <h3 className="truncate font-medium">{template.name}</h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <div className="flex items-center">
-                            <Star className="mr-1 size-3 text-yellow-400" /> {template.rating}
+                    </motion.div>
+                  ))}
+                </div>
+              )
+            : viewMode === 'compact'
+              ? (
+                // Compact Grid View
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filteredTemplates.map((template, index) => (
+                      <motion.div
+                        key={template.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: 0.05 * index }}
+                        className="group relative"
+                      >
+                        <Card className="overflow-hidden border-slate-200/60 bg-white/80 transition-all duration-150 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
+                          {/* Thumbnail */}
+                          <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-700">
+                            {/* Premium/Popular indicators */}
+                            <div className="absolute left-2 top-2 z-10 flex gap-1">
+                              {template.isPremium && (
+                                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
+                                  <Star className="mr-1 size-3" />
+                                  Pro
+                                </Badge>
+                              )}
+                              {template.isPopular && !template.isPremium && (
+                                <Badge className="bg-gradient-to-r from-purple-400 to-indigo-400 text-white">
+                                  <Sparkles className="mr-1 size-3" />
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Quick actions overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                              <Button size="sm" variant="secondary">
+                                <Eye className="size-4" />
+                              </Button>
+                              <Button size="sm" variant="secondary">
+                                <Edit className="size-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <span>•</span>
-                          <span>{template.downloads.toLocaleString()} uses</span>
-                        </div>
-                      </div>
-                      
-                      {/* Action */}
-                      <Button size="sm" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
-                        <Copy className="mr-1 size-3" /> Use Template
-                      </Button>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            // Standard Grid View
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredTemplates.map((template, index) => (
-                <motion.div
-                  key={template.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 * index }}
-                  className="group"
-                >
-                  <Card className="overflow-hidden border-slate-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
-                    {/* Template Thumbnail */}
-                    <div className="relative aspect-video overflow-hidden bg-gradient-to-tr from-slate-100 to-white dark:from-slate-800 dark:to-slate-700">
-                      {template.isPremium && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
-                      )}
-                      
-                      {/* Badges */}
-                      <div className="absolute left-3 top-3 flex items-center space-x-2">
-                        {template.isPremium && (
-                          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                            <Star className="mr-1 size-3" />
-                            Premium
-                          </Badge>
-                        )}
-                        {template.isPopular && (
-                          <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
-                            <Sparkles className="mr-1 size-3" />
-                            Popular
-                          </Badge>
-                        )}
-                      </div>
 
-                      {/* Overlay on hover */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <Button size="sm" variant="secondary">
-                          <Eye className="mr-1 size-4" />
-                          Preview
-                        </Button>
-                        <Button size="sm" variant="secondary">
-                          <Edit className="mr-1 size-4" />
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
+                          {/* Content */}
+                          <div className="p-3">
+                            <div className="mb-2">
+                              <h3 className="truncate font-medium">{template.name}</h3>
+                              <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <div className="flex items-center">
+                                  <Star className="mr-1 size-3 text-yellow-400" />
+                                  {' '}
+                                  {template.rating}
+                                </div>
+                                <span>•</span>
+                                <span>
+                                  {template.downloads.toLocaleString()}
+                                  {' '}
+                                  uses
+                                </span>
+                              </div>
+                            </div>
 
-                    {/* Content */}
-                    <div className="p-4">
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">
-                          {template.name}
-                        </h3>
-                        <Badge variant="outline" className="text-xs">
-                          {template.category}
-                        </Badge>
-                      </div>
-                      
-                      <p className="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-                        {template.description}
-                      </p>
-
-                      {/* Tags */}
-                      <div className="mb-3 flex flex-wrap gap-1">
-                        {template.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            <Tag className="mr-1 size-3" />
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {/* Stats */}
-                      <div className="mb-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center">
-                            <Star className="mr-1 size-4 fill-yellow-400 text-yellow-400" />
-                            <span>{template.rating}</span>
+                            {/* Action */}
+                            <Button size="sm" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
+                              <Copy className="mr-1 size-3" />
+                              {' '}
+                              Use Template
+                            </Button>
                           </div>
-                          <div className="flex items-center">
-                            <Download className="mr-1 size-4" />
-                            <span>{template.downloads.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )
+              : (
+                // Standard Grid View
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredTemplates.map((template, index) => (
+                      <motion.div
+                        key={template.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: 0.05 * index }}
+                        className="group"
+                      >
+                        <Card className="overflow-hidden border-slate-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
+                          {/* Template Thumbnail */}
+                          <div className="relative aspect-video overflow-hidden bg-gradient-to-tr from-slate-100 to-white dark:from-slate-800 dark:to-slate-700">
+                            {template.isPremium && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
+                            )}
 
-                      {/* Actions */}
-                      <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
-                        <Copy className="mr-2 size-4" />
-                        Use Template
-                      </Button>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
+                            {/* Badges */}
+                            <div className="absolute left-3 top-3 flex items-center space-x-2">
+                              {template.isPremium && (
+                                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                                  <Star className="mr-1 size-3" />
+                                  Premium
+                                </Badge>
+                              )}
+                              {template.isPopular && (
+                                <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+                                  <Sparkles className="mr-1 size-3" />
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Overlay on hover */}
+                            <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                              <Button size="sm" variant="secondary">
+                                <Eye className="mr-1 size-4" />
+                                Preview
+                              </Button>
+                              <Button size="sm" variant="secondary">
+                                <Edit className="mr-1 size-4" />
+                                Edit
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-4">
+                            <div className="mb-2 flex items-center justify-between">
+                              <h3 className="font-semibold text-slate-900 dark:text-white">
+                                {template.name}
+                              </h3>
+                              <Badge variant="outline" className="text-xs">
+                                {template.category}
+                              </Badge>
+                            </div>
+
+                            <p className="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+                              {template.description}
+                            </p>
+
+                            {/* Tags */}
+                            <div className="mb-3 flex flex-wrap gap-1">
+                              {template.tags.slice(0, 3).map(tag => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  <Tag className="mr-1 size-3" />
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+
+                            {/* Stats */}
+                            <div className="mb-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex items-center">
+                                  <Star className="mr-1 size-4 fill-yellow-400 text-yellow-400" />
+                                  <span>{template.rating}</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Download className="mr-1 size-4" />
+                                  <span>{template.downloads.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
+                              <Copy className="mr-2 size-4" />
+                              Use Template
+                            </Button>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
 
           {/* Empty State */}
           {filteredTemplates.length === 0 && (
