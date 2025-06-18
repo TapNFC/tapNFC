@@ -1,12 +1,23 @@
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './libs/i18nNavigation';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-const publicPaths = ['/', '/sign-in', '/sign-up'];
+// Define paths that should be accessible without authentication
+const publicPaths = ['/sign-in', '/sign-up'];
 
 export default async function middleware(req: NextRequest) {
+  // Check if the request is for the root path
+  if (req.nextUrl.pathname === '/') {
+    // Get the locale from the request or use the default
+    const locale = req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || routing.defaultLocale;
+    
+    // Redirect to the dashboard with the appropriate locale
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, req.url));
+  }
+
   const publicPathnameRegex = new RegExp(`^(/(${routing.locales.join('|')}))?(${publicPaths.join('|')})?/?$`, 'i');
   const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
 

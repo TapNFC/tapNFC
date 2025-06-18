@@ -4,23 +4,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
-  CheckCircle,
   Eye,
   EyeOff,
-  Mail,
-  Shield,
-  Sparkles,
-  Zap,
+  QrCode,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
-import { nanoid } from 'nanoid';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -34,21 +29,6 @@ const formSchema = z.object({
     message: 'Password must be at least 8 characters long.',
   }),
 });
-
-const features = [
-  {
-    icon: <Shield className="size-4" />,
-    text: 'Enterprise-grade security',
-  },
-  {
-    icon: <Zap className="size-4" />,
-    text: 'Lightning-fast performance',
-  },
-  {
-    icon: <CheckCircle className="size-4" />,
-    text: 'Trusted by 10,000+ users',
-  },
-];
 
 export default function SignIn() {
   const [error, setError] = useState<string | null>(null);
@@ -88,373 +68,190 @@ export default function SignIn() {
     }
   }
 
-  const handleSocialSignIn = async (provider: 'github' | 'google') => {
-    setIsLoading(true);
-    try {
-      await signIn(provider, { callbackUrl: '/dashboard' });
-    } catch (error) {
-      console.error(`${provider} sign in error:`, error);
-      setError(`Failed to sign in with ${provider}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Background decorative elements */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-primary/20 to-primary-blue-dark/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 size-80 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-3xl" />
-        <div className="absolute left-1/2 top-1/2 size-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500/10 to-transparent blur-3xl" />
+    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 to-white p-4 dark:from-gray-950 dark:to-gray-900">
+      {/* Abstract QR Pattern Background */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03] dark:opacity-[0.05]">
+        <div className="h-full w-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjxyZWN0IHg9IjIwMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjxyZWN0IHg9IjQwMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjxyZWN0IHg9IjEwMCIgeT0iMTAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iY3VycmVudENvbG9yIi8+PHJlY3QgeD0iMzAwIiB5PSIxMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJjdXJyZW50Q29sb3IiLz48cmVjdCB5PSIyMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJjdXJyZW50Q29sb3IiLz48cmVjdCB4PSIyMDAiIHk9IjIwMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjxyZWN0IHg9IjQwMCIgeT0iMjAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iY3VycmVudENvbG9yIi8+PHJlY3QgeD0iMzAwIiB5PSIzMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJjdXJyZW50Q29sb3IiLz48cmVjdCB4PSIxMDAiIHk9IjQwMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjxyZWN0IHg9IjMwMCIgeT0iNDAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iY3VycmVudENvbG9yIi8+PC9zdmc+')]" />
       </div>
 
-      {/* Floating particles */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {Array.from({ length: 20 }).map(() => (
-          <motion.div
-            key={nanoid()}
-            className="absolute size-1 rounded-full bg-primary/30"
+      {/* Accent gradients */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div aria-hidden="true" className="absolute left-[40%] top-0 -z-10 transform-gpu blur-3xl">
+          <div 
+            className="aspect-[1108/632] w-[69.25rem] bg-gradient-to-r from-primary/20 to-primary-blue-dark/20 opacity-30"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              opacity: [0.3, 0.8, 0.3],
-              scale: [1, 1.5, 1],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
+              clipPath: 'polygon(73.6% 51.7%, 91.7% 11.8%, 100% 46.4%, 97.4% 82.2%, 92.5% 84.9%, 75.7% 64%, 55.3% 47.5%, 46.5% 49.4%, 45% 62.9%, 50.3% 87.2%, 21.3% 64.1%, 0.1% 100%, 5.4% 51.1%, 21.4% 63.9%, 58.9% 0.2%, 73.6% 51.7%)'
+            }} 
           />
-        ))}
+        </div>
       </div>
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
-        {/* Left side - Branding and features */}
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="hidden space-y-8 lg:block"
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 mx-auto w-full max-w-md"
+      >
+        {/* Logo and Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8 flex flex-col items-center text-center"
         >
-          {/* Logo and branding */}
-          <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex items-center space-x-3"
-            >
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-blue-dark shadow-lg">
-                <Sparkles className="size-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                  QR Studio
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Professional QR Management
-                </p>
-              </div>
-            </motion.div>
+          <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-blue-dark shadow-lg">
+            <QrCode className="size-8 text-white" />
+          </div>
+          <h1 className="bg-gradient-to-r from-primary to-primary-blue-dark bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+            QR Studio
+          </h1>
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
+            Professional QR Code Management
+          </p>
+        </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="space-y-4"
-            >
-              <h2 className="text-4xl font-bold leading-tight text-slate-900 dark:text-white">
-                Welcome back to the
-                <span className="bg-gradient-to-r from-primary to-primary-blue-dark bg-clip-text text-transparent">
-                  {' '}
-                  future
-                  {' '}
-                </span>
-                of QR codes
+        {/* Card container */}
+        <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white/90 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/90">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="p-8"
+          >
+            <div className="mb-6">
+              <h2 className="mb-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+                Welcome back
               </h2>
-              <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-                Create, manage, and track your QR codes with our powerful platform.
-                Join thousands of professionals who trust QR Studio.
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Sign in to access your dashboard
               </p>
-            </motion.div>
-          </div>
-
-          {/* Features */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="space-y-4"
-          >
-            {features.map(feature => (
-              <motion.div
-                key={nanoid()}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 }}
-                className="flex items-center space-x-3 rounded-xl border border-slate-200/60 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-800/50"
-              >
-                <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary-blue-dark/10 p-2 text-primary">
-                  {feature.icon}
-                </div>
-                <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {feature.text}
-                </span>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="grid grid-cols-3 gap-6"
-          >
-            {[
-              { label: 'Active Users', value: '10K+' },
-              { label: 'QR Codes Created', value: '1M+' },
-              { label: 'Success Rate', value: '99.9%' },
-            ].map(stat => (
-              <div key={nanoid()} className="text-center">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </motion.div>
-
-        {/* Right side - Sign in form */}
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto w-full max-w-md"
-        >
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/80 shadow-2xl shadow-slate-200/20 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80 dark:shadow-slate-900/20">
-            {/* Glassmorphism overlay */}
-            <div className="absolute inset-0 bg-white/40 backdrop-blur-sm dark:bg-slate-800/40" />
-
-            {/* Content */}
-            <div className="relative p-8">
-              {/* Header */}
-              <div className="mb-8 text-center">
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="mb-4 flex items-center justify-center"
-                >
-                  <Badge variant="secondary" className="border-primary/20 bg-gradient-to-r from-primary/10 to-primary-blue-dark/10 text-primary">
-                    <Sparkles className="mr-1 size-3" />
-                    Welcome Back
-                  </Badge>
-                </motion.div>
-
-                <motion.h3
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="mb-2 text-2xl font-bold text-slate-900 dark:text-white"
-                >
-                  Sign in to your account
-                </motion.h3>
-
-                <motion.p
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                  className="text-slate-600 dark:text-slate-400"
-                >
-                  Enter your credentials to access your dashboard
-                </motion.p>
-              </div>
-
-              {/* Social Sign In */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="mb-6 space-y-3"
-              >
-
-                <Button
-                  variant="outline"
-                  onClick={() => handleSocialSignIn('google')}
-                  disabled={isLoading}
-                  className="h-12 w-full border-slate-200 bg-white/50 transition-all duration-200 hover:bg-white dark:border-slate-600 dark:bg-slate-800/50 dark:hover:bg-slate-700"
-                >
-                  <Mail className="mr-3 size-5" />
-                  Continue with Google
-                </Button>
-              </motion.div>
-
-              {/* Divider */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.7 }}
-                className="relative mb-6"
-              >
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white/80 px-4 text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
-                    Or continue with email
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Form */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-              >
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-medium text-slate-700 dark:text-slate-300">
-                            Email Address
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="email"
-                              placeholder="Enter your email"
-                              className="h-12 border-slate-200 bg-white/50 transition-all duration-200 focus:border-primary/50 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800/50"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-medium text-slate-700 dark:text-slate-300">
-                            Password
-                          </FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                {...field}
-                                type={showPassword ? 'text' : 'password'}
-                                placeholder="Enter your password"
-                                className="h-12 border-slate-200 bg-white/50 pr-12 transition-all duration-200 focus:border-primary/50 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800/50"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-0 top-0 size-12 hover:bg-transparent"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword
-                                  ? (
-                                      <EyeOff className="size-4 text-slate-500" />
-                                    )
-                                  : (
-                                      <Eye className="size-4 text-slate-500" />
-                                    )}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <Link
-                          href="/forgot-password"
-                          className="text-primary transition-colors hover:text-primary-blue-dark"
-                        >
-                          Forgot your password?
-                        </Link>
-                      </div>
-                    </div>
-
-                    <AnimatePresence>
-                      {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        >
-                          {error}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <Button
-                      type="submit"
-                      disabled={isLoading}
-                      className={cn(
-                        'w-full h-12 bg-gradient-to-r from-primary to-primary-blue-dark hover:from-primary-blue-dark hover:to-primary text-white font-medium',
-                        'shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300',
-                        'disabled:opacity-50 disabled:cursor-not-allowed',
-                      )}
-                    >
-                      {isLoading
-                        ? (
-                            <div className="flex items-center space-x-2">
-                              <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                              <span>Signing in...</span>
-                            </div>
-                          )
-                        : (
-                            <div className="flex items-center space-x-2">
-                              <span>Sign In</span>
-                              <ArrowRight className="size-4" />
-                            </div>
-                          )}
-                    </Button>
-                  </form>
-                </Form>
-              </motion.div>
-
-              {/* Footer */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.9 }}
-                className="mt-8 text-center"
-              >
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Don't have an account?
-                  {' '}
-                  <Link
-                    href="/sign-up"
-                    className="font-medium text-primary transition-colors hover:text-primary-blue-dark"
-                  >
-                    Sign up for free
-                  </Link>
-                </p>
-              </motion.div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                        Email
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="your.email@example.com"
+                          className="h-11 bg-white transition-all focus:border-primary/50 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800/80"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                          Password
+                        </FormLabel>
+                        <button
+                          type="button"
+                          onClick={() => {}} // This would be connected to a password reset flow
+                          className="text-xs text-primary hover:text-primary-blue-dark dark:text-primary/90 dark:hover:text-primary"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showPassword ? 'text' : 'password'} 
+                            placeholder="••••••••"
+                            className="h-11 bg-white transition-all focus:border-primary/50 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800/80"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 size-11 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="size-4 text-gray-500" />
+                            ) : (
+                              <Eye className="size-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-800/30 dark:bg-red-900/20 dark:text-red-400"
+                    >
+                      <RefreshCw className="size-3.5 animate-spin" />
+                      {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className={cn(
+                      'h-11 w-full bg-gradient-to-r from-primary to-primary-blue-dark font-medium text-white transition-all duration-300',
+                      'shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                      'hover:translate-y-[-1px]',
+                    )}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        <span>Signing in...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span>Sign In</span>
+                        <ArrowRight className="size-4" />
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+
+            {/* Security Info */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-8"
+            >
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <ShieldCheck className="size-3.5 text-primary" />
+                <span>Enterprise-grade security and encryption</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 }
