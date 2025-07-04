@@ -11,6 +11,7 @@ import {
   User,
   Zap,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/utils/supabase/client';
 
 type ModernHeaderProps = {
   className?: string;
@@ -38,6 +41,9 @@ type ModernHeaderProps = {
 export function ModernHeader({ className, user }: ModernHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
   const getInitials = (name: string) => {
     return name
@@ -46,6 +52,28 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/sign-in');
+      toast({
+        title: 'Logged out successfully',
+        description: 'You have been logged out of your account.',
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: 'Error logging out',
+        description: 'There was a problem logging out. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -133,11 +161,11 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
                   <User className="mr-2 size-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/settings')}>
                   <Settings className="mr-2 size-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
@@ -149,9 +177,13 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                   </Badge>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400">
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-600 dark:text-red-400"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
                   <LogOut className="mr-2 size-4" />
-                  <span>Log out</span>
+                  <span>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

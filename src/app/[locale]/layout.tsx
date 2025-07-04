@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Poppins } from 'next/font/google';
 import { notFound } from 'next/navigation';
+import { Toaster } from '@/components/ui/toaster';
 import arcjet, { detectBot, request } from '@/libs/Arcjet';
 import { Env } from '@/libs/Env';
 import { routing } from '@/libs/i18nNavigation';
@@ -100,7 +101,7 @@ export default async function RootLayout(props: {
           messages={messages}
         >
           {props.children}
-
+          <Toaster />
         </NextIntlClientProvider>
       </body>
     </html>
