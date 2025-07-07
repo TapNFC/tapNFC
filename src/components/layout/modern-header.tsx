@@ -1,20 +1,14 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   ChevronDown,
-  Command,
   LogOut,
-  Plus,
-  Search,
   Settings,
   User,
-  Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,7 +18,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
@@ -39,8 +32,6 @@ type ModernHeaderProps = {
 };
 
 export function ModernHeader({ className, user }: ModernHeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -85,49 +76,10 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
         className,
       )}
     >
-      <div className="flex h-16 items-center justify-between px-6">
-        {/* Left Section - Search */}
-        <div className="flex max-w-md flex-1 items-center space-x-4">
-          <motion.div
-            className="relative w-full"
-            animate={{
-              scale: isSearchFocused ? 1.02 : 1,
-            }}
-            transition={{ duration: 0.2 }}
-          >
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="search"
-              placeholder="Search QR codes, templates, customers..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className={cn(
-                'pl-10 pr-12 h-10 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700',
-                'focus:bg-white dark:focus:bg-slate-800 focus:border-primary/50 focus:ring-primary/20',
-                'transition-all duration-200',
-              )}
-            />
-            <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center space-x-1">
-              <kbd className="hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:inline-flex">
-                <Command className="size-3" />
-                K
-              </kbd>
-            </div>
-          </motion.div>
-        </div>
+      <div className="flex h-16 items-center justify-end px-6">
 
         {/* Right Section */}
         <div className="flex items-center space-x-3">
-          {/* Quick Actions */}
-          <Button
-            size="sm"
-            className="hidden items-center space-x-2 bg-gradient-to-r from-primary to-primary-blue-dark text-white shadow-lg shadow-primary/25 hover:from-primary-blue-dark hover:to-primary sm:flex"
-          >
-            <Plus className="size-4" />
-            <span>Create Template</span>
-          </Button>
 
           {/* User Menu */}
           {user && (
@@ -168,13 +120,6 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/settings')}>
                   <Settings className="mr-2 size-4" />
                   <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Zap className="mr-2 size-4" />
-                  <span>Upgrade Plan</span>
-                  <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-amber-500 to-orange-500 text-xs text-white">
-                    Pro
-                  </Badge>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

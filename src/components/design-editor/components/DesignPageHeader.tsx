@@ -70,7 +70,7 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
   };
 
   return (
-    <div className="relative border-b border-white/20 bg-white/70 shadow-lg shadow-blue-100/20 backdrop-blur-xl">
+    <div className="relative bg-white/70 shadow-lg shadow-blue-100/20 backdrop-blur-xl">
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
 
