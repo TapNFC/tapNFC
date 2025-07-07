@@ -1,44 +1,86 @@
+import type { CookieOptions } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import { routing } from './libs/i18nNavigation';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Define paths that should be accessible without authentication
-const publicPaths = ['/sign-in', '/sign-up'];
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-export default async function middleware(req: NextRequest) {
-  // Check if the request is for the root path
-  if (req.nextUrl.pathname === '/') {
-    // Get the locale from the request or use the default
-    const locale = req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || routing.defaultLocale;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.delete(name);
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    },
+  );
 
-    // Redirect to the dashboard with the appropriate locale
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, req.url));
-  }
+  // Refresh session if expired - required for Server Components
+  await supabase.auth.getSession();
 
-  const publicPathnameRegex = new RegExp(`^(/(${routing.locales.join('|')}))?(${publicPaths.join('|')})?/?$`, 'i');
-  const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
+  // Apply i18n middleware
+  const i18nResponse = await intlMiddleware(request);
 
-  if (isPublicPage) {
-    return intlMiddleware(req);
-  }
+  // Copy over the cookies from the Supabase response to the i18n response
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') {
+      i18nResponse.headers.append(key, value);
+    }
+  });
 
-  // Handle unauthenticated requests
-  /* if (!session) {
-    const locale = req.nextUrl.pathname.split("/")[1] || ""
-    const signInUrl = new URL(`/${locale}/sign-in`, req.url)
-    signInUrl.searchParams.set("callbackUrl", req.url)
-    return NextResponse.redirect(signInUrl)
-  } */
-
-  // Apply intl middleware for authenticated requests
-  return intlMiddleware(req);
+  return i18nResponse;
 }
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|assets/images).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,10 +1,17 @@
 import type { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/utils/supabase/server';
 
 type DesignLayoutProps = {
   children: ReactNode;
 };
 
-export default function DesignLayout({ children }: DesignLayoutProps) {
+export default async function DesignLayout({ children }: DesignLayoutProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/sign-in');
+  }
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/80 to-indigo-100/90">
       {/* Elegant background pattern */}

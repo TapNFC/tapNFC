@@ -2,14 +2,30 @@
 
 import type { DesignData, TemplateData } from '@/lib/indexedDB';
 import {
+  ChevronDown,
   Grid3x3,
+  LogOut,
   Menu,
+  Settings,
+  User,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import { designDB, formatDesignTitle, generateTemplateId } from '@/lib/indexedDB';
+import { createClient } from '@/utils/supabase/client';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { FileMenu } from './components/toolbar/FileMenu';
@@ -59,7 +75,67 @@ export function DesignToolbar({
   const [isSaving, setIsSaving] = useState(false);
   const [isGuidesEnabled, setIsGuidesEnabled] = useState(true);
   const [isExporting] = useState(false);
-  const [currentTemplateName, setCurrentTemplateName] = useState<string>('');
+  const [currentTemplateName, setCurrentTemplateName] = useState<string | null>(null);
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    avatar?: string;
+  } | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+  const { toast: hookToast } = useToast();
+
+  // Fetch user data
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          setUser({
+            name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+            email: authUser.email || '',
+            avatar: authUser.user_metadata?.avatar_url,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    getUser();
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/sign-in');
+      hookToast({
+        title: 'Logged out successfully',
+        description: 'You have been logged out of your account.',
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      hookToast({
+        title: 'Error logging out',
+        description: 'There was a problem logging out. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleSaveTemplate = async (templateName: string, category = 'Custom', description?: string) => {
     if (!canvas) {
@@ -343,7 +419,7 @@ export function DesignToolbar({
         {/* Center Section - Status */}
         <div className="relative z-10">
           <StatusIndicator
-            currentTemplateName={currentTemplateName}
+            currentTemplateName={currentTemplateName ?? undefined}
           />
         </div>
 
@@ -397,13 +473,60 @@ export function DesignToolbar({
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
-          {/* Enhanced User Avatar */}
-          <div className="group relative">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-blue-500/30">
-              <span className="text-sm font-bold text-white">U</span>
-            </div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400/20 to-indigo-400/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-          </div>
+          {/* User Menu */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-auto rounded-lg px-2 hover:bg-white/60"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="size-8 ring-2 ring-primary/20">
+                      <AvatarImage src={user.avatar ?? ''} alt={user.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden text-left sm:block">
+                      <p className="text-sm font-medium text-slate-900">
+                        {user.name.split(' ')[0]}
+                      </p>
+                    </div>
+                    <ChevronDown className="size-3 text-slate-500" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
+                  <User className="mr-2 size-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/settings')}>
+                  <Settings className="mr-2 size-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-600 dark:text-red-400"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
+                  <LogOut className="mr-2 size-4" />
+                  <span>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 

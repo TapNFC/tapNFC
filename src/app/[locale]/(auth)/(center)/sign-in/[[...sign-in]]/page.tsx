@@ -1,72 +1,25 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Eye,
-  EyeOff,
-  QrCode,
-  RefreshCw,
-  ShieldCheck,
-} from 'lucide-react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters long.',
-  }),
-});
+import { motion } from 'framer-motion';
+import { QrCode } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import React from 'react';
+import { SignInForm } from '@/components/SignInForm';
+import { createClient } from '@/utils/supabase/client';
 
 export default function SignIn() {
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: values.email,
-        password: values.password,
-      });
-
-      if (result?.error) {
-        setError('Invalid email or password');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (error) {
-      console.error('Sign in error:', error);
-      setError('An error occurred during sign in');
-    } finally {
-      setIsLoading(false);
+  const handleSession = async () => {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      redirect('/dashboard');
     }
-  }
+  };
+
+  // Call handleSession on component mount
+  React.useEffect(() => {
+    handleSession();
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 to-white p-4 dark:from-gray-950 dark:to-gray-900">
@@ -124,135 +77,11 @@ export default function SignIn() {
                 Welcome back
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Sign in to access your dashboard
+                Sign in to your QR Studio account
               </p>
             </div>
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
-                        Email
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="your.email@example.com"
-                          className="h-11 bg-white transition-all focus:border-primary/50 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800/80"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
-                          Password
-                        </FormLabel>
-                        <button
-                          type="button"
-                          onClick={() => {}} // This would be connected to a password reset flow
-                          className="text-xs text-primary hover:text-primary-blue-dark dark:text-primary/90 dark:hover:text-primary"
-                        >
-                          Forgot password?
-                        </button>
-                      </div>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            className="h-11 bg-white transition-all focus:border-primary/50 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800/80"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 size-11 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword
-                              ? (
-                                  <EyeOff className="size-4 text-gray-500" />
-                                )
-                              : (
-                                  <Eye className="size-4 text-gray-500" />
-                                )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-800/30 dark:bg-red-900/20 dark:text-red-400"
-                    >
-                      <RefreshCw className="size-3.5 animate-spin" />
-                      {error}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className={cn(
-                      'h-11 w-full bg-gradient-to-r from-primary to-primary-blue-dark font-medium text-white transition-all duration-300',
-                      'shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                      'hover:translate-y-[-1px]',
-                    )}
-                  >
-                    {isLoading
-                      ? (
-                          <div className="flex items-center gap-2">
-                            <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            <span>Signing in...</span>
-                          </div>
-                        )
-                      : (
-                          <div className="flex items-center gap-2">
-                            <span>Sign In</span>
-                            <ArrowRight className="size-4" />
-                          </div>
-                        )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-
-            {/* Security Info */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="mt-8"
-            >
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <ShieldCheck className="size-3.5 text-primary" />
-                <span>Enterprise-grade security and encryption</span>
-              </div>
-            </motion.div>
+            <SignInForm />
           </motion.div>
         </div>
       </motion.div>

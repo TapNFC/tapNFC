@@ -3,6 +3,8 @@ import { DesignFilters } from '@/components/design-editor/components/DesignFilte
 import { DesignGallerySkeleton } from '@/components/design-editor/components/DesignGallerySkeleton';
 import { DesignPageHeader } from '@/components/design-editor/components/DesignPageHeader';
 import { DesignGallery } from '@/components/design-editor/DesignGallery';
+import { ModernHeader } from '@/components/layout/modern-header';
+import { createClient } from '@/utils/supabase/server';
 
 type DesignPageProps = {
   params: Promise<{
@@ -19,8 +21,24 @@ export default async function DesignPage({ params, searchParams }: DesignPagePro
   const { locale } = await params;
   const { view = 'grid', search, category } = await searchParams;
 
+  // Get user data for the header
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="min-h-screen bg-transparent">
+      {/* Header with User Info */}
+      <ModernHeader
+        className="relative z-20"
+        user={user
+          ? {
+              name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+              email: user.email || '',
+              avatar: user.user_metadata?.avatar_url,
+            }
+          : undefined}
+      />
+
       {/* Header */}
       <DesignPageHeader locale={locale} />
 

@@ -1,18 +1,18 @@
+import { redirect } from 'next/navigation';
 import { ModernHeader } from '@/components/layout/modern-header';
 import { ModernSidebar } from '@/components/layout/modern-sidebar';
+import { createClient } from '@/utils/supabase/server';
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
 };
 
-// Mock user data - in real app, this would come from auth
-const mockUser = {
-  name: 'Alex Johnson',
-  email: 'alex@company.com',
-  avatar: undefined,
-};
-
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default async function DashboardLayout({ children }: DashboardLayoutProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/sign-in');
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="flex h-screen">
@@ -23,7 +23,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Modern Header */}
           <ModernHeader
-            user={mockUser}
+            user={{
+              name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+              email: user?.email || '',
+              avatar: user?.user_metadata?.avatar_url,
+            }}
           />
 
           {/* Page Content */}
