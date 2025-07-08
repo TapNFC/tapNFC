@@ -91,7 +91,6 @@ const navigationGroups: NavGroup[] = [
 
 export function ModernSidebar({ className }: ModernSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const pathname = usePathname();
 
   const toggleCollapse = () => {
@@ -196,36 +195,39 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
                   return (
                     <motion.div
                       key={item.id}
-                      onHoverStart={() => setHoveredItem(item.id)}
-                      onHoverEnd={() => setHoveredItem(null)}
                       whileHover={{ x: isCollapsed ? 0 : 4 }}
                       transition={{ duration: 0.2 }}
+                      className="relative"
                     >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeIndicator"
+                          className="absolute -left-4 top-1/4 h-1/2 w-1 rounded-full bg-gradient-to-b from-primary to-primary-blue-dark"
+                          transition={{
+                            type: 'spring',
+                            bounce: 0.2,
+                            duration: 0.6,
+                          }}
+                        />
+                      )}
                       <Link
                         href={item.href}
                         className={cn(
-                          'group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200',
+                          'group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200',
                           'hover:bg-slate-100 dark:hover:bg-slate-800/50',
-                          isActive && 'bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20',
-                          isActive && 'shadow-lg shadow-primary/10',
                           isCollapsed ? 'justify-center' : 'justify-start',
+                          isActive && 'bg-gradient-to-r from-primary/10 to-primary/5 shadow-lg shadow-primary/10',
                         )}
                       >
-                        {/* Active indicator */}
-                        {isActive && (
-                          <motion.div
-                            layoutId="activeIndicator"
-                            className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-primary to-primary-blue-dark"
-                            transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                          />
-                        )}
-
                         {/* Icon */}
-                        <div className={cn(
-                          'flex items-center justify-center transition-colors',
-                          isActive ? 'text-primary' : 'text-slate-600 dark:text-slate-400',
-                          'group-hover:text-primary',
-                        )}
+                        <div
+                          className={cn(
+                            'flex items-center justify-center transition-colors',
+                            isActive
+                              ? 'text-primary'
+                              : 'text-slate-600 dark:text-slate-400',
+                            'group-hover:text-primary',
+                          )}
                         >
                           {item.icon}
                         </div>
@@ -239,43 +241,29 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
                               exit={{ opacity: 0, x: -10 }}
                               className="ml-3 flex flex-1 items-center justify-between"
                             >
-                              <span className={cn(
-                                'text-sm font-medium transition-colors',
-                                isActive ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300',
-                                'group-hover:text-slate-900 dark:group-hover:text-white',
-                              )}
+                              <span
+                                className={cn(
+                                  'text-sm font-medium transition-colors',
+                                  isActive
+                                    ? 'text-slate-900 dark:text-white'
+                                    : 'text-slate-700 dark:text-slate-300',
+                                  'group-hover:text-slate-900 dark:group-hover:text-white',
+                                )}
                               >
                                 {item.label}
                               </span>
 
-                              <div className="flex items-center space-x-2">
-                                {item.isNew && (
-                                  <Badge variant="secondary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-xs text-white">
-                                    New
-                                  </Badge>
-                                )}
-                                {item.badge && (
-                                  <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </div>
+                              {item.isNew && (
+                                <Badge
+                                  variant="default"
+                                  className="rounded-full bg-green-500 px-2.5 py-1 text-xs text-white"
+                                >
+                                  New
+                                </Badge>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
-
-                        {/* Tooltip for collapsed state */}
-                        {isCollapsed && hoveredItem === item.id && (
-                          <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            className="absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-sm text-white shadow-lg dark:bg-slate-700"
-                          >
-                            {item.label}
-                            <div className="absolute left-0 top-1/2 size-2 -translate-x-1 -translate-y-1/2 rotate-45 bg-slate-900 dark:bg-slate-700" />
-                          </motion.div>
-                        )}
                       </Link>
                     </motion.div>
                   );
