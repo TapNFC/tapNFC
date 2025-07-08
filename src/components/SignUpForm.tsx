@@ -105,19 +105,6 @@ export function SignUpForm() {
           </Button>
         </form>
       </Form>
-
-      {/* 3rd-Party Providers */}
-      <div className="flex w-full max-w-sm flex-col gap-2">
-        <Button variant="outline" className="w-full">
-          Sign up with Google
-        </Button>
-        <Button variant="outline" className="w-full">
-          Sign up with GitHub
-        </Button>
-        <Button variant="outline" className="w-full">
-          Sign up with Facebook
-        </Button>
-      </div>
     </div>
   );
 }

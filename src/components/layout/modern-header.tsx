@@ -4,7 +4,6 @@ import {
   ChevronDown,
   LogOut,
   Settings,
-  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -113,10 +112,7 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
-                  <User className="mr-2 size-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
+
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/settings')}>
                   <Settings className="mr-2 size-4" />
                   <span>Settings</span>
