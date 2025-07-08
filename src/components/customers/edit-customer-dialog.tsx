@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { ImageUpload } from '@/components/customers/ImageUpload';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -61,6 +62,7 @@ export function EditCustomerDialog({
         email: customer.email ?? '',
         phone: customer.phone ?? '',
         website: customer.website ?? '',
+        avatar_url: customer.logo ?? '',
         status: customer.status ?? 'Active',
         brand_color: customer.brandColor ?? '#3B82F6',
         linkedin_url: customer.socialLinks?.linkedin ?? '',
@@ -168,6 +170,32 @@ export function EditCustomerDialog({
                   )}
                 />
               </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="mb-4 flex items-center space-x-2 text-lg font-medium">
+                <div className="size-2 rounded-full bg-yellow-500" />
+                <span>Company Logo</span>
+              </h3>
+              <FormField
+                control={form.control}
+                name="avatar_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Upload a new logo to replace the existing one.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </Card>
 
             {/* Status & Branding */}

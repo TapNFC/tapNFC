@@ -19,7 +19,7 @@ export const mapDbToDisplay = (dbCustomers: DbCustomer[]): Customer[] => {
       twitter: c.twitter_url,
       instagram: c.instagram_url,
     },
-    logo: null, // As per original implementation
+    logo: c.avatar_url,
     qrCodeId: `QR-${c.id.substring(0, 8)}`,
     qrCodeUrl: `https://qr.studio/dummy-${c.id.substring(0, 8)}`,
     createdAt: c.created_at,

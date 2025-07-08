@@ -17,6 +17,7 @@ create table if not exists public.customers (
     linkedin_url text,
     twitter_url text,
     instagram_url text,
+    avatar_url text,
     
     -- Ensures a user cannot add the same customer email address more than once.
     constraint unique_customer_email_for_user unique (user_id, email)
@@ -36,6 +37,7 @@ comment on column public.customers.brand_color is 'Primary brand color in hex fo
 comment on column public.customers.linkedin_url is 'URL for the customer''s LinkedIn profile.';
 comment on column public.customers.twitter_url is 'URL for the customer''s Twitter profile.';
 comment on column public.customers.instagram_url is 'URL for the customer''s Instagram profile.';
+comment on column public.customers.avatar_url is 'URL for the customer''s logo or avatar image.';
 
 
 -- 3. Enable Row-Level Security (RLS) on the customers table.

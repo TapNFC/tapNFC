@@ -11,7 +11,6 @@ import {
   Instagram,
   Linkedin,
   List,
-  Phone,
   Plus,
   QrCode,
   Search,
@@ -442,89 +441,118 @@ function CustomerCard({
   getInitials,
 }: CustomerCardProps) {
   return (
-    <Card className="overflow-hidden border-slate-200/60 bg-white/90 backdrop-blur-sm transition-all duration-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/90">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex gap-3">
-            <Avatar className="size-10 border-2 border-white shadow-sm">
-              <AvatarImage src={customer.logo || undefined} />
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="group relative"
+    >
+      <Card className="h-full overflow-hidden rounded-xl bg-white/60 shadow-md backdrop-blur-sm transition-all duration-300 ease-in-out hover:shadow-xl dark:border-slate-700/60 dark:bg-slate-800/60">
+        <div
+          className="relative h-24"
+          style={{ backgroundColor: customer.brandColor || '#475569' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10" />
+        </div>
+
+        <div className="relative p-5">
+          <div className="absolute -top-12 left-1/2 flex -translate-x-1/2 justify-center">
+            <Avatar className="size-20 rounded-full border-4 border-white shadow-lg dark:border-slate-800">
+              <AvatarImage
+                src={customer.logo ?? undefined}
+                alt={customer.name}
+                className="object-cover"
+              />
               <AvatarFallback
-                className="text-sm font-medium text-white"
-                style={{ backgroundColor: customer.brandColor || '#3B82F6' }}
+                className="text-2xl font-semibold text-white"
+                style={{ backgroundColor: customer.brandColor ?? '#3B82F6' }}
               >
                 {getInitials(customer.name)}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                {customer.name}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {customer.email}
-              </p>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center text-center">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+              {customer.name}
+            </h3>
+            <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+              {customer.email}
+            </p>
+
+            <div className="mb-4 flex w-full items-center justify-around rounded-lg bg-slate-100/80 p-2 text-xs dark:bg-slate-700/80">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'size-2 rounded-full',
+                    customer.status === 'Active'
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-400',
+                  )}
+                />
+                <span>{customer.status}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <QrCode className="size-3.5" />
+                <span className="font-mono">{customer.qrCodeId}</span>
+              </div>
+            </div>
+
+            <div className="flex h-8 items-center justify-center gap-3">
+              {customer.website && (
+                <a
+                  href={customer.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-emerald-500"
+                  aria-label="Website"
+                >
+                  <Globe className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.linkedin && (
+                <a
+                  href={customer.socialLinks.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-blue-600"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.twitter && (
+                <a
+                  href={customer.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-sky-500"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.instagram && (
+                <a
+                  href={customer.socialLinks.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-pink-500"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="size-5" />
+                </a>
+              )}
             </div>
           </div>
         </div>
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <QrCode className="size-3.5" />
-              <span className="font-mono">{customer.qrCodeId}</span>
-            </div>
-            {customer.phone && (
-              <div className="flex items-center gap-1">
-                <Phone className="size-3.5" />
-                <span className="hidden xl:inline">{customer.phone}</span>
-              </div>
-            )}
-          </div>
-          <div className="mt-2 flex items-center gap-2 border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
-            {customer.website && (
-              <a
-                href={customer.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 transition-colors hover:text-emerald-500"
-              >
-                <Globe className="size-4" />
-              </a>
-            )}
-            {customer.socialLinks.linkedin && (
-              <a
-                href={customer.socialLinks.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 transition-colors hover:text-blue-600"
-              >
-                <Linkedin className="size-4" />
-              </a>
-            )}
-            {customer.socialLinks.twitter && (
-              <a
-                href={customer.socialLinks.twitter}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 transition-colors hover:text-sky-500"
-              >
-                <Twitter className="size-4" />
-              </a>
-            )}
-            {customer.socialLinks.instagram && (
-              <a
-                href={customer.socialLinks.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 transition-colors hover:text-pink-500"
-              >
-                <Instagram className="size-4" />
-              </a>
-            )}
-          </div>
-          <div className="mt-2 flex gap-1.5 border-t pt-3">
+
+        <div className="absolute inset-x-0 bottom-0 flex translate-y-full justify-center p-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 shadow-lg backdrop-blur-sm dark:bg-slate-800/70">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 flex-1 justify-center gap-1 text-xs"
+              className="h-8 w-20 justify-center gap-1 text-xs"
               onClick={onView}
             >
               <Eye className="size-3.5" />
@@ -533,7 +561,7 @@ function CustomerCard({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 flex-1 justify-center gap-1 text-xs"
+              className="h-8 w-20 justify-center gap-1 text-xs"
               onClick={onEdit}
             >
               <Edit className="size-3.5" />
@@ -541,16 +569,17 @@ function CustomerCard({
             </Button>
             <Button
               variant="ghost"
-              size="sm"
-              className="size-8 text-red-500/90 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-red-500/70 dark:hover:text-red-500"
+              size="icon"
+              className="size-8 text-red-500/80 transition-colors hover:bg-red-500/10 hover:text-red-500"
               onClick={onDelete}
+              aria-label="Delete"
             >
-              <Trash2 className="size-3.5" />
+              <Trash2 className="size-4" />
             </Button>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -570,102 +599,122 @@ function CustomerRow({
   getInitials,
 }: CustomerRowProps) {
   return (
-    <Card className="overflow-hidden border-slate-200/60 bg-white/90 backdrop-blur-sm transition-all duration-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/90">
-      <div className="flex items-center p-3">
-        <Avatar className="mr-3 size-10 border-2 border-white shadow-sm">
-          <AvatarImage src={customer.logo || undefined} />
-          <AvatarFallback
-            className="text-sm font-medium text-white"
-            style={{ backgroundColor: customer.brandColor || '#3B82F6' }}
-          >
-            {getInitials(customer.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center justify-between">
-            <div>
-              <h3 className="truncate font-medium text-slate-900 dark:text-white">
-                {customer.name}
-              </h3>
-              <div className="flex items-center gap-3 text-xs text-slate-500">
-                <span>{customer.email}</span>
-                <div className="flex items-center gap-1">
-                  <QrCode className="size-3.5" />
-                  <span className="font-mono">{customer.qrCodeId}</span>
-                </div>
-              </div>
+    <Card className="group grid grid-cols-12 items-center gap-4 p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+      <div className="col-span-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="size-10 shrink-0 rounded-lg border-2 border-white shadow-sm dark:border-slate-700">
+            <AvatarImage
+              src={customer.logo ?? undefined}
+              alt={customer.name}
+              className="object-contain"
+            />
+            <AvatarFallback
+              className="rounded-lg text-sm font-semibold text-white"
+              style={{ backgroundColor: customer.brandColor ?? '#3B82F6' }}
+            >
+              {getInitials(customer.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="truncate font-semibold text-slate-900 dark:text-white">
+              {customer.name}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-2 border-l border-slate-200/60 pl-2 dark:border-slate-700/60">
-                {customer.website && (
-                  <a
-                    href={customer.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 transition-colors hover:text-emerald-500"
-                  >
-                    <Globe className="size-3.5" />
-                  </a>
-                )}
-                {customer.socialLinks.linkedin && (
-                  <a
-                    href={customer.socialLinks.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 transition-colors hover:text-blue-600"
-                  >
-                    <Linkedin className="size-3.5" />
-                  </a>
-                )}
-                {customer.socialLinks.twitter && (
-                  <a
-                    href={customer.socialLinks.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 transition-colors hover:text-sky-500"
-                  >
-                    <Twitter className="size-3.5" />
-                  </a>
-                )}
-                {customer.socialLinks.instagram && (
-                  <a
-                    href={customer.socialLinks.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 transition-colors hover:text-pink-500"
-                  >
-                    <Instagram className="size-3.5" />
-                  </a>
-                )}
-              </div>
-              <div className="flex">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={onView}
-                >
-                  <Eye className="size-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={onEdit}
-                >
-                  <Edit className="size-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-red-500/90 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-red-500/70 dark:hover:text-red-500"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
+            <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+              {customer.email}
             </div>
           </div>
+        </div>
+      </div>
+      <div className="col-span-2">
+        <div
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            customer.status === 'Active'
+              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+              : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+          )}
+        >
+          <span
+            className={cn(
+              'size-2 shrink-0 rounded-full',
+              customer.status === 'Active'
+                ? 'bg-emerald-500'
+                : 'bg-slate-400',
+            )}
+          />
+          <span className="truncate">{customer.status}</span>
+        </div>
+      </div>
+      <div className="col-span-3">
+        <div className="flex items-center justify-center gap-3">
+          {customer.website && (
+            <a
+              href={customer.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-emerald-500"
+            >
+              <Globe className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.linkedin && (
+            <a
+              href={customer.socialLinks.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-blue-600"
+            >
+              <Linkedin className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.twitter && (
+            <a
+              href={customer.socialLinks.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-sky-500"
+            >
+              <Twitter className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.instagram && (
+            <a
+              href={customer.socialLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-pink-500"
+            >
+              <Instagram className="size-4" />
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="col-span-3 text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={onView}
+          >
+            <Eye className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={onEdit}
+          >
+            <Edit className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-red-500/80 hover:bg-red-500/10 hover:text-red-500"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
+          </Button>
         </div>
       </div>
     </Card>

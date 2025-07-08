@@ -6,6 +6,7 @@ export const customerSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  avatar_url: z.string().optional(),
   brand_color: z
     .string()
     .regex(/^#[0-9A-F]{6}$/i, 'Invalid color format (use #RRGGBB)')
@@ -41,6 +42,7 @@ export type DbCustomer = {
   email: string | null;
   phone: string | null;
   website: string | null;
+  avatar_url: string | null;
   brand_color: string | null;
   linkedin_url: string | null;
   twitter_url: string | null;
