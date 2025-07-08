@@ -1,12 +1,13 @@
 'use client';
 
-import type { CustomerFormData } from '@/types/customer';
+import type { Customer, CustomerFormData } from '@/types/customer';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Plus, User } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, Save, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -34,42 +35,57 @@ import {
 } from '@/components/ui/select';
 import { customerSchema } from '@/types/customer';
 
-type AddCustomerDialogProps = {
+type EditCustomerDialogProps = {
   open: boolean;
+  customer: Customer | null;
   onOpenChange: (open: boolean) => void;
-  onAdd: (customerData: CustomerFormData) => Promise<void>;
+  onUpdate: (customerId: string, customerData: CustomerFormData) => Promise<void>;
 };
 
-export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDialogProps) {
+export function EditCustomerDialog({
+  open,
+  customer,
+  onOpenChange,
+  onUpdate,
+}: EditCustomerDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      website: '',
-      status: 'Active',
-      brand_color: '#3B82F6',
-      linkedin_url: '',
-      twitter_url: '',
-      instagram_url: '',
-    },
   });
+
+  useEffect(() => {
+    if (customer) {
+      form.reset({
+        name: customer.name ?? '',
+        email: customer.email ?? '',
+        phone: customer.phone ?? '',
+        website: customer.website ?? '',
+        status: customer.status ?? 'Active',
+        brand_color: customer.brandColor ?? '#3B82F6',
+        linkedin_url: customer.socialLinks?.linkedin ?? '',
+        twitter_url: customer.socialLinks?.twitter ?? '',
+        instagram_url: customer.socialLinks?.instagram ?? '',
+      });
+    }
+  }, [customer, form]);
 
   const handleClose = () => {
     onOpenChange(false);
-    form.reset();
   };
 
   const onSubmit = async (data: CustomerFormData) => {
+    if (!customer) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onAdd(data);
+      await onUpdate(customer.id, data);
       handleClose();
-    } catch {
-      // Error is already handled by the hook, but you could add specific UI feedback here if needed.
+    } catch (error: any) {
+      toast.error(error.message);
+      // Error is already handled by the hook
     } finally {
       setIsSubmitting(false);
     }
@@ -81,10 +97,10 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <User className="size-5" />
-            <span>Add New Customer</span>
+            <span>Edit Customer</span>
           </DialogTitle>
           <DialogDescription>
-            Create a new customer profile with company details and branding.
+            Update the customer's profile details and branding.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,7 +112,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                 <div className="size-2 rounded-full bg-green-500" />
                 <span>Basic Information</span>
               </h3>
-
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -111,7 +126,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -125,7 +139,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="phone"
@@ -135,14 +148,11 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                       <FormControl>
                         <Input placeholder="+1-555-123-4567" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Optional contact phone number
-                      </FormDescription>
+                      <FormDescription>Optional contact phone number</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="website"
@@ -152,9 +162,7 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                       <FormControl>
                         <Input placeholder="https://acme.com" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Company website URL
-                      </FormDescription>
+                      <FormDescription>Company website URL</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -168,7 +176,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                 <div className="size-2 rounded-full bg-blue-500" />
                 <span>Status & Branding</span>
               </h3>
-
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -191,7 +198,7 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Set the customer's initial status
+                        Set the customer's current status
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -220,7 +227,7 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Hex color code for branding
+                        Hex color code for brand customization
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -235,7 +242,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                 <div className="size-2 rounded-full bg-purple-500" />
                 <span>Social Media Links</span>
               </h3>
-
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -250,7 +256,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="twitter_url"
@@ -264,7 +269,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="instagram_url"
@@ -280,7 +284,6 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
                 />
               </div>
             </Card>
-
             {/* Form Actions */}
             <div className="flex items-center justify-end space-x-3 border-t pt-4">
               <Button
@@ -294,19 +297,19 @@ export function AddCustomerDialog({ open, onOpenChange, onAdd }: AddCustomerDial
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
               >
                 {isSubmitting
                   ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
-                        Creating...
+                        Saving...
                       </>
                     )
                   : (
                       <>
-                        <Plus className="mr-2 size-4" />
-                        Add Customer
+                        <Save className="mr-2 size-4" />
+                        Save Changes
                       </>
                     )}
               </Button>

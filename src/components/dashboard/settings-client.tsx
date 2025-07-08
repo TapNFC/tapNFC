@@ -1,51 +1,83 @@
 'use client';
 
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
-import {
-  Eye,
-  EyeOff,
-  Key,
-  Save,
-  User,
-} from 'lucide-react';
+import { Eye, EyeOff, Key, Loader2, Save, User } from 'lucide-react';
 import { useState } from 'react';
-
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createClient } from '@/utils/supabase/client';
 
-export function SettingsClient() {
+type SettingsClientProps = {
+  user: SupabaseUser;
+};
+
+export function SettingsClient({ user }: SettingsClientProps) {
+  const supabase = createClient();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [settings, setSettings] = useState({
-    name: 'Alex Johnson',
-    email: 'alex@company.com',
-    timezone: 'UTC-5',
-    language: 'English',
+    name: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
   });
-
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
 
-  const handleSettingChange = (key: string, value: any) => {
+  const isChanged
+    = settings.name !== (user?.user_metadata?.full_name || '');
+
+  const handleSettingChange = (key: string, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    // Simulate API call - settings saved successfully
-    // TODO: Implement actual API call to save settings
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await supabase.auth.updateUser({
+      data: { full_name: settings.name },
+    });
+    if (error) {
+      toast.error('Failed to update settings. Please try again.');
+    } else {
+      toast.success('Settings saved!');
+    }
+    setIsSaving(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match.');
+      return;
+    }
+    setIsChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      toast.error('Failed to change password. Please try again.');
+    } else {
+      toast.success('Password changed successfully.');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+    setIsChangingPassword(false);
   };
 
   return (
     <div className="min-h-full space-y-8 p-8 py-2">
-      {/* Background decorative elements */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 size-80 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 blur-3xl" />
       </div>
-
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -68,36 +100,35 @@ export function SettingsClient() {
               </div>
             </div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
-            <Button
-              onClick={handleSave}
-              className="bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:from-purple-600 hover:to-pink-700 hover:shadow-xl hover:shadow-purple-500/30"
-            >
-              <Save className="mr-2 size-4" />
-              Save Changes
-            </Button>
-          </motion.div>
         </div>
       </motion.div>
-
-      {/* Settings Content */}
       <div className="relative z-10 w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {/* Profile Settings Card */}
           <Card className="mb-6 border-slate-200/60 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80">
             <div className="p-6">
-              <h3 className="mb-6 text-lg font-semibold text-slate-900 dark:text-white">
-                Profile Information
-              </h3>
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Profile Information
+                </h3>
+                <Button
+                  onClick={handleSave}
+                  disabled={!isChanged || isSaving}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:from-purple-600 hover:to-pink-700 hover:shadow-xl hover:shadow-purple-500/30"
+                >
+                  {isSaving
+                    ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      )
+                    : (
+                        <Save className="mr-2 size-4" />
+                      )}
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
@@ -115,25 +146,7 @@ export function SettingsClient() {
                       id="email"
                       type="email"
                       value={settings.email}
-                      onChange={e => handleSettingChange('email', e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="timezone">Timezone</Label>
-                    <Input
-                      id="timezone"
-                      value={settings.timezone}
-                      onChange={e => handleSettingChange('timezone', e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="language">Language</Label>
-                    <Input
-                      id="language"
-                      value={settings.language}
-                      onChange={e => handleSettingChange('language', e.target.value)}
+                      disabled
                       className="mt-2"
                     />
                   </div>
@@ -141,8 +154,6 @@ export function SettingsClient() {
               </div>
             </div>
           </Card>
-
-          {/* Password Settings Card */}
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80">
             <div className="p-6">
               <div className="mb-6 flex items-center space-x-2">
@@ -151,31 +162,7 @@ export function SettingsClient() {
                   Change Password
                 </h3>
               </div>
-
               <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative mt-2">
-                      <Input
-                        id="currentPassword"
-                        type={showPasswords ? 'text' : 'password'}
-                        value={currentPassword}
-                        onChange={e => setCurrentPassword(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowPasswords(!showPasswords)}
-                      >
-                        {showPasswords ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
                     <Label htmlFor="newPassword">New Password</Label>
@@ -188,7 +175,6 @@ export function SettingsClient() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <Label htmlFor="confirmPassword">Confirm New Password</Label>
                     <div className="relative mt-2">
@@ -198,9 +184,44 @@ export function SettingsClient() {
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full"
+                        onClick={() => setShowPasswords(!showPasswords)}
+                      >
+                        {showPasswords
+                          ? (
+                              <EyeOff className="size-4" />
+                            )
+                          : (
+                              <Eye className="size-4" />
+                            )}
+                      </Button>
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={
+                    isChangingPassword
+                    || !newPassword
+                    || newPassword !== confirmPassword
+                  }
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:from-blue-600 hover:to-indigo-700 hover:shadow-xl hover:shadow-blue-500/30"
+                >
+                  {isChangingPassword
+                    ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      )
+                    : (
+                        <Key className="mr-2 size-4" />
+                      )}
+                  {isChangingPassword ? 'Changing...' : 'Change Password'}
+                </Button>
               </div>
             </div>
           </Card>
