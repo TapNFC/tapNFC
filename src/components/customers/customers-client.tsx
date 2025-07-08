@@ -1,260 +1,131 @@
 'use client';
 
+import type { CSVCustomer, Customer, CustomerFormData } from '@/types/customer';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Edit,
   Eye,
-  FileText,
-  Grid3X3,
+  FileDown,
+  Globe,
+  Grid,
+  Instagram,
+  Linkedin,
   List,
-  Phone,
   Plus,
   QrCode,
   Search,
   Trash2,
-  Upload,
+  Twitter,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
 
+import { useEffect, useState } from 'react';
 import { AddCustomerDialog } from '@/components/customers/add-customer-dialog';
 import { CSVUploadDialog } from '@/components/customers/csv-upload-dialog';
+import { DeleteCustomerDialog } from '@/components/customers/delete-customer-dialog';
+import { EditCustomerDialog } from '@/components/customers/edit-customer-dialog';
+import { ViewCustomerDialog } from '@/components/customers/view-customer-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useCustomers } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
 
-type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  logo?: string;
-  brandColor: string;
-  website?: string;
-  socialLinks: {
-    linkedin?: string;
-    twitter?: string;
-    instagram?: string;
-  };
-  qrCodeId: string;
-  qrCodeUrl: string;
-  createdAt: any;
-  lastUpdated: any;
-  status: 'Active' | 'Inactive' | 'Draft';
-};
-
-const mockCustomers: Customer[] = [
-  {
-    id: '1',
-    name: 'Acme Corporation',
-    email: 'contact@acme.com',
-    phone: '+1 (555) 123-4567',
-    logo: '',
-    brandColor: '#3B82F6',
-    website: 'https://acme.com',
-    socialLinks: {
-      linkedin: 'https://linkedin.com/company/acme',
-      twitter: 'https://twitter.com/acme',
-    },
-    qrCodeId: 'QR-ACM-001',
-    qrCodeUrl: 'https://qr.studio/acme-001',
-    createdAt: '2024-01-15',
-    lastUpdated: '2024-01-20',
-    status: 'Active',
-  },
-  {
-    id: '2',
-    name: 'TechStart Inc',
-    email: 'hello@techstart.io',
-    phone: '+1 (555) 987-6543',
-    logo: '',
-    brandColor: '#10B981',
-    website: 'https://techstart.io',
-    socialLinks: {
-      linkedin: 'https://linkedin.com/company/techstart',
-      instagram: 'https://instagram.com/techstart',
-    },
-    qrCodeId: 'QR-TSI-002',
-    qrCodeUrl: 'https://qr.studio/techstart-002',
-    createdAt: '2024-01-12',
-    lastUpdated: '2024-01-18',
-    status: 'Active',
-  },
-  {
-    id: '3',
-    name: 'Creative Studio',
-    email: 'info@creativestudio.com',
-    logo: '',
-    brandColor: '#8B5CF6',
-    website: 'https://creativestudio.com',
-    socialLinks: {
-      instagram: 'https://instagram.com/creativestudio',
-      twitter: 'https://twitter.com/creativestudio',
-    },
-    qrCodeId: 'QR-CRS-003',
-    qrCodeUrl: 'https://qr.studio/creative-003',
-    createdAt: '2024-01-10',
-    lastUpdated: '2024-01-15',
-    status: 'Draft',
-  },
-  {
-    id: '4',
-    name: 'Global Retail Co',
-    email: 'support@globalretail.com',
-    phone: '+1 (555) 456-7890',
-    logo: '',
-    brandColor: '#F59E0B',
-    website: 'https://globalretail.com',
-    socialLinks: {
-      linkedin: 'https://linkedin.com/company/globalretail',
-    },
-    qrCodeId: 'QR-GRC-004',
-    qrCodeUrl: 'https://qr.studio/globalretail-004',
-    createdAt: '2024-01-08',
-    lastUpdated: '2024-01-12',
-    status: 'Inactive',
-  },
-  {
-    id: '5',
-    name: 'Local Bistro',
-    email: 'orders@localbistro.com',
-    phone: '+1 (555) 321-0987',
-    logo: '',
-    brandColor: '#EF4444',
-    website: 'https://localbistro.com',
-    socialLinks: {
-      instagram: 'https://instagram.com/localbistro',
-    },
-    qrCodeId: 'QR-LBS-005',
-    qrCodeUrl: 'https://qr.studio/localbistro-005',
-    createdAt: '2024-01-05',
-    lastUpdated: '2024-01-22',
-    status: 'Active',
-  },
-];
-
-const statusColors = {
-  Active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  Inactive: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
-  Draft: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-};
-
-const filterOptions = [
-  { id: 'all', label: 'All Customers', count: 5 },
-  { id: 'active', label: 'Active', count: 3 },
-  { id: 'inactive', label: 'Inactive', count: 1 },
-  { id: 'draft', label: 'Draft', count: 1 },
-];
+type ViewMode = 'grid' | 'list';
 
 export function CustomersClient() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filteredCustomers, setFilteredCustomers] = useState(mockCustomers);
-  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
-  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const {
+    customers,
+    isLoading,
+    error,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer,
+    addMultipleCustomers,
+  } = useCustomers();
 
-  const generateUniqueQRCode = () => {
-    const prefix = 'QR';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substr(2, 3).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
-  };
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddOpen, setAddOpen] = useState(false);
+  const [isCsvUploadOpen, setCsvUploadOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isViewOpen, setViewOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    const filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(query.toLowerCase())
-      || customer.email.toLowerCase().includes(query.toLowerCase())
-      || customer.qrCodeId.toLowerCase().includes(query.toLowerCase()),
-    );
-    setFilteredCustomers(filtered);
-  };
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
-  const handleFilterChange = (filterId: string) => {
-    setSelectedFilter(filterId);
-    let filtered = customers;
+  useEffect(() => {
+    let result = customers;
 
-    switch (filterId) {
-      case 'active':
-        filtered = customers.filter(customer => customer.status === 'Active');
-        break;
-      case 'inactive':
-        filtered = customers.filter(customer => customer.status === 'Inactive');
-        break;
-      case 'draft':
-        filtered = customers.filter(customer => customer.status === 'Draft');
-        break;
-      default:
-        filtered = customers;
+    if (searchTerm) {
+      result = result.filter(
+        c =>
+          c.name.toLowerCase().includes(searchTerm.toLowerCase())
+          || c.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
     }
 
-    setFilteredCustomers(filtered);
+    setFilteredCustomers(result);
+  }, [customers, searchTerm]);
+
+  const handleAdd = async (data: CustomerFormData) => {
+    await addCustomer(data);
+    setAddOpen(false);
   };
 
-  const handleCSVUpload = (csvCustomers: any[]) => {
-    const newCustomers: Customer[] = csvCustomers.map((csvCustomer: any, index: number) => {
-      const qrCodeId = generateUniqueQRCode();
-      const currentDate = new Date().toISOString().split('T')[0];
-      return {
-        id: (customers.length + index + 1).toString(),
-        name: csvCustomer.name,
-        email: csvCustomer.email,
-        phone: csvCustomer.phone,
-        logo: '',
-        brandColor: csvCustomer.brandColor || '#3B82F6',
-        website: csvCustomer.website,
-        socialLinks: {
-          linkedin: csvCustomer.linkedin,
-          twitter: csvCustomer.twitter,
-          instagram: csvCustomer.instagram,
-        },
-        qrCodeId,
-        qrCodeUrl: `https://qr.studio/${qrCodeId.toLowerCase()}`,
-        createdAt: currentDate,
-        lastUpdated: currentDate,
-        status: 'Active' as const,
-      };
-    });
-
-    const updatedCustomers = [...customers, ...newCustomers];
-    setCustomers(updatedCustomers);
-    setFilteredCustomers(updatedCustomers);
+  const handleCsvUpload = async (csvData: CSVCustomer[]) => {
+    const customersToCreate: CustomerFormData[] = csvData.map(c => ({
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      website: c.website,
+      status: (c.status as 'Active' | 'Inactive') || 'Active',
+      brand_color: c.brandColor,
+      linkedin_url: c.linkedin,
+      twitter_url: c.twitter,
+      instagram_url: c.instagram,
+    }));
+    await addMultipleCustomers(customersToCreate);
   };
 
-  const handleAddCustomer = (customerData: any) => {
-    const qrCodeId = generateUniqueQRCode();
-    const currentDate = new Date().toISOString().split('T')[0];
-    const newCustomer: Customer = {
-      id: (customers.length + 1).toString(),
-      name: customerData.name,
-      email: customerData.email,
-      phone: customerData.phone,
-      logo: '',
-      brandColor: customerData.brandColor || '#3B82F6',
-      website: customerData.website,
-      socialLinks: {
-        linkedin: customerData.linkedin,
-        twitter: customerData.twitter,
-        instagram: customerData.instagram,
-      },
-      qrCodeId,
-      qrCodeUrl: `https://qr.studio/${qrCodeId.toLowerCase()}`,
-      createdAt: currentDate,
-      lastUpdated: currentDate,
-      status: 'Active',
-    };
+  const handleUpdate = async (id: string, data: CustomerFormData) => {
+    await updateCustomer(id, data);
+    setSelectedCustomer(null);
+    setEditOpen(false);
+  };
 
-    const updatedCustomers = [...customers, newCustomer];
-    setCustomers(updatedCustomers);
-    setFilteredCustomers(updatedCustomers);
+  const handleDeleteConfirm = async (
+    customerId: string,
+    customerName: string,
+  ) => {
+    await deleteCustomer(customerId, customerName);
+    setSelectedCustomer(null);
+    setDeleteOpen(false);
+  };
+
+  const openEditDialog = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setEditOpen(true);
+  };
+
+  const openDeleteDialog = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setDeleteOpen(true);
+  };
+
+  const openViewDialog = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setViewOpen(true);
   };
 
   const getInitials = (name: string) => {
+    if (!name) {
+      return '??';
+    }
     return name
       .split(' ')
       .map(n => n[0])
@@ -263,27 +134,73 @@ export function CustomersClient() {
       .slice(0, 2);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="flex flex-col items-center space-y-2">
+          <div className="text-center">
+            <div className="size-8 animate-spin rounded-full border-y-2 border-emerald-500" />
+          </div>
+          <div className="text-sm text-slate-500">Loading customer data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="text-center text-red-500">
+          <p>Error loading customers:</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   const totalCustomers = customers.length;
-  const activeCustomers = customers.filter(c => c.status === 'Active').length;
-  const totalQRCodes = customers.length; // Each customer has a unique QR code
-  const draftCustomers = customers.filter(c => c.status === 'Draft').length;
+  const withWebsite = customers.filter(c => c.website).length;
+  const withSocials = customers.filter(
+    c =>
+      c.socialLinks.linkedin
+      || c.socialLinks.twitter
+      || c.socialLinks.instagram,
+  ).length;
+
+  const stats = [
+    {
+      title: 'Total Customers',
+      value: totalCustomers,
+      icon: <Users className="size-4" />,
+      color: 'bg-blue-500',
+    },
+    {
+      title: 'With Website',
+      value: withWebsite,
+      icon: <Globe className="size-4" />,
+      color: 'bg-emerald-500',
+    },
+    {
+      title: 'With Socials',
+      value: withSocials,
+      icon: <Linkedin className="size-4" />,
+      color: 'bg-purple-500',
+    },
+  ];
 
   return (
     <div className="min-h-full space-y-6 p-6">
-      {/* Background decorative elements */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 size-80 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 size-80 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 blur-3xl" />
       </div>
 
-      {/* Header with Stats */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="relative z-10"
       >
-        {/* Header with Title & Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
           <div className="flex items-start gap-3">
             <div className="rounded-lg bg-emerald-500 p-2 shadow">
@@ -298,7 +215,6 @@ export function CustomersClient() {
               </p>
             </div>
           </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
@@ -306,12 +222,12 @@ export function CustomersClient() {
               onClick={() => setCsvUploadOpen(true)}
               className="h-9 gap-1.5 px-3 text-xs"
             >
-              <Upload className="size-3.5" />
+              <FileDown className="size-3.5" />
               Import CSV
             </Button>
             <Button
               size="sm"
-              onClick={() => setAddCustomerOpen(true)}
+              onClick={() => setAddOpen(true)}
               className="h-9 gap-1.5 bg-emerald-500 px-3 text-xs hover:bg-emerald-600"
             >
               <Plus className="size-3.5" />
@@ -319,35 +235,8 @@ export function CustomersClient() {
             </Button>
           </div>
         </div>
-
-        {/* Stats Row */}
-        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[
-            {
-              title: 'Total Customers',
-              value: totalCustomers,
-              icon: <Users className="size-4" />,
-              color: 'bg-emerald-500',
-            },
-            {
-              title: 'Active Profiles',
-              value: activeCustomers,
-              icon: <Eye className="size-4" />,
-              color: 'bg-blue-500',
-            },
-            {
-              title: 'Total QR Codes',
-              value: totalQRCodes,
-              icon: <QrCode className="size-4" />,
-              color: 'bg-purple-500',
-            },
-            {
-              title: 'Draft Profiles',
-              value: draftCustomers,
-              icon: <FileText className="size-4" />,
-              color: 'bg-orange-500',
-            },
-          ].map((stat, index) => (
+        <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {stats.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 10 }}
@@ -357,8 +246,12 @@ export function CustomersClient() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-xl font-semibold text-slate-900 dark:text-white">{stat.value}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{stat.title}</span>
+                  <span className="text-xl font-semibold text-slate-900 dark:text-white">
+                    {stat.value}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {stat.title}
+                  </span>
                 </div>
                 <div className={`${stat.color} rounded-md p-2 text-white`}>
                   {stat.icon}
@@ -367,43 +260,18 @@ export function CustomersClient() {
             </motion.div>
           ))}
         </div>
-
-        {/* Search and Filters Combined Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-nowrap">
             <div className="relative min-w-[200px] flex-1">
               <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <Input
                 placeholder="Search customers..."
-                value={searchQuery}
-                onChange={e => handleSearch(e.target.value)}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="h-9 border-slate-200 pl-9 text-sm dark:border-slate-700"
               />
             </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              {filterOptions.map(filter => (
-                <Button
-                  key={filter.id}
-                  size="sm"
-                  variant={selectedFilter === filter.id ? 'primary' : 'secondary'}
-                  onClick={() => handleFilterChange(filter.id)}
-                  className={cn(
-                    'h-9 px-3 text-xs whitespace-nowrap',
-                    selectedFilter === filter.id && 'bg-emerald-500 hover:bg-emerald-600',
-                  )}
-                >
-                  {filter.label}
-                  <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                    {filter.count}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
           </div>
-
-          {/* View Toggle */}
           <div className="flex h-9 items-center rounded-md border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
             <Button
               variant="ghost"
@@ -411,10 +279,12 @@ export function CustomersClient() {
               onClick={() => setViewMode('grid')}
               className={cn(
                 'h-full rounded-none px-2.5',
-                viewMode === 'grid' ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : '',
+                viewMode === 'grid'
+                  ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+                  : '',
               )}
             >
-              <Grid3X3 className="size-4" />
+              <Grid className="size-4" />
             </Button>
             <Button
               variant="ghost"
@@ -422,7 +292,9 @@ export function CustomersClient() {
               onClick={() => setViewMode('list')}
               className={cn(
                 'h-full rounded-none px-2.5',
-                viewMode === 'list' ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : '',
+                viewMode === 'list'
+                  ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+                  : '',
               )}
             >
               <List className="size-4" />
@@ -431,7 +303,6 @@ export function CustomersClient() {
         </div>
       </motion.div>
 
-      {/* Customers Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -447,139 +318,46 @@ export function CustomersClient() {
             transition={{ duration: 0.3 }}
             className={cn(
               'grid gap-4',
-              viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1',
+              viewMode === 'grid'
+                ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                : 'grid-cols-1',
             )}
           >
-            {filteredCustomers.map((customer, index) => (
+            {filteredCustomers.map(customer => (
               <motion.div
                 key={customer.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.05 * index }}
+                transition={{
+                  duration: 0.3,
+                  delay: filteredCustomers.indexOf(customer) * 0.05,
+                }}
                 className="group"
               >
                 {viewMode === 'grid'
                   ? (
-                      <Card className="overflow-hidden border-slate-200/60 bg-white/90 backdrop-blur-sm transition-all duration-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/90">
-                        <div className="p-4">
-                          {/* Header with Avatar and Status */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex gap-3">
-                              <Avatar className="size-10 border-2 border-white shadow-sm">
-                                <AvatarImage src={customer.logo} />
-                                <AvatarFallback
-                                  className="text-sm font-medium text-white"
-                                  style={{ backgroundColor: customer.brandColor }}
-                                >
-                                  {getInitials(customer.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <h3 className="font-medium text-slate-900 dark:text-white">
-                                  {customer.name}
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {customer.email}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge className={statusColors[customer.status]}>
-                              {customer.status}
-                            </Badge>
-                          </div>
-
-                          {/* Contact & QR Info */}
-                          <div className="mt-4 space-y-3">
-                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                              <div className="flex items-center gap-1.5">
-                                <QrCode className="size-3.5" />
-                                <span className="font-mono">{customer.qrCodeId}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                {customer.phone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="size-3.5" />
-                                    <span className="hidden xl:inline">{customer.phone}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Quick Actions */}
-                            <div className="mt-2 flex gap-1.5 border-t pt-3">
-                              <Button variant="ghost" size="sm" className="h-8 flex-1 justify-center gap-1 text-xs">
-                                <Eye className="size-3.5" />
-                                <span>View</span>
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 flex-1 justify-center gap-1 text-xs">
-                                <Edit className="size-3.5" />
-                                <span>Edit</span>
-                              </Button>
-                              <Button variant="ghost" size="sm" className="size-8 text-red-600 hover:text-red-700">
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                      <CustomerCard
+                        customer={customer}
+                        onView={() => openViewDialog(customer)}
+                        onEdit={() => openEditDialog(customer)}
+                        onDelete={() => openDeleteDialog(customer)}
+                        getInitials={getInitials}
+                      />
                     )
                   : (
-                      <Card className="overflow-hidden border-slate-200/60 bg-white/90 backdrop-blur-sm transition-all duration-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/90">
-                        <div className="flex items-center p-3">
-                          {/* Avatar */}
-                          <Avatar className="mr-3 size-10 border-2 border-white shadow-sm">
-                            <AvatarImage src={customer.logo} />
-                            <AvatarFallback
-                              className="text-sm font-medium text-white"
-                              style={{ backgroundColor: customer.brandColor }}
-                            >
-                              {getInitials(customer.name)}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          {/* Content */}
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-1 flex items-center justify-between">
-                              <div>
-                                <h3 className="truncate font-medium text-slate-900 dark:text-white">
-                                  {customer.name}
-                                </h3>
-                                <div className="flex items-center gap-3 text-xs text-slate-500">
-                                  <span>{customer.email}</span>
-                                  <div className="flex items-center gap-1">
-                                    <QrCode className="size-3.5" />
-                                    <span className="font-mono">{customer.qrCodeId}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Badge className={statusColors[customer.status]}>
-                                  {customer.status}
-                                </Badge>
-                                <div className="flex">
-                                  <Button variant="ghost" size="icon" className="size-8">
-                                    <Eye className="size-3.5" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="size-8">
-                                    <Edit className="size-3.5" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="size-8 text-red-600 hover:text-red-700">
-                                    <Trash2 className="size-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                      <CustomerRow
+                        customer={customer}
+                        onView={() => openViewDialog(customer)}
+                        onEdit={() => openEditDialog(customer)}
+                        onDelete={() => openDeleteDialog(customer)}
+                        getInitials={getInitials}
+                      />
                     )}
               </motion.div>
             ))}
           </motion.div>
         </AnimatePresence>
-
-        {/* Empty State */}
-        {filteredCustomers.length === 0 && (
+        {filteredCustomers.length === 0 && !isLoading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -595,13 +373,17 @@ export function CustomersClient() {
               Adjust your search or add a new customer
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setCsvUploadOpen(true)}>
-                <Upload className="mr-1.5 size-3.5" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCsvUploadOpen(true)}
+              >
+                <FileDown className="mr-1.5 size-3.5" />
                 Import CSV
               </Button>
               <Button
                 size="sm"
-                onClick={() => setAddCustomerOpen(true)}
+                onClick={() => setAddOpen(true)}
                 className="bg-emerald-500 hover:bg-emerald-600"
               >
                 <Plus className="mr-1.5 size-3.5" />
@@ -612,18 +394,329 @@ export function CustomersClient() {
         )}
       </motion.div>
 
-      {/* Dialogs */}
       <CSVUploadDialog
-        open={csvUploadOpen}
+        open={isCsvUploadOpen}
         onOpenChange={setCsvUploadOpen}
-        onUpload={handleCSVUpload}
+        onUpload={handleCsvUpload}
       />
-
       <AddCustomerDialog
-        open={addCustomerOpen}
-        onOpenChange={setAddCustomerOpen}
-        onAdd={handleAddCustomer}
+        open={isAddOpen}
+        onOpenChange={setAddOpen}
+        onAdd={handleAdd}
+      />
+      <ViewCustomerDialog
+        open={isViewOpen}
+        onOpenChange={setViewOpen}
+        customer={selectedCustomer}
+      />
+      <EditCustomerDialog
+        open={isEditOpen}
+        onOpenChange={setEditOpen}
+        customer={selectedCustomer}
+        onUpdate={handleUpdate}
+      />
+      <DeleteCustomerDialog
+        open={isDeleteOpen}
+        customer={selectedCustomer}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
+  );
+}
+
+type CustomerCardProps = {
+  customer: Customer;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  getInitials: (name: string) => string;
+};
+
+function CustomerCard({
+  customer,
+  onView,
+  onEdit,
+  onDelete,
+  getInitials,
+}: CustomerCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="group relative"
+    >
+      <Card className="h-full overflow-hidden rounded-xl bg-white/60 shadow-md backdrop-blur-sm transition-all duration-300 ease-in-out hover:shadow-xl dark:border-slate-700/60 dark:bg-slate-800/60">
+        <div
+          className="relative h-24"
+          style={{ backgroundColor: customer.brandColor || '#475569' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10" />
+        </div>
+
+        <div className="relative p-5">
+          <div className="absolute -top-12 left-1/2 flex -translate-x-1/2 justify-center">
+            <Avatar className="size-20 rounded-full border-4 border-white shadow-lg dark:border-slate-800">
+              <AvatarImage
+                src={customer.logo ?? undefined}
+                alt={customer.name}
+                className="object-cover"
+              />
+              <AvatarFallback
+                className="text-2xl font-semibold text-white"
+                style={{ backgroundColor: customer.brandColor ?? '#3B82F6' }}
+              >
+                {getInitials(customer.name)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center text-center">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+              {customer.name}
+            </h3>
+            <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+              {customer.email}
+            </p>
+
+            <div className="mb-4 flex w-full items-center justify-around rounded-lg bg-slate-100/80 p-2 text-xs dark:bg-slate-700/80">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'size-2 rounded-full',
+                    customer.status === 'Active'
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-400',
+                  )}
+                />
+                <span>{customer.status}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <QrCode className="size-3.5" />
+                <span className="font-mono">{customer.qrCodeId}</span>
+              </div>
+            </div>
+
+            <div className="flex h-8 items-center justify-center gap-3">
+              {customer.website && (
+                <a
+                  href={customer.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-emerald-500"
+                  aria-label="Website"
+                >
+                  <Globe className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.linkedin && (
+                <a
+                  href={customer.socialLinks.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-blue-600"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.twitter && (
+                <a
+                  href={customer.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-sky-500"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="size-5" />
+                </a>
+              )}
+              {customer.socialLinks.instagram && (
+                <a
+                  href={customer.socialLinks.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 transition-colors hover:text-pink-500"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="size-5" />
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 flex translate-y-full justify-center p-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 shadow-lg backdrop-blur-sm dark:bg-slate-800/70">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-20 justify-center gap-1 text-xs"
+              onClick={onView}
+            >
+              <Eye className="size-3.5" />
+              <span>View</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-20 justify-center gap-1 text-xs"
+              onClick={onEdit}
+            >
+              <Edit className="size-3.5" />
+              <span>Edit</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-red-500/80 transition-colors hover:bg-red-500/10 hover:text-red-500"
+              onClick={onDelete}
+              aria-label="Delete"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
+type CustomerRowProps = {
+  customer: Customer;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  getInitials: (name: string) => string;
+};
+
+function CustomerRow({
+  customer,
+  onView,
+  onEdit,
+  onDelete,
+  getInitials,
+}: CustomerRowProps) {
+  return (
+    <Card className="group grid grid-cols-12 items-center gap-4 p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+      <div className="col-span-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="size-10 shrink-0 rounded-lg border-2 border-white shadow-sm dark:border-slate-700">
+            <AvatarImage
+              src={customer.logo ?? undefined}
+              alt={customer.name}
+              className="object-contain"
+            />
+            <AvatarFallback
+              className="rounded-lg text-sm font-semibold text-white"
+              style={{ backgroundColor: customer.brandColor ?? '#3B82F6' }}
+            >
+              {getInitials(customer.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="truncate font-semibold text-slate-900 dark:text-white">
+              {customer.name}
+            </div>
+            <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+              {customer.email}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="col-span-2">
+        <div
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            customer.status === 'Active'
+              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+              : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+          )}
+        >
+          <span
+            className={cn(
+              'size-2 shrink-0 rounded-full',
+              customer.status === 'Active'
+                ? 'bg-emerald-500'
+                : 'bg-slate-400',
+            )}
+          />
+          <span className="truncate">{customer.status}</span>
+        </div>
+      </div>
+      <div className="col-span-3">
+        <div className="flex items-center justify-center gap-3">
+          {customer.website && (
+            <a
+              href={customer.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-emerald-500"
+            >
+              <Globe className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.linkedin && (
+            <a
+              href={customer.socialLinks.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-blue-600"
+            >
+              <Linkedin className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.twitter && (
+            <a
+              href={customer.socialLinks.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-sky-500"
+            >
+              <Twitter className="size-4" />
+            </a>
+          )}
+          {customer.socialLinks.instagram && (
+            <a
+              href={customer.socialLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 transition-colors hover:text-pink-500"
+            >
+              <Instagram className="size-4" />
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="col-span-3 text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={onView}
+          >
+            <Eye className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={onEdit}
+          >
+            <Edit className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-red-500/80 hover:bg-red-500/10 hover:text-red-500"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 }

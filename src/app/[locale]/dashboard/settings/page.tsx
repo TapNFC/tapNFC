@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { SettingsClient } from '@/components/dashboard/settings-client';
+import { createClient } from '@/utils/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Account Settings',
@@ -25,10 +27,19 @@ function SettingsSkeleton() {
   );
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/sign-in');
+  }
+
   return (
     <Suspense fallback={<SettingsSkeleton />}>
-      <SettingsClient />
+      <SettingsClient user={user} />
     </Suspense>
   );
 }

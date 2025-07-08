@@ -51,7 +51,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: var(--neutral-200);
     --input: var(--neutral-200);
-    --ring: var(--primary-blue);
+    --ring: var(--success);
 
     /* Chart Colors */
     --chart-1: var(--primary-blue);
@@ -97,7 +97,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: var(--neutral-700);
     --input: var(--neutral-700);
-    --ring: var(--primary-blue);
+    --ring: var(--success);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -153,7 +153,7 @@
   }
 
   h4 {
-    @apply text-xl lg:text-2xl;
+    @apply text-xl;
   }
 
   h5 {
@@ -173,7 +173,12 @@
 
   /* Focus Styles for Accessibility */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none;
+  }
+
+  input:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Smooth Scrolling */
