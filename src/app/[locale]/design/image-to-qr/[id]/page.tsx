@@ -1,19 +1,14 @@
+import type { DesignPageProps } from '@/types/design';
 import { Suspense } from 'react';
+import { DESIGN_EDITOR_CONFIG } from '@/components/design-editor/constants';
 import { ImageToQrGenerator } from '@/components/design-editor/ImageToQrGenerator';
 import { ImageToQrSkeleton } from '@/components/design-editor/ImageToQrSkeleton';
 
-type ImageToQrPageProps = {
-  params: Promise<{
-    locale: string;
-    id: string;
-  }>;
-};
-
-export default async function ImageToQrPage({ params }: ImageToQrPageProps) {
+export default async function ImageToQrPage({ params }: DesignPageProps) {
   const { locale, id } = await params;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.PAGE}>
       <Suspense fallback={<ImageToQrSkeleton />}>
         <ImageToQrGenerator designId={id} locale={locale} />
       </Suspense>
@@ -21,7 +16,7 @@ export default async function ImageToQrPage({ params }: ImageToQrPageProps) {
   );
 }
 
-export async function generateMetadata({ params }: ImageToQrPageProps) {
+export async function generateMetadata({ params }: DesignPageProps) {
   const { id } = await params;
 
   return {

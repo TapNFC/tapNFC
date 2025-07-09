@@ -1,16 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
-import { designDB } from '@/lib/indexedDB';
 import { CanvasContainer } from './components/CanvasContainer';
-import { LinkEditPopup } from './components/LinkEditPopup';
-import { RealTimePreview } from './components/RealTimePreview';
+import {
+  MemoizedLinkEditPopup,
+  MemoizedRealTimePreview,
+  MemoizedTextToolbar,
+} from './components/OptimizedComponents';
+import { DESIGN_EDITOR_CONFIG } from './constants';
 import { DesignSidebar } from './DesignSidebar';
 import { DesignToolbar } from './DesignToolbar';
+import { useCanvasEvents } from './hooks/useCanvasEvents';
+import { useDesignEditorState } from './hooks/useDesignEditorState';
+import { useDesignLoader } from './hooks/useDesignLoader';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { TextToolbar } from './TextToolbar';
+import { useLinkEditor } from './hooks/useLinkEditor';
 
 type DesignEditorProps = {
   designId: string;
@@ -19,23 +25,24 @@ type DesignEditorProps = {
 
 export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedObject, setSelectedObject] = useState<any>(null);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showLoadDialog, setShowLoadDialog] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [canvasVersion, setCanvasVersion] = useState(0);
-  const [isDesignLoaded, setIsDesignLoaded] = useState(false);
 
-  // Link editing popup state
-  const [linkEditPopup, setLinkEditPopup] = useState<{
-    isVisible: boolean;
-    linkObject: any;
-    position: { x: number; y: number };
-  }>({
-    isVisible: false,
-    linkObject: null,
-    position: { x: 0, y: 0 },
-  });
+  // Extract state management to custom hook
+  const {
+    showSaveDialog,
+    showLoadDialog,
+    setShowSaveDialog,
+    setShowLoadDialog,
+    handleShowSaveDialog,
+    handleShowLoadDialog,
+    sidebarCollapsed,
+    handleToggleSidebar,
+    canvasVersion,
+    incrementCanvasVersion,
+    isDesignLoaded,
+    setIsDesignLoaded,
+    selectedObject,
+    setSelectedObject,
+  } = useDesignEditorState();
 
   // Initialize canvas with custom hook
   const { canvasRef, canvas, isCanvasReady, fabricError, fabric, guideControls } = useFabricCanvas({
@@ -45,107 +52,17 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     onSelectionCleared: () => setSelectedObject(null),
   });
 
-  // Load existing design data when canvas is ready
-  useEffect(() => {
-    if (!canvas || !isCanvasReady || isDesignLoaded) {
-      return;
-    }
+  // Extract link editing functionality to custom hook
+  const { linkEditPopup, handleUpdateLink, handleCloseLinkEdit } = useLinkEditor({ canvas });
 
-    const loadExistingDesign = async () => {
-      try {
-        // Ensure the canvas context is available before attempting to load or clear
-        if (!canvas.contextContainer) {
-          console.warn('Canvas contextContainer not ready, delaying loadExistingDesign.');
-          setTimeout(() => {
-            if (!isDesignLoaded && isCanvasReady && canvas && canvas.contextContainer) {
-              loadExistingDesign();
-            } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.contextContainer) {
-              console.error('Canvas contextContainer still not ready after delay. Aborting load.');
-              setIsDesignLoaded(true);
-            }
-          }, 150);
-          return;
-        }
-
-        const existingDesign = await designDB.getDesign(designId);
-
-        if (existingDesign?.canvasData) {
-          console.warn('Loading existing design from IndexedDB:', designId);
-
-          const canvasDataToLoad = existingDesign.canvasData;
-          if (!canvasDataToLoad.objects) {
-            console.warn('Canvas data is missing objects array, creating empty array');
-            canvasDataToLoad.objects = [];
-          }
-
-          try {
-            canvas.loadFromJSON?.(canvasDataToLoad, () => {
-              try {
-                if (existingDesign.metadata?.width && existingDesign.metadata?.height) {
-                  canvas.setDimensions?.({
-                    width: existingDesign.metadata.width,
-                    height: existingDesign.metadata.height,
-                  });
-                }
-
-                if (existingDesign.metadata?.backgroundColor) {
-                  canvas.setBackgroundColor?.(existingDesign.metadata.backgroundColor, () => {
-                    canvas.renderAll?.();
-                  });
-                } else {
-                  canvas.renderAll?.();
-                }
-
-                setIsDesignLoaded(true);
-                console.warn('Design loaded successfully from IndexedDB');
-              } catch (renderError) {
-                console.error('Error during canvas rendering after load:', renderError);
-                setIsDesignLoaded(true);
-              }
-            });
-          } catch (loadError) {
-            console.error('Error loading canvas JSON:', loadError);
-            setIsDesignLoaded(true);
-          }
-          return;
-        }
-
-        const savedData = localStorage.getItem(`design_${designId}`);
-        if (savedData) {
-          try {
-            const canvasData = JSON.parse(savedData);
-            console.warn('Loading existing design from localStorage:', designId);
-
-            if (!canvasData?.objects) {
-              canvasData.objects = [];
-            }
-
-            canvas.loadFromJSON?.(canvasData, () => {
-              try {
-                canvas.renderAll?.();
-                setIsDesignLoaded(true);
-                console.warn('Design loaded successfully from localStorage');
-              } catch (renderError) {
-                console.error('Error rendering localStorage data:', renderError);
-                setIsDesignLoaded(true);
-              }
-            });
-          } catch (error) {
-            console.error('Error parsing saved design data:', error);
-            setIsDesignLoaded(true);
-          }
-        } else {
-          console.warn('No existing design found, starting with empty canvas');
-          setIsDesignLoaded(true);
-        }
-      } catch (error) {
-        console.error('Error loading existing design:', error);
-        setIsDesignLoaded(true);
-      }
-    };
-
-    loadExistingDesign();
-  }, [canvas, isCanvasReady, designId, isDesignLoaded]);
+  // Extract design loading logic to custom hook
+  useDesignLoader({
+    canvas,
+    isCanvasReady,
+    designId,
+    isDesignLoaded,
+    setIsDesignLoaded,
+  });
 
   // Auto-save and real-time state management
   const {
@@ -160,14 +77,12 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   } = useCanvasAutoSave({
     canvas,
     designId,
-    autoSaveInterval: 2000, // Auto-save every 2 seconds
+    autoSaveInterval: DESIGN_EDITOR_CONFIG.AUTO_SAVE_INTERVAL,
     enabled: isCanvasReady && isDesignLoaded, // Only enable auto-save after design is loaded
   });
 
-  // Memoize callback functions to prevent recreation on every render
-  const handleShowSaveDialog = useCallback(() => setShowSaveDialog(true), []);
-  const handleShowLoadDialog = useCallback(() => setShowLoadDialog(true), []);
-  const handleToggleSidebar = useCallback(() => setSidebarCollapsed(!sidebarCollapsed), [sidebarCollapsed]);
+  // Extract canvas event management to custom hook
+  useCanvasEvents({ canvas, incrementCanvasVersion });
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
@@ -182,126 +97,11 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     canRedo,
   });
 
-  // Handle link double-click to show edit popup
-  const handleLinkDoubleClick = useCallback((linkObject: any, _event: any) => {
-    if (!canvas || !linkObject) {
-      return;
-    }
-
-    const canvasElement = canvas.getElement?.();
-    if (!canvasElement) {
-      console.warn('Canvas element not found for link positioning.');
-      return;
-    }
-    const rect = canvasElement.getBoundingClientRect();
-    const zoom = canvas.getZoom?.() || 1;
-
-    // Calculate position relative to viewport
-    const position = {
-      x: rect.left + ((linkObject.left || 0) + (linkObject.width || 0) / 2) * zoom,
-      y: rect.top + ((linkObject.top || 0) + (linkObject.height || 0)) * zoom,
-    };
-
-    setLinkEditPopup({
-      isVisible: true,
-      linkObject,
-      position,
-    });
-  }, [canvas]);
-
-  // Update link properties
-  const handleUpdateLink = useCallback((updates: { url?: string; text?: string }) => {
-    if (!linkEditPopup.linkObject || !canvas || !updates) {
-      return;
-    }
-
-    const linkObject = linkEditPopup.linkObject;
-
-    // Update link data
-    const linkData = {
-      ...(linkObject.linkData || {}),
-      ...updates,
-    };
-
-    linkObject.set?.({ linkData });
-
-    // If text changed, update the displayed text
-    if (updates.text !== undefined) {
-      linkObject.set?.({ text: updates.text });
-    }
-
-    canvas.renderAll?.();
-  }, [linkEditPopup.linkObject, canvas]);
-
-  // Close link edit popup
-  const handleCloseLinkEdit = useCallback(() => {
-    setLinkEditPopup({
-      isVisible: false,
-      linkObject: null,
-      position: { x: 0, y: 0 },
-    });
-  }, []);
-
-  // Set up canvas event listeners for link editing
-  useEffect(() => {
-    if (!canvas) {
-      return;
-    }
-
-    const handleDoubleClick = (e: any) => {
-      const target = e?.target;
-      if (target && target.elementType === 'link') {
-        handleLinkDoubleClick(target, e);
-      }
-    };
-
-    canvas.on('mouse:dblclick', handleDoubleClick);
-
-    // Cleanup function
-    return () => {
-      canvas.off?.('mouse:dblclick', handleDoubleClick);
-    };
-  }, [canvas, handleLinkDoubleClick]);
-
   // Get preview data for real-time preview - memoize to prevent unnecessary re-renders
   const previewData = useMemo(() => {
     const data = getPreviewData();
     return data;
   }, [getPreviewData, hasUnsavedChanges, canvasVersion]);
-
-  // Force preview updates when canvas changes
-  useEffect(() => {
-    if (!canvas) {
-      return;
-    }
-
-    const handleCanvasUpdate = () => {
-      setCanvasVersion(prev => prev + 1);
-    };
-
-    const events = [
-      'object:added',
-      'object:removed',
-      'object:modified',
-      'object:moving',
-      'object:scaling',
-      'object:rotating',
-      'canvas:background:changed',
-    ];
-
-    events.forEach((event) => {
-      canvas.on(event, handleCanvasUpdate);
-    });
-
-    // Cleanup function
-    return () => {
-      if (canvas) {
-        events.forEach((event) => {
-          canvas.off?.(event, handleCanvasUpdate);
-        });
-      }
-    };
-  }, [canvas]);
 
   // Log component lifecycle
   useEffect(() => {
@@ -319,7 +119,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   }, [isCanvasReady, designId]);
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+    <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.MAIN}>
       {/* Full Width Header */}
       <DesignToolbar
         designId={designId}
@@ -354,7 +154,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         {/* Main Editor Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Text Formatting Toolbar */}
-          <TextToolbar canvas={canvas} selectedObject={selectedObject} />
+          <MemoizedTextToolbar canvas={canvas} selectedObject={selectedObject} />
 
           {/* Canvas Area */}
           <div className="flex-1 overflow-hidden">
@@ -371,7 +171,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       </div>
 
       {/* Link Edit Popup */}
-      <LinkEditPopup
+      <MemoizedLinkEditPopup
         isVisible={linkEditPopup.isVisible}
         linkObject={linkEditPopup.linkObject}
         position={linkEditPopup.position}
@@ -380,11 +180,11 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       />
 
       {/* Real-time Preview */}
-      <RealTimePreview
+      <MemoizedRealTimePreview
         canvasState={previewData?.canvasData || null}
-        width={previewData?.width || 375}
-        height={previewData?.height || 667}
-        backgroundColor={previewData?.backgroundColor || '#ffffff'}
+        width={previewData?.width || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH}
+        height={previewData?.height || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT}
+        backgroundColor={previewData?.backgroundColor || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR}
       />
     </div>
   );

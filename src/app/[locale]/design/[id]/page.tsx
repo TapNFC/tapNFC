@@ -1,13 +1,7 @@
+import type { DesignPageProps } from '@/types/design';
 import { Suspense } from 'react';
 import { DesignEditor } from '@/components/design-editor/DesignEditor';
 import { DesignEditorSkeleton } from '@/components/design-editor/DesignEditorSkeleton';
-
-type DesignPageProps = {
-  params: Promise<{
-    locale: string;
-    id: string;
-  }>;
-};
 
 export default async function DesignPage({ params }: DesignPageProps) {
   const { locale, id } = await params;

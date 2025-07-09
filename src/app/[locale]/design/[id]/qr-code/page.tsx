@@ -1,19 +1,14 @@
+import type { DesignPageProps } from '@/types/design';
 import { Suspense } from 'react';
+import { DESIGN_EDITOR_CONFIG } from '@/components/design-editor/constants';
 import { QrCodeGenerator } from '@/components/design-editor/QrCodeGenerator';
 import { QrCodeGeneratorSkeleton } from '@/components/design-editor/QrCodeGeneratorSkeleton';
 
-type QrCodePageProps = {
-  params: Promise<{
-    locale: string;
-    id: string;
-  }>;
-};
-
-export default async function QrCodePage({ params }: QrCodePageProps) {
+export default async function QrCodePage({ params }: DesignPageProps) {
   const { locale, id } = await params;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.PAGE}>
       <Suspense fallback={<QrCodeGeneratorSkeleton />}>
         <QrCodeGenerator designId={id} locale={locale} />
       </Suspense>
@@ -21,7 +16,7 @@ export default async function QrCodePage({ params }: QrCodePageProps) {
   );
 }
 
-export async function generateMetadata({ params }: QrCodePageProps) {
+export async function generateMetadata({ params }: DesignPageProps) {
   const { id } = await params;
 
   return {
