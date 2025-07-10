@@ -22,6 +22,14 @@ export default withSentryConfig(
       experimental: {
         optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
       },
+      images: {
+        remotePatterns: [
+          {
+            protocol: 'https',
+            hostname: 'wjdlnxhhcxiseutevgbk.supabase.co',
+          },
+        ],
+      },
     }),
   ),
   {

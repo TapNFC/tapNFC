@@ -19,7 +19,6 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Settings</h1>
 
       <Suspense fallback={(
         <div className="flex h-64 w-full items-center justify-center">

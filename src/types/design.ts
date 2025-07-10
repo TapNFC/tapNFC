@@ -17,6 +17,7 @@ export type DesignPageWithSearchParams = {
     view?: 'grid' | 'list';
     search?: string;
     category?: string;
+    tag?: string;
   }>;
 };
 
@@ -36,6 +37,8 @@ export type Design = {
   id: string;
   user_id: string;
   name: string;
+  description?: string;
+  tags?: string[];
   canvas_data: any; // JSONB data representing the Fabric.js canvas
   preview_url: string | null;
   is_template: boolean;

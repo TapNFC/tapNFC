@@ -1,5 +1,6 @@
 import type { Design } from '@/types/design';
 import { FileText } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ type LoadTemplateDialogProps = {
 };
 
 export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateDialogProps) {
-  const { designs, loading, error, refreshDesigns } = useDesigns('all');
+  const { designs, loading, error, refreshDesigns } = useDesigns({ category: 'all' });
 
   // Load templates and designs when dialog opens
   useEffect(() => {
@@ -64,8 +65,8 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
           {loading
             ? (
                 <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={`loading-skeleton-${i}`} className="flex items-center space-x-4 rounded-lg border p-3">
+                  {Array.from({ length: 3 }).map(() => (
+                    <div key={`template-skeleton-${crypto.randomUUID()}`} className="flex items-center space-x-4 rounded-lg border p-3">
                       <div className="h-12 w-16 animate-pulse rounded bg-gray-200"></div>
                       <div className="flex-1">
                         <div className="h-4 w-32 animate-pulse rounded bg-gray-200"></div>
@@ -108,10 +109,12 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
                         <div className="flex h-12 w-16 items-center justify-center rounded bg-gray-200">
                           {design.preview_url
                             ? (
-                                <img
+                                <Image
                                   src={design.preview_url}
                                   alt={design.name}
-                                  className="size-full object-cover"
+                                  width={64}
+                                  height={48}
+                                  className="size-full object-contain"
                                 />
                               )
                             : (

@@ -1,6 +1,6 @@
 import type { CustomerFormData, DbCustomer } from '@/types/customer';
 import { createClient } from '@/utils/supabase/client';
-import { deleteCustomerLogo, uploadCustomerLogo } from './storageService';
+import { storageService } from './storageService';
 
 const supabase = createClient();
 
@@ -26,7 +26,7 @@ export async function addCustomer(customerData: CustomerFormData): Promise<DbCus
 
   // Handle image upload if a new avatar is provided
   if (customerData.avatar_url && customerData.avatar_url.startsWith('data:image')) {
-    customerData.avatar_url = await uploadCustomerLogo(customerData.avatar_url, user.id);
+    customerData.avatar_url = await storageService.uploadCustomerLogo(customerData.avatar_url, user.id);
   }
 
   const submissionData = Object.fromEntries(
@@ -42,7 +42,7 @@ export async function addCustomer(customerData: CustomerFormData): Promise<DbCus
   if (error) {
     console.error('Error adding customer:', error);
     if (submissionData.avatar_url) {
-      await deleteCustomerLogo(submissionData.avatar_url as string);
+      await storageService.deleteCustomerLogo(submissionData.avatar_url as string);
     }
     throw new Error(error.message);
   }
@@ -109,13 +109,13 @@ export async function updateCustomer(
     if (!user) {
       throw new Error('Authentication Error: You must be logged in to update a customer.');
     }
-    newAvatarUrl = await uploadCustomerLogo(newAvatarUrl as string, user.id);
+    newAvatarUrl = await storageService.uploadCustomerLogo(newAvatarUrl as string, user.id);
     customerData.avatar_url = newAvatarUrl;
   }
 
   // 4. If image has changed or been removed, delete the old one
   if (oldAvatarUrl && (isNewImageUploaded || isImageRemoved)) {
-    await deleteCustomerLogo(oldAvatarUrl);
+    await storageService.deleteCustomerLogo(oldAvatarUrl);
   }
 
   // 5. Prepare and update the database record
@@ -134,7 +134,7 @@ export async function updateCustomer(
     console.error('Error updating customer:', updateError);
     // If the DB update fails but we uploaded a new image, roll back the upload.
     if (isNewImageUploaded && newAvatarUrl) {
-      await deleteCustomerLogo(newAvatarUrl);
+      await storageService.deleteCustomerLogo(newAvatarUrl);
     }
     throw new Error(updateError.message);
   }
@@ -162,6 +162,6 @@ export async function deleteCustomer(customerId: string): Promise<void> {
   }
 
   if (existingCustomer?.avatar_url) {
-    await deleteCustomerLogo(existingCustomer.avatar_url);
+    await storageService.deleteCustomerLogo(existingCustomer.avatar_url);
   }
 }

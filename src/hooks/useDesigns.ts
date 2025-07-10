@@ -3,42 +3,61 @@ import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { designService } from '@/services/designService';
 
-export function useDesigns(initialCategory: string = 'all') {
+type UseDesignsProps = {
+  category?: string;
+  searchQuery?: string;
+  tag?: string;
+};
+
+export function useDesigns({
+  category: initialCategory = 'all',
+  searchQuery,
+  tag,
+}: UseDesignsProps) {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState(initialCategory);
   const { toast } = useToast();
 
-  // Fetch designs based on category
   const fetchDesigns = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       let fetchedDesigns: Design[] = [];
 
-      switch (category) {
-        case 'templates':
-          fetchedDesigns = await designService.getPublicDesigns();
-          break;
-        case 'my-designs':
-          fetchedDesigns = await designService.getUserDesigns();
-          fetchedDesigns = fetchedDesigns.filter(design => !design.is_template);
-          break;
-        case 'recent':
-          fetchedDesigns = await designService.getUserDesigns();
-          fetchedDesigns = fetchedDesigns
-            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-            .slice(0, 10);
-          break;
-        case 'all':
-        default: {
-          const [userDesigns, publicDesigns] = await Promise.all([
-            designService.getUserDesigns(),
-            designService.getPublicDesigns(),
-          ]);
-          fetchedDesigns = [...userDesigns, ...publicDesigns];
-          break;
+      if (tag) {
+        fetchedDesigns = await designService.getDesignsByTag(tag);
+      } else if (searchQuery) {
+        fetchedDesigns = await designService.searchDesigns(searchQuery);
+      } else {
+        switch (category) {
+          case 'templates':
+            fetchedDesigns = await designService.getPublicDesigns();
+            break;
+          case 'my-designs': {
+            let userDesigns = await designService.getUserDesigns();
+            userDesigns = userDesigns.filter(design => !design.is_template);
+            fetchedDesigns = userDesigns;
+            break;
+          }
+          case 'recent': {
+            let userDesigns = await designService.getUserDesigns();
+            userDesigns = userDesigns
+              .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+              .slice(0, 10);
+            fetchedDesigns = userDesigns;
+            break;
+          }
+          case 'all':
+          default: {
+            const [userDesigns, publicDesigns] = await Promise.all([
+              designService.getUserDesigns(),
+              designService.getPublicDesigns(),
+            ]);
+            fetchedDesigns = [...userDesigns, ...publicDesigns];
+            break;
+          }
         }
       }
 
@@ -49,7 +68,7 @@ export function useDesigns(initialCategory: string = 'all') {
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [category, searchQuery, tag]);
 
   // Create a new design
   const createDesign = async (design: Partial<Design>): Promise<Design | null> => {
@@ -125,13 +144,15 @@ export function useDesigns(initialCategory: string = 'all') {
     }
   };
 
-  // Search designs
+  // Search designs - This is now handled by the main fetchDesigns effect
+  // but can be kept for explicit search actions if needed elsewhere.
   const searchDesigns = async (query: string): Promise<Design[]> => {
     if (!query.trim()) {
       await fetchDesigns();
       return designs;
     }
 
+    setLoading(true);
     try {
       const results = await designService.searchDesigns(query);
       setDesigns(results);
@@ -144,6 +165,8 @@ export function useDesigns(initialCategory: string = 'all') {
         variant: 'error',
       });
       return [];
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -173,7 +196,7 @@ export function useDesigns(initialCategory: string = 'all') {
     setCategory(newCategory);
   };
 
-  // Fetch designs on mount and when category changes
+  // Fetch designs on mount and when category/search/tag changes
   useEffect(() => {
     fetchDesigns();
   }, [fetchDesigns]);
@@ -187,7 +210,7 @@ export function useDesigns(initialCategory: string = 'all') {
     createDesign,
     updateDesign,
     deleteDesign,
-    searchDesigns,
+    searchDesigns, // Keep exposing for explicit searches if needed
     uploadPreviewImage,
     refreshDesigns: fetchDesigns,
   };

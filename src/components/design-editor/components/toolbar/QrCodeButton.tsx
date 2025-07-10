@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { designDB } from '@/lib/indexedDB';
+import { designService } from '@/services/designService';
+import { storageService } from '@/services/storageService';
 
 type QrCodeButtonProps = {
   designId: string;
@@ -23,6 +25,12 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
     // Save the current canvas data to IndexedDB before proceeding
     if (canvas) {
       try {
+        // 1. Get existing design to find old preview_url
+        const existingDesign = await designService.getDesignById(designId);
+        if (existingDesign?.preview_url) {
+          await storageService.deleteDesignPreview(existingDesign.preview_url);
+        }
+
         const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
 
         if (!canvasData) {
@@ -35,6 +43,15 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
         canvasData.height = canvas.getHeight?.();
         canvasData.background = canvas.backgroundColor || '#ffffff';
 
+        // Generate preview image
+        const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+        const previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+
+        if (previewUrl) {
+          await designService.updateDesign(designId, { preview_url: previewUrl });
+          toast.success('Design preview updated.');
+        }
+
         const designData: DesignData = {
           id: designId,
           canvasData,
@@ -44,6 +61,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
             backgroundColor: canvas.backgroundColor || '#ffffff',
             title: `Design ${designId}`,
             description: 'Design ready for QR code generation',
+            previewUrl: previewUrl || undefined,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -54,6 +72,8 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
 
         // Also keep localStorage for backward compatibility (temporary)
         localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
+
+        toast.success('Design saved locally.');
       } catch (error) {
         console.error('Failed to save design data:', error);
         toast.error('Failed to save design data. Please try again.');

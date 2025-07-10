@@ -3,6 +3,8 @@ CREATE TABLE designs (
   id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
+  description TEXT,
+  tags TEXT[],
   canvas_data JSONB,
   preview_url TEXT,
   is_template BOOLEAN DEFAULT FALSE,
@@ -16,6 +18,8 @@ COMMENT ON TABLE designs IS 'Stores design templates and user-created designs.';
 COMMENT ON COLUMN designs.id IS 'Unique identifier for each design.';
 COMMENT ON COLUMN designs.user_id IS 'Foreign key to the user who owns the design.';
 COMMENT ON COLUMN designs.name IS 'The name of the design.';
+COMMENT ON COLUMN designs.description IS 'Description of the design.';
+COMMENT ON COLUMN designs.tags IS 'Array of tags associated with the design.';
 COMMENT ON COLUMN designs.canvas_data IS 'JSONB data representing the state of the design canvas (e.g., Fabric.js data).';
 COMMENT ON COLUMN designs.preview_url IS 'URL for a preview image of the design.';
 COMMENT ON COLUMN designs.is_template IS 'Flag to indicate if the design is a pre-made template.';

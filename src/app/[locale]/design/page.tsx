@@ -25,7 +25,7 @@ async function getUserProfile(): Promise<UserProfile | undefined> {
 
 export default async function DesignPage({ params, searchParams }: DesignPageWithSearchParams) {
   const { locale } = await params;
-  const { view = 'grid', search, category } = await searchParams;
+  const { view = 'grid', search, category, tag } = await searchParams;
 
   // Get user profile for the header
   const userProfile = await getUserProfile();
@@ -56,6 +56,7 @@ export default async function DesignPage({ params, searchParams }: DesignPageWit
             view={view}
             search={search}
             category={category}
+            tag={tag}
             locale={locale}
           />
         </Suspense>

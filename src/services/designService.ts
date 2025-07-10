@@ -147,4 +147,22 @@ export const designService = {
 
     return data || [];
   },
+
+  // Get designs by tag
+  async getDesignsByTag(tag: string): Promise<Design[]> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('designs')
+      .select('*')
+      .or(`is_public.eq.true,user_id.eq.auth.uid()`)
+      .contains('tags', [tag])
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching designs by tag:', error);
+      return [];
+    }
+
+    return data || [];
+  },
 };

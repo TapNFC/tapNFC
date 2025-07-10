@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { designDB } from '@/lib/indexedDB';
+import { designService } from '@/services/designService';
+import { storageService } from '@/services/storageService';
 
 type CanvasSettingsProps = {
   canvas: any;
@@ -136,6 +138,12 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
     }
 
     try {
+      // 1. Get existing design to find old preview_url
+      const existingDesign = await designService.getDesignById(designId);
+      if (existingDesign?.preview_url) {
+        await storageService.deleteDesignPreview(existingDesign.preview_url);
+      }
+
       // Save the current canvas data to IndexedDB before proceeding
       const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
 
@@ -149,6 +157,15 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
       canvasData.height = canvas.getHeight?.();
       canvasData.background = canvas.backgroundColor || '#ffffff';
 
+      // Generate preview image
+      const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+      const previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+
+      if (previewUrl) {
+        await designService.updateDesign(designId, { preview_url: previewUrl });
+        toast.success('Design preview updated.');
+      }
+
       const designData: DesignData = {
         id: designId,
         canvasData,
@@ -158,6 +175,7 @@ export function CanvasSettings({ canvas, designId, locale = 'en' }: CanvasSettin
           backgroundColor: canvas.backgroundColor || '#ffffff',
           title: `Design ${designId}`,
           description: 'Design created with canvas editor',
+          previewUrl: previewUrl || undefined,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
