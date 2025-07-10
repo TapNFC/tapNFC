@@ -1,9 +1,10 @@
 'use client';
 
-import type { DesignData } from '@/lib/indexedDB';
-import { Calendar, Clock, Copy, Download, Edit, Eye, Folder, MoreHorizontal, Palette, Share, Star, Trash2 } from 'lucide-react';
+import type { Design } from '@/types/design';
+import { Calendar, Clock, Copy, Download, Edit, Eye, MoreHorizontal, Palette, Share, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { designDB } from '@/lib/indexedDB';
+import { useDesigns } from '@/hooks/useDesigns';
 import { DesignGallerySkeleton } from './components/DesignGallerySkeleton';
 
 type DesignGalleryProps = {
@@ -24,207 +25,80 @@ type DesignGalleryProps = {
   locale: string;
 };
 
-type CombinedDesignItem = {
-  id: string;
-  name: string;
-  category: string;
-  createdAt: Date;
-  updatedAt: Date;
-  type: 'design' | 'template';
-  thumbnail?: string;
-  size: { width: number; height: number };
-  backgroundColor?: string;
-  description?: string;
-  data: any;
-};
-
 export function DesignGallery({ view, search, category, locale }: DesignGalleryProps) {
-  const [designs, setDesigns] = useState<CombinedDesignItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    designs,
+    loading,
+    error,
+    deleteDesign,
+    searchDesigns,
+    refreshDesigns,
+    updateDesign,
+    createDesign,
+  } = useDesigns(category || 'all');
 
-  // Load designs and templates from IndexedDB
-  const loadDesigns = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load both designs and templates
-      const [savedDesignsData, savedTemplatesData] = await Promise.all([
-        designDB.getAllDesigns(),
-        designDB.getAllTemplates(),
-      ]);
-
-      const savedDesigns = Array.isArray(savedDesignsData) ? savedDesignsData : [];
-      const savedTemplates = Array.isArray(savedTemplatesData) ? savedTemplatesData : [];
-
-      // Convert designs to combined format
-      const designItems: CombinedDesignItem[] = savedDesigns.map(design => ({
-        id: design?.id || `design-${Math.random().toString(36).substring(2, 11)}`,
-        name: design?.metadata?.title || `Design ${(design?.id || 'unknown').slice(-8)}`,
-        category: 'My Designs',
-        createdAt: design?.createdAt ? new Date(design.createdAt) : new Date(),
-        updatedAt: design?.updatedAt ? new Date(design.updatedAt) : new Date(),
-        type: 'design' as const,
-        size: {
-          width: design?.metadata?.width || 0,
-          height: design?.metadata?.height || 0,
-        },
-        backgroundColor: design?.metadata?.backgroundColor || '#ffffff',
-        description: design?.metadata?.description,
-        data: { ...(design?.canvasData || {}) },
-      }));
-
-      // Convert templates to combined format
-      const templateItems: CombinedDesignItem[] = savedTemplates.map(template => ({
-        id: template?.id || `template-${Math.random().toString(36).substring(2, 11)}`,
-        name: template?.name || 'Untitled Template',
-        category: template?.category || 'Uncategorized',
-        createdAt: template?.createdAt ? new Date(template.createdAt) : new Date(),
-        updatedAt: template?.updatedAt ? new Date(template.updatedAt) : new Date(),
-        type: 'template' as const,
-        size: {
-          width: template?.canvasData?.width || 800,
-          height: template?.canvasData?.height || 600,
-        },
-        backgroundColor: template?.canvasData?.background || '#ffffff',
-        description: template?.description,
-        data: { ...(template?.canvasData || {}) },
-      }));
-
-      // Combine and sort by updated date (newest first)
-      const allItems = [...designItems, ...templateItems]
-        .sort((a, b) => (b?.updatedAt?.getTime() || 0) - (a?.updatedAt?.getTime() || 0));
-
-      setDesigns(allItems);
-    } catch (error) {
-      console.error('Failed to load designs:', error);
-      setError('Failed to load designs. Please try again.');
-      toast.error('Failed to load designs');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load designs on component mount
+  // Search designs when search query changes
   useEffect(() => {
-    loadDesigns();
-  }, [loadDesigns]);
+    if (search) {
+      searchDesigns(search);
+    }
+  }, [search, searchDesigns]);
 
-  // Filter designs based on search and category
-  const filteredDesigns = designs.filter((design) => {
-    const matchesSearch = !search
-      || (design?.name || '').toLowerCase().includes(search.toLowerCase())
-      || (design?.category || '').toLowerCase().includes(search.toLowerCase())
-      || (design?.description || '').toLowerCase().includes(search.toLowerCase());
+  // Refresh designs when category changes
+  useEffect(() => {
+    refreshDesigns();
+  }, [category, refreshDesigns]);
 
-    const matchesCategory = !category
-      || category === 'All Designs'
-      || design?.category === category
-      || (category === 'My Designs' && design?.type === 'design')
-      || (category === 'Templates' && design?.type === 'template');
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleDuplicate = useCallback(async (designId: string) => {
+  const handleDuplicate = useCallback(async (design: Design) => {
     try {
-      const designToDuplicate = designs.find(d => d?.id === designId);
-      if (!designToDuplicate) {
-        toast.error('Design not found');
-        return;
-      }
+      // Create a duplicate design
+      const duplicateData = {
+        user_id: design.user_id,
+        name: `${design.name} (Copy)`,
+        canvas_data: design.canvas_data,
+        preview_url: design.preview_url,
+        is_template: false, // Always create as a regular design, not a template
+        is_public: false, // Always create as private
+      };
 
-      // Generate new ID for the duplicate
-      const newId = `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const duplicateName = `${designToDuplicate?.name || 'Unnamed Design'} (Copy)`;
-
-      if (designToDuplicate?.type === 'design') {
-        // Duplicate as a new design
-        const duplicateDesignData: DesignData = {
-          id: newId,
-          canvasData: { ...(designToDuplicate?.data || {}) },
-          metadata: {
-            width: designToDuplicate?.size?.width || 0,
-            height: designToDuplicate?.size?.height || 0,
-            backgroundColor: designToDuplicate?.backgroundColor || '#ffffff',
-            title: duplicateName,
-            description: designToDuplicate?.description,
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        await designDB.saveDesign(duplicateDesignData);
+      const newDesign = await createDesign(duplicateData);
+      if (newDesign) {
+        toast.success('Design duplicated successfully');
       } else {
-        // Duplicate template as a new design
-        const duplicateDesignData: DesignData = {
-          id: newId,
-          canvasData: { ...(designToDuplicate?.data || {}) },
-          metadata: {
-            width: designToDuplicate?.size?.width || 0,
-            height: designToDuplicate?.size?.height || 0,
-            backgroundColor: designToDuplicate?.backgroundColor || '#ffffff',
-            title: duplicateName,
-            description: designToDuplicate?.description,
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        await designDB.saveDesign(duplicateDesignData);
+        toast.error('Failed to duplicate design');
       }
-
-      toast.success('Design duplicated successfully');
-      loadDesigns(); // Refresh the list
     } catch (error) {
       console.error('Failed to duplicate design:', error);
       toast.error('Failed to duplicate design');
     }
-  }, [designs, loadDesigns]);
+  }, [createDesign]);
 
-  const handleDelete = useCallback(async (designId: string) => {
+  const handleDelete = useCallback(async (id: string, name: string) => {
     try {
-      const designToDelete = designs.find(d => d?.id === designId);
-      if (!designToDelete) {
-        toast.error('Design not found');
-        return;
-      }
-
-      if (designToDelete?.type === 'design') {
-        await designDB.deleteDesign(designId);
+      const success = await deleteDesign(id, name);
+      if (success) {
+        toast.success('Design deleted successfully');
       } else {
-        await designDB.deleteTemplate(designId);
+        toast.error('Failed to delete design');
       }
-
-      toast.success('Design deleted successfully');
-      loadDesigns(); // Refresh the list
     } catch (error) {
       console.error('Failed to delete design:', error);
       toast.error('Failed to delete design');
     }
-  }, [designs, loadDesigns]);
+  }, [deleteDesign]);
 
-  const handleDownload = useCallback(async (designId: string) => {
+  const handleDownload = useCallback(async (design: Design) => {
     try {
-      const design = designs.find(d => d?.id === designId);
-      if (!design) {
-        toast.error('Design not found');
-        return;
-      }
-
       // Create a JSON blob with the design data
       const designJson = JSON.stringify({
-        id: design?.id,
-        name: design?.name || 'Untitled Design',
-        type: design?.type,
-        canvasData: design?.data || {},
+        id: design.id,
+        name: design.name,
+        type: design.is_template ? 'template' : 'design',
+        canvasData: design.canvas_data || {},
         metadata: {
-          width: design?.size?.width || 0,
-          height: design?.size?.height || 0,
-          backgroundColor: design?.backgroundColor || '#ffffff',
-          title: design?.name || 'Untitled Design',
-          description: design?.description,
+          title: design.name,
+          is_template: design.is_template,
+          is_public: design.is_public,
         },
         exportedAt: new Date().toISOString(),
       }, null, 2);
@@ -234,7 +108,7 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${(design?.name || 'design').replace(/[^a-z0-9]/gi, '_')}.json`;
+      link.download = `${design.name.replace(/[^a-z0-9]/gi, '_')}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -245,377 +119,361 @@ export function DesignGallery({ view, search, category, locale }: DesignGalleryP
       console.error('Failed to download design:', error);
       toast.error('Failed to download design');
     }
-  }, [designs]);
+  }, []);
 
-  const handleShare = useCallback(async (designId: string) => {
+  const handleShare = useCallback(async (design: Design) => {
     try {
-      const design = designs.find(d => d?.id === designId);
-      if (!design) {
-        toast.error('Design not found');
-        return;
+      // Toggle the is_public flag
+      const updatedDesign = await updateDesign(design.id, {
+        is_public: !design.is_public,
+      });
+
+      if (updatedDesign) {
+        toast.success(
+          updatedDesign.is_public
+            ? 'Design is now public and can be shared'
+            : 'Design is now private',
+        );
       }
-
-      const shareUrl = `${window.location.origin}/${locale}/preview/${design?.id || ''}`;
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Share link copied to clipboard!');
     } catch (error) {
-      console.error('Failed to share design:', error);
-      toast.error('Failed to share design');
+      console.error('Failed to update design visibility:', error);
+      toast.error('Failed to update design visibility');
     }
-  }, [designs, locale]);
+  }, [updateDesign]);
 
-  const formatDate = (date?: Date) => {
-    if (!date) {
-      return 'N/A';
+  const formatDate = (dateString?: string) => {
+    if (!dateString) {
+      return 'Unknown date';
     }
-    return date.toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
   };
 
-  const formatTimeAgo = (date?: Date) => {
-    if (!date) {
-      return 'N/A';
+  const formatTimeAgo = (dateString?: string) => {
+    if (!dateString) {
+      return '';
     }
+    const date = new Date(dateString);
     const now = new Date();
-    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.round(diffMs / 1000);
+    const diffMins = Math.round(diffSecs / 60);
+    const diffHours = Math.round(diffMins / 60);
+    const diffDays = Math.round(diffHours / 24);
+    const diffWeeks = Math.round(diffDays / 7);
+    const diffMonths = Math.round(diffDays / 30);
+    const diffYears = Math.round(diffDays / 365);
 
-    if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Recently';
+    if (diffSecs < 60) {
+      return 'just now';
     }
+    if (diffMins < 60) {
+      return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    }
+    if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    }
+    if (diffWeeks < 4) {
+      return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+    }
+    if (diffMonths < 12) {
+      return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
+    }
+    return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`;
   };
 
-  // Loading state
   if (loading) {
     return <DesignGallerySkeleton view={view} />;
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mb-6 flex justify-center">
-            <div className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 shadow-lg">
-              <Palette className="size-10 text-red-600" />
-            </div>
-          </div>
-          <h3 className="mb-3 text-2xl font-bold text-gray-900">Failed to load designs</h3>
-          <p className="mb-8 leading-relaxed text-gray-600">{error}</p>
-          <Button onClick={loadDesigns} className="bg-gradient-to-r from-blue-600 to-indigo-600">
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (filteredDesigns.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mb-6 flex justify-center">
-            <div className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 shadow-lg">
-              <Palette className="size-10 text-blue-600" />
-            </div>
-          </div>
-          <h3 className="mb-3 text-2xl font-bold text-gray-900">
-            {search || category ? 'No designs found' : 'No designs yet'}
-          </h3>
-          <p className="mb-8 leading-relaxed text-gray-600">
-            {search || category
-              ? 'Try adjusting your search or filter criteria to find what you\'re looking for.'
-              : 'Start your creative journey by designing your first masterpiece.'}
-          </p>
-          <Link href={`/${locale}/design/new`}>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25 transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:to-indigo-700">
-              Create New Design
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // List view
-  if (view === 'list') {
-    return (
-      <div className="space-y-4">
-        {filteredDesigns.map(design => (
-          <div
-            key={design.id}
-            className="group flex items-center space-x-6 rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm transition-all duration-300 hover:bg-white/80 hover:shadow-xl hover:shadow-blue-100/30"
-          >
-            {/* Enhanced Thumbnail */}
-            <Link href={`/${locale}/design/${design.id}`}>
-              <div
-                className="relative h-20 w-32 overflow-hidden rounded-xl shadow-md transition-all duration-300 group-hover:shadow-lg"
-                style={{ backgroundColor: design.backgroundColor || '#f3f4f6' }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10"></div>
-                <div className="flex h-full items-center justify-center text-gray-500">
-                  {design.type === 'template'
-                    ? (
-                        <Star className="size-6 text-yellow-500" />
-                      )
-                    : (
-                        <Eye className="size-6" />
-                      )}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-              </div>
-            </Link>
-
-            {/* Enhanced Design Info */}
-            <div className="min-w-0 flex-1">
-              <Link href={`/${locale}/design/${design.id}`}>
-                <h3 className="text-lg font-semibold text-gray-900 transition-colors duration-200 hover:text-blue-600">
-                  {design.name}
-                </h3>
-              </Link>
-              <div className="mt-2 flex items-center space-x-4">
-                <Badge
-                  variant={design.type === 'template' ? 'default' : 'secondary'}
-                  className="text-xs"
-                >
-                  {design.type === 'template'
-                    ? (
-                        <>
-                          <Star className="mr-1 size-3" />
-                          {design.category}
-                        </>
-                      )
-                    : (
-                        <>
-                          <Folder className="mr-1 size-3" />
-                          {design.category}
-                        </>
-                      )}
-                </Badge>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Clock className="mr-1 size-3" />
-                  {formatTimeAgo(design.updatedAt)}
-                </div>
-              </div>
-              <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                <span>
-                  {design.size.width}
-                  {' '}
-                  ×
-                  {design.size.height}
-                  px
-                </span>
-                <div className="flex items-center">
-                  <Calendar className="mr-1 size-3" />
-                  {formatDate(design.createdAt)}
-                </div>
-              </div>
-              {design.description && (
-                <p className="mt-1 line-clamp-1 text-sm text-gray-600">{design.description}</p>
-              )}
-            </div>
-
-            {/* Enhanced Actions */}
-            <div className="flex items-center space-x-2">
-              <Link href={`/${locale}/design/${design.id}`}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/40 bg-white/60 backdrop-blur-sm transition-all duration-200 hover:border-blue-200 hover:bg-white/80"
-                >
-                  <Edit className="mr-2 size-4" />
-                  Edit
-                </Button>
-              </Link>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="size-8 p-0 backdrop-blur-sm transition-all duration-200 hover:bg-white/60"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-white/30 bg-white/80 backdrop-blur-xl">
-                  <DropdownMenuItem onClick={() => handleDuplicate(design.id)}>
-                    <Copy className="mr-2 size-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload(design.id)}>
-                    <Download className="mr-2 size-4" />
-                    Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare(design.id)}>
-                    <Share className="mr-2 size-4" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleDelete(design.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Grid view
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {filteredDesigns.map(design => (
-        <div
-          key={design.id}
-          className="group relative rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-2xl hover:shadow-blue-200/30"
+      <div className="flex min-h-[300px] w-full flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <div className="text-2xl font-semibold text-gray-500">Failed to load designs</div>
+        <p className="mt-2 text-sm text-gray-500">{error}</p>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => refreshDesigns()}
         >
-          {/* Background gradient overlay */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
-          {/* Type Badge */}
-          <div className="absolute right-3 top-3 z-10">
-            <Badge
-              variant={design.type === 'template' ? 'default' : 'secondary'}
-              className="text-xs shadow-md"
-            >
-              {design.type === 'template'
-                ? (
-                    <>
-                      <Star className="mr-1 size-3" />
-                      Template
-                    </>
-                  )
-                : (
-                    <>
-                      <Folder className="mr-1 size-3" />
-                      Design
-                    </>
-                  )}
-            </Badge>
-          </div>
+  if (designs.length === 0) {
+    return (
+      <div className="flex min-h-[300px] w-full flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <div className="text-2xl font-semibold text-gray-500">No designs found</div>
+        <p className="mt-2 text-sm text-gray-500">
+          {search
+            ? `No designs match your search for "${search}"`
+            : category === 'templates'
+              ? 'No templates available'
+              : 'Create your first design to get started'}
+        </p>
+        <Link href={`/${locale}/design/new`}>
+          <Button className="mt-4">Create New Design</Button>
+        </Link>
+      </div>
+    );
+  }
 
-          {/* Enhanced Thumbnail */}
-          <Link href={`/${locale}/design/${design.id}`}>
-            <div
-              className="relative mb-6 aspect-[4/3] w-full overflow-hidden rounded-xl shadow-md transition-all duration-300 group-hover:shadow-lg"
-              style={{ backgroundColor: design.backgroundColor || '#f3f4f6' }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10"></div>
-              <div className="flex h-full items-center justify-center text-gray-500">
-                <div className="text-center">
-                  {design.type === 'template'
-                    ? (
-                        <Star className="mx-auto mb-2 size-8 text-yellow-500" />
-                      )
-                    : (
-                        <Eye className="mx-auto mb-2 size-8" />
+  return (
+    <div className="pb-10">
+      {view === 'grid'
+        ? (
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {designs.map(design => (
+                <div
+                  key={design.id}
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  {/* Design preview */}
+                  <Link
+                    href={`/${locale}/design/${design.id}`}
+                    className="block shrink-0"
+                  >
+                    <div className="relative aspect-[4/3] w-full overflow-hidden">
+                      {design.preview_url
+                        ? (
+                            <Image
+                              src={design.preview_url}
+                              alt={design.name}
+                              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              width={500}
+                              height={500}
+                            />
+                          )
+                        : (
+                            <div className="flex size-full items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400 dark:from-zinc-800 dark:to-zinc-900">
+                              <Palette className="size-12 opacity-30" />
+                            </div>
+                          )}
+
+                      {/* Template badge */}
+                      {design.is_template && (
+                        <Badge className="absolute left-3 top-3 border border-white/20 bg-black/50 text-white backdrop-blur-sm">
+                          Template
+                        </Badge>
                       )}
-                  <div className="text-sm font-medium">
-                    {design.size.width}
-                    {' '}
-                    ×
-                    {design.size.height}
-                    px
+
+                      {/* Public badge */}
+                      {design.is_public && !design.is_template && (
+                        <Badge className="absolute left-3 top-3 border border-white/20 bg-green-600/50 text-white backdrop-blur-sm">
+                          Public
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+
+                  {/* Design info */}
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="flex-1">
+                      <h3 className="line-clamp-2 font-semibold text-gray-800 dark:text-gray-100">
+                        {design.name}
+                      </h3>
+                      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="size-3" />
+                          <span>{formatDate(design.created_at)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="size-3" />
+                          <span>{formatTimeAgo(design.updated_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions dropdown */}
+                    <div className="mt-4 flex items-center justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 rounded-full"
+                          >
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[180px]">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/${locale}/design/${design.id}`}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="mr-2 size-4" />
+                              Edit Design
+                            </Link>
+                          </DropdownMenuItem>
+                          {!design.is_template && (
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/${locale}/design/${design.id}/qr-code`}
+                                className="cursor-pointer"
+                              >
+                                <Eye className="mr-2 size-4" />
+                                Generate QR
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => handleDuplicate(design)}>
+                            <Copy className="mr-2 size-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShare(design)}>
+                            <Share className="mr-2 size-4" />
+                            {design.is_public ? 'Make Private' : 'Make Public'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(design)}>
+                            <Download className="mr-2 size-4" />
+                            Download
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                            onClick={() => handleDelete(design.id, design.name)}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+              ))}
+            </div>
+          )
+        : (
+            <div className="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+              {designs.map(design => (
+                <div
+                  key={design.id}
+                  className="flex items-center justify-between p-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-zinc-800/20"
+                >
+                  <div className="flex items-center space-x-4">
+                    {/* Thumbnail */}
+                    <div className="relative size-12 shrink-0 overflow-hidden rounded-md">
+                      {design.preview_url
+                        ? (
+                            <img
+                              src={design.preview_url}
+                              alt={design.name}
+                              className="size-full object-cover"
+                            />
+                          )
+                        : (
+                            <div className="flex size-full items-center justify-center bg-gray-100 dark:bg-zinc-800">
+                              <Palette className="size-6 text-gray-400" />
+                            </div>
+                          )}
+                    </div>
 
-              {/* Floating edit button */}
-              <div className="absolute left-3 top-3 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                <div className="rounded-lg bg-white/90 p-2 shadow-lg backdrop-blur-sm">
-                  <Edit className="size-4 text-blue-600" />
+                    {/* Info */}
+                    <div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-100">
+                        {design.name}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="size-3" />
+                          <span>{formatDate(design.created_at)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="size-3" />
+                          <span>{formatTimeAgo(design.updated_at)}</span>
+                        </div>
+                        {design.is_template && (
+                          <Badge
+                            variant="outline"
+                            className="border-blue-200 bg-blue-50 text-xs text-blue-600 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-400"
+                          >
+                            Template
+                          </Badge>
+                        )}
+                        {design.is_public && !design.is_template && (
+                          <Badge
+                            variant="outline"
+                            className="border-green-200 bg-green-50 text-xs text-green-600 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-500"
+                          >
+                            Public
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="icon" asChild className="size-8">
+                      <Link href={`/${locale}/design/${design.id}`}>
+                        <Edit className="size-4" />
+                        <span className="sr-only">Edit</span>
+                      </Link>
+                    </Button>
+                    {!design.is_template && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="size-8"
+                      >
+                        <Link href={`/${locale}/design/${design.id}/qr-code`}>
+                          <Eye className="size-4" />
+                          <span className="sr-only">Generate QR</span>
+                        </Link>
+                      </Button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 rounded-full"
+                        >
+                          <MoreHorizontal className="size-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[160px]">
+                        <DropdownMenuItem onClick={() => handleDuplicate(design)}>
+                          <Copy className="mr-2 size-4" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare(design)}>
+                          <Share className="mr-2 size-4" />
+                          {design.is_public ? 'Make Private' : 'Make Public'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownload(design)}>
+                          <Download className="mr-2 size-4" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                          onClick={() => handleDelete(design.id, design.name)}
+                        >
+                          <Trash2 className="mr-2 size-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          </Link>
-
-          {/* Enhanced Design Info */}
-          <div className="relative space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1">
-                <Link href={`/${locale}/design/${design.id}`}>
-                  <h3 className="truncate text-lg font-semibold text-gray-900 transition-colors duration-200 hover:text-blue-600">
-                    {design.name}
-                  </h3>
-                </Link>
-                <div className="mt-2">
-                  <Badge variant="outline" className="text-xs">
-                    {design.category}
-                  </Badge>
-                </div>
-                {design.description && (
-                  <p className="mt-2 line-clamp-2 text-sm text-gray-600">{design.description}</p>
-                )}
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="size-8 p-0 opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-white/60 group-hover:opacity-100"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-white/30 bg-white/90 backdrop-blur-xl">
-                  <DropdownMenuItem onClick={() => handleDuplicate(design.id)}>
-                    <Copy className="mr-2 size-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload(design.id)}>
-                    <Download className="mr-2 size-4" />
-                    Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare(design.id)}>
-                    <Share className="mr-2 size-4" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleDelete(design.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div className="flex items-center">
-                <Clock className="mr-1 size-3" />
-                <span>{formatTimeAgo(design.updatedAt)}</span>
-              </div>
-              <div className="flex items-center">
-                <Calendar className="mr-1 size-3" />
-                <span>{formatDate(design.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+          )}
     </div>
   );
 }

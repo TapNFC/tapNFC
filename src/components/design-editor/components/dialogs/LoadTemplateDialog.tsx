@@ -1,5 +1,7 @@
+import type { Design } from '@/types/design';
 import { FileText } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { designDB } from '@/lib/indexedDB';
+import { useDesigns } from '@/hooks/useDesigns';
 
 type LoadTemplateDialogProps = {
   open: boolean;
@@ -17,66 +19,15 @@ type LoadTemplateDialogProps = {
   onLoad: (templateId: string) => Promise<void>;
 };
 
-type CombinedTemplate = {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  type: 'design' | 'template';
-  updatedAt: Date;
-};
-
 export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateDialogProps) {
-  const [templates, setTemplates] = useState<CombinedTemplate[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { designs, loading, error, refreshDesigns } = useDesigns('all');
 
-  const loadTemplatesAndDesigns = async () => {
-    try {
-      setLoading(true);
-
-      // Load both templates and designs from IndexedDB
-      const [savedTemplates, savedDesigns] = await Promise.all([
-        designDB.getAllTemplates(),
-        designDB.getAllDesigns(),
-      ]);
-
-      // Convert templates to combined format
-      const templatesData: CombinedTemplate[] = (Array.isArray(savedTemplates) ? savedTemplates : []).map(template => ({
-        id: template?.id || `template-${Math.random()}`,
-        name: template?.name || 'Untitled Template',
-        description: template?.description,
-        category: template?.category || 'Uncategorized',
-        type: 'template' as const,
-        updatedAt: template?.updatedAt ? new Date(template.updatedAt) : new Date(),
-      }));
-
-      // Convert designs to template format
-      const designsData: CombinedTemplate[] = (Array.isArray(savedDesigns) ? savedDesigns : []).map(design => ({
-        id: design?.id || `design-${Math.random()}`,
-        name: design?.metadata?.title || `Design ${design?.id?.slice(-8) || 'Unknown'}`,
-        description: design?.metadata?.description,
-        category: 'My Designs',
-        type: 'design' as const,
-        updatedAt: design?.updatedAt ? new Date(design.updatedAt) : new Date(),
-      }));
-
-      // Combine and sort by updated date (newest first)
-      const allTemplates = [...templatesData, ...designsData]
-        .sort((a, b) => (b?.updatedAt?.getTime() || 0) - (a?.updatedAt?.getTime() || 0));
-
-      setTemplates(allTemplates);
-    } catch (error) {
-      console.error('Failed to load templates and designs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
   // Load templates and designs when dialog opens
   useEffect(() => {
     if (open) {
-      loadTemplatesAndDesigns();
+      refreshDesigns();
     }
-  }, [open]);
+  }, [open, refreshDesigns]);
 
   const handleLoadTemplate = async (templateId: string) => {
     try {
@@ -84,11 +35,16 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
       onOpenChange(false);
     } catch (error) {
       console.error('Error loading template:', error);
+      toast.error('Error loading template');
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) {
+      return 'Unknown date';
+    }
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -119,58 +75,72 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
                   ))}
                 </div>
               )
-            : templates.length === 0
+            : error
               ? (
                   <div className="py-8 text-center text-gray-500">
-                    <FileText className="mx-auto mb-4 size-12 text-gray-300" />
-                    <p>No templates or designs found</p>
-                    <p className="text-sm">Create your first design or save a template to see them here</p>
+                    <p className="text-red-500">{error}</p>
+                    <Button onClick={refreshDesigns} className="mt-4">Try Again</Button>
                   </div>
                 )
-              : (
-                  templates.map((template) => {
-                    if (!template || !template.id) {
-                      return null;
-                    }
-                    return (
+              : designs.length === 0
+                ? (
+                    <div className="py-8 text-center text-gray-500">
+                      <FileText className="mx-auto mb-4 size-12 text-gray-300" />
+                      <p>No templates or designs found</p>
+                      <p className="text-sm">Create your first design or save a template to see them here</p>
+                    </div>
+                  )
+                : (
+                    designs.map((design: Design) => (
                       <div
-                        key={template.id}
+                        key={design.id}
                         role="button"
                         tabIndex={0}
                         className="flex cursor-pointer items-center space-x-4 rounded-lg border p-3 transition-colors hover:bg-gray-50"
-                        onClick={() => handleLoadTemplate(template.id)}
+                        onClick={() => handleLoadTemplate(design.id)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            handleLoadTemplate(template.id);
+                            handleLoadTemplate(design.id);
                           }
                         }}
                       >
                         <div className="flex h-12 w-16 items-center justify-center rounded bg-gray-200">
-                          <FileText className="size-6 text-gray-400" />
+                          {design.preview_url
+                            ? (
+                                <img
+                                  src={design.preview_url}
+                                  alt={design.name}
+                                  className="size-full object-cover"
+                                />
+                              )
+                            : (
+                                <FileText className="size-6 text-gray-400" />
+                              )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium">{template.name || 'Untitled'}</h4>
-                          {template.description && (
-                            <p className="text-sm text-gray-500">{template.description}</p>
-                          )}
+                          <h4 className="font-medium">{design.name || 'Untitled'}</h4>
                           <div className="mt-1 flex items-center space-x-2">
-                            <span className={`rounded px-2 py-1 text-xs ${template.type === 'template'
+                            <span className={`rounded px-2 py-1 text-xs ${design.is_template
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
                             }`}
                             >
-                              {template.category || 'Uncategorized'}
+                              {design.is_template ? 'Template' : 'Design'}
                             </span>
                             <span className="text-xs text-gray-400">
-                              {template.updatedAt ? formatDate(template.updatedAt) : 'Date N/A'}
+                              {formatDate(design.updated_at)}
                             </span>
+                            {design.is_public && (
+                              <span className="rounded bg-purple-100 px-2 py-1 text-xs text-purple-800">
+                                Public
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                    );
-                  })
-                )}
+                    ))
+                  )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

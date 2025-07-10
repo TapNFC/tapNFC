@@ -1,244 +1,184 @@
-import type { DesignData } from '@/lib/indexedDB';
+import type { Canvas, Gradient, Pattern } from 'fabric/fabric-impl';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { designDB } from '@/lib/indexedDB';
+import { toast } from 'sonner';
+import { designService } from '@/services/designService';
+import { createClient } from '@/utils/supabase/client';
 
+// Define the return type for the hook
+type UseCanvasAutoSaveReturn = {
+  hasUnsavedChanges: boolean;
+  lastSaved: Date | null;
+  saveNow: () => Promise<boolean>;
+  getPreviewData: () => any;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+};
+
+// Define the options for the hook
 type UseCanvasAutoSaveOptions = {
-  canvas: any;
+  canvas: Canvas | null;
   designId: string;
   autoSaveInterval?: number;
   enabled?: boolean;
 };
 
-type PreviewData = {
-  canvasData: any;
-  width: number;
-  height: number;
-  backgroundColor: string;
-};
-
+/**
+ * Custom hook to handle auto-saving canvas state to Supabase
+ */
 export function useCanvasAutoSave({
   canvas,
   designId,
-  autoSaveInterval = 3000,
+  autoSaveInterval = 30000, // Default to 30 seconds
   enabled = true,
-}: UseCanvasAutoSaveOptions) {
+}: UseCanvasAutoSaveOptions): UseCanvasAutoSaveReturn {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const loadDesignRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastCanvasStateRef = useRef<string>('');
-  const isLoadingRef = useRef(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
-  // Save current canvas state to IndexedDB
-  const saveCanvasState = useCallback(async () => {
-    if (!canvas || !enabled || isLoadingRef.current) {
-      return;
+  // Use refs for history to avoid re-renders
+  const historyRef = useRef<any[]>([]);
+  const historyPositionRef = useRef<number>(-1);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstSaveRef = useRef<boolean>(true);
+
+  // Get the current user ID
+  const getUserId = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id;
+  }, []);
+
+  // Function to save the canvas state to Supabase
+  const saveCanvasState = useCallback(async (): Promise<boolean> => {
+    if (!canvas || !designId) {
+      return false;
     }
 
     try {
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      // Serialize the entire canvas state, including the background
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
 
-      // Add canvas dimensions and background
-      canvasData.width = canvas.getWidth();
-      canvasData.height = canvas.getHeight();
-      canvasData.background = canvas.backgroundColor || '#ffffff';
+      // Get existing design to update or check if it's new
+      const existingDesign = await designService.getDesignById(designId);
 
-      const designData: DesignData = {
-        id: designId,
-        canvasData,
-        metadata: {
-          width: canvas.getWidth(),
-          height: canvas.getHeight(),
-          backgroundColor: canvas.backgroundColor || '#ffffff',
-          title: `Design ${designId}`,
-          description: 'Auto-saved design',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await designDB.saveDesign(designData);
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.error('Failed to save design to IndexedDB:', error);
-    }
-  }, [canvas, designId, enabled]);
-
-  // Manual save function
-  const saveNow = useCallback(async () => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
-    }
-    await saveCanvasState();
-  }, [saveCanvasState]);
-
-  // Load design from IndexedDB
-  const loadDesign = useCallback(async () => {
-    if (!canvas || !designId || isLoadingRef.current) {
-      return;
-    }
-
-    // Add a robust check for canvas context readiness
-    if (!canvas.contextContainer) {
-      console.warn('[useCanvasAutoSave] Canvas contextContainer not ready, delaying loadDesign.');
-      // Clear any existing retry timeout
-      if (loadDesignRetryTimeoutRef.current) {
-        clearTimeout(loadDesignRetryTimeoutRef.current);
-      }
-      loadDesignRetryTimeoutRef.current = setTimeout(() => {
-        if (canvas && canvas.contextContainer) {
-          loadDesign(); // Retry the load
-        } else {
-          console.error('[useCanvasAutoSave] Canvas contextContainer still not ready after delay. Aborting load in hook.');
-          isLoadingRef.current = false; // Ensure loading ref is reset
-        }
-      }, 150); // Delay for retry
-      return; // Exit and wait for retry
-    }
-
-    try {
-      isLoadingRef.current = true;
-      const designData = await designDB.getDesign(designId);
-
-      if (designData?.canvasData) {
-        // Clear canvas first
-        canvas.clear();
-
-        // Set canvas dimensions if available
-        if (designData.metadata.width && designData.metadata.height) {
-          canvas.setDimensions({
-            width: designData.metadata.width,
-            height: designData.metadata.height,
-          });
-        }
-
-        // Set background color
-        if (designData.metadata.backgroundColor) {
-          canvas.backgroundColor = designData.metadata.backgroundColor;
-        }
-
-        // Load canvas data
-        canvas.loadFromJSON(designData.canvasData, () => {
-          canvas.renderAll();
-          setLastSaved(designData.updatedAt);
-          setHasUnsavedChanges(false);
-
-          // Initialize history with loaded state
-          const initialState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
-          setHistory([initialState]);
-          setCurrentHistoryIndex(0);
-          lastCanvasStateRef.current = JSON.stringify(initialState);
+      if (existingDesign) {
+        // --- UPDATE EXISTING DESIGN ---
+        const result = await designService.updateDesign(designId, {
+          canvas_data: canvasJSON, // Save the entire canvas JSON
+          updated_at: new Date().toISOString(),
         });
-      } else {
-        // No saved design found, initialize with empty state
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
 
-        const initialState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
-        setHistory([initialState]);
-        setCurrentHistoryIndex(0);
-        lastCanvasStateRef.current = JSON.stringify(initialState);
+        if (result) {
+          setLastSaved(new Date());
+          setHasUnsavedChanges(false);
+          return true;
+        }
+      } else {
+        // --- CREATE NEW DESIGN ---
+        const userId = await getUserId();
+        if (!userId) {
+          toast.error('You must be logged in to save designs');
+          return false;
+        }
+
+        // 1. Create the design record FIRST
+        const newDesign = await designService.createDesign({
+          id: designId,
+          user_id: userId,
+          name: `Design ${designId.slice(-8)}`,
+          canvas_data: canvasJSON, // Save the entire canvas JSON
+          is_template: false,
+          is_public: false,
+        });
+
+        if (!newDesign) {
+          toast.error('Failed to create new design record.');
+          return false;
+        }
+
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Failed to save canvas state:', error);
+      toast.error('Failed to save your design');
+      return false;
+    }
+  }, [canvas, designId, getUserId]);
+
+  // Function to manually save the canvas state
+  const saveNow = useCallback(async (): Promise<boolean> => {
+    if (!canvas || !designId) {
+      return false;
+    }
+
+    // Clear any pending auto-save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    // Show toast notification
+    const toastId = toast.loading('Saving your design...');
+
+    try {
+      const success = await saveCanvasState();
+
+      if (success) {
+        toast.success('Design saved successfully', { id: toastId });
+
+        // Add to history if it's the first save or if there are unsaved changes
+        if (isFirstSaveRef.current || hasUnsavedChanges) {
+          const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+
+          // If we've gone back in history and made changes, remove future states
+          if (historyPositionRef.current < historyRef.current.length - 1) {
+            historyRef.current = historyRef.current.slice(0, historyPositionRef.current + 1);
+          }
+
+          // Add current state to history
+          historyRef.current.push(canvasJSON);
+          historyPositionRef.current = historyRef.current.length - 1;
+
+          // Update undo/redo state
+          setCanUndo(historyPositionRef.current > 0);
+          setCanRedo(false);
+
+          isFirstSaveRef.current = false;
+        }
+
+        return true;
+      } else {
+        toast.error('Failed to save design', { id: toastId });
+        return false;
       }
     } catch (error) {
-      console.error('Failed to load design from IndexedDB:', error);
-    } finally {
-      isLoadingRef.current = false;
+      console.error('Error saving design:', error);
+      toast.error('Error saving design', { id: toastId });
+      return false;
     }
-  }, [canvas, designId]);
+  }, [canvas, designId, hasUnsavedChanges, saveCanvasState]);
 
-  // Track canvas changes for auto-save and history
-  const handleCanvasChange = useCallback(() => {
-    if (!canvas || !enabled || isLoadingRef.current) {
-      return;
-    }
-
-    const currentState = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
-    const currentStateString = JSON.stringify(currentState);
-
-    // Only trigger if state actually changed
-    if (currentStateString !== lastCanvasStateRef.current) {
-      setHasUnsavedChanges(true);
-      lastCanvasStateRef.current = currentStateString;
-
-      // Add to history (limit to 50 states)
-      setHistory((prev) => {
-        const newHistory = prev.slice(0, currentHistoryIndex + 1);
-        newHistory.push(currentState);
-        return newHistory.slice(-50); // Keep last 50 states
-      });
-      setCurrentHistoryIndex(prev => Math.min(prev + 1, 49));
-
-      // Clear existing timeout and set new one
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        saveCanvasState();
-      }, autoSaveInterval);
-    }
-  }, [canvas, enabled, currentHistoryIndex, autoSaveInterval, saveCanvasState]);
-
-  // Undo function
-  const undo = useCallback(() => {
-    if (!canvas || currentHistoryIndex <= 0) {
-      return;
-    }
-
-    const newIndex = currentHistoryIndex - 1;
-    const targetState = history[newIndex];
-
-    if (targetState) {
-      isLoadingRef.current = true;
-      canvas.loadFromJSON(targetState, () => {
-        canvas.renderAll();
-        setCurrentHistoryIndex(newIndex);
-        lastCanvasStateRef.current = JSON.stringify(targetState);
-        setHasUnsavedChanges(newIndex !== 0); // Mark as unsaved if not at initial state
-        isLoadingRef.current = false;
-      });
-    }
-  }, [canvas, currentHistoryIndex, history]);
-
-  // Redo function
-  const redo = useCallback(() => {
-    if (!canvas || currentHistoryIndex >= history.length - 1) {
-      return;
-    }
-
-    const newIndex = currentHistoryIndex + 1;
-    const targetState = history[newIndex];
-
-    if (targetState) {
-      isLoadingRef.current = true;
-      canvas.loadFromJSON(targetState, () => {
-        canvas.renderAll();
-        setCurrentHistoryIndex(newIndex);
-        lastCanvasStateRef.current = JSON.stringify(targetState);
-        setHasUnsavedChanges(true);
-        isLoadingRef.current = false;
-      });
-    }
-  }, [canvas, currentHistoryIndex, history]);
-
-  // Get preview data for real-time preview
-  const getPreviewData = useCallback((): PreviewData | null => {
+  // Function to get preview data for real-time preview
+  const getPreviewData = useCallback(() => {
     if (!canvas) {
       return null;
     }
 
     try {
-      const canvasData = canvas.toJSON(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+
       return {
-        canvasData,
+        canvasData: canvasJSON,
         width: canvas.getWidth(),
         height: canvas.getHeight(),
-        backgroundColor: canvas.backgroundColor || '#ffffff',
+        backgroundColor: canvas.backgroundColor?.toString() || '#ffffff',
       };
     } catch (error) {
       console.error('Failed to get preview data:', error);
@@ -246,67 +186,163 @@ export function useCanvasAutoSave({
     }
   }, [canvas]);
 
-  // Load design on mount
-  useEffect(() => {
-    if (canvas && designId) {
-      loadDesign();
+  // Function to handle undo
+  const undo = useCallback(() => {
+    if (!canvas || historyPositionRef.current <= 0) {
+      return;
     }
-    // Cleanup retry timeout on unmount or when dependencies change
-    return () => {
-      if (loadDesignRetryTimeoutRef.current) {
-        clearTimeout(loadDesignRetryTimeoutRef.current);
-      }
-    };
-  }, [canvas, designId, loadDesign]);
 
-  // Set up canvas event listeners
+    historyPositionRef.current -= 1;
+    const previousState = historyRef.current[historyPositionRef.current];
+
+    if (previousState) {
+      canvas.loadFromJSON(previousState, () => {
+        canvas.renderAll();
+        setCanUndo(historyPositionRef.current > 0);
+        setCanRedo(historyPositionRef.current < historyRef.current.length - 1);
+        setHasUnsavedChanges(true);
+      });
+    }
+  }, [canvas]);
+
+  // Function to handle redo
+  const redo = useCallback(() => {
+    if (!canvas || historyPositionRef.current >= historyRef.current.length - 1) {
+      return;
+    }
+
+    historyPositionRef.current += 1;
+    const nextState = historyRef.current[historyPositionRef.current];
+
+    if (nextState) {
+      canvas.loadFromJSON(nextState, () => {
+        canvas.renderAll();
+        setCanUndo(historyPositionRef.current > 0);
+        setCanRedo(historyPositionRef.current < historyRef.current.length - 1);
+        setHasUnsavedChanges(true);
+      });
+    }
+  }, [canvas]);
+
+  // Load initial state when canvas is ready
   useEffect(() => {
     if (!canvas || !enabled) {
       return;
     }
 
-    const events = [
-      'object:added',
-      'object:removed',
-      'object:modified',
-      'object:moving',
-      'object:scaling',
-      'object:rotating',
-      'object:skewing',
-      'path:created',
-      'text:changed',
-      'canvas:background:changed',
-    ];
+    const loadInitialState = async () => {
+      try {
+        const design = await designService.getDesignById(designId);
 
-    events.forEach((event) => {
-      canvas.on(event, handleCanvasChange);
-    });
+        if (design && design.canvas_data) {
+          // Load the entire canvas state from the saved JSON
+          canvas.loadFromJSON(design.canvas_data, () => {
+            canvas.renderAll();
 
-    return () => {
-      events.forEach((event) => {
-        canvas.off(event, handleCanvasChange);
-      });
-    };
-  }, [canvas, enabled, handleCanvasChange]);
+            // Initialize history with current state
+            const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+            historyRef.current = [initialState];
+            historyPositionRef.current = 0;
+            setCanUndo(false);
+            setCanRedo(false);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
+            setLastSaved(new Date(design.updated_at));
+            setHasUnsavedChanges(false);
+            isFirstSaveRef.current = false;
+          });
+        } else {
+          // Initialize history with empty canvas
+          const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+          historyRef.current = [initialState];
+          historyPositionRef.current = 0;
+          setCanUndo(false);
+          setCanRedo(false);
+
+          isFirstSaveRef.current = true;
+          // For a new design, we consider it to have unsaved changes immediately
+          setHasUnsavedChanges(true);
+        }
+      } catch (error) {
+        console.error('Failed to load initial state:', error);
+        toast.error('Failed to load design');
       }
     };
-  }, []);
+
+    loadInitialState();
+  }, [canvas, designId, enabled]);
+
+  // Setup canvas change detection
+  useEffect(() => {
+    if (!canvas || !enabled) {
+      return;
+    }
+
+    const handleCanvasChange = () => {
+      setHasUnsavedChanges(true);
+
+      // Clear any existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set a new timeout for auto-save
+      saveTimeoutRef.current = setTimeout(() => {
+        saveNow();
+      }, autoSaveInterval);
+    };
+
+    // Add event listeners for canvas changes
+    canvas.on('object:added', handleCanvasChange);
+    canvas.on('object:removed', handleCanvasChange);
+    canvas.on('object:modified', handleCanvasChange);
+
+    // Custom event for background changes
+    const originalSetBackgroundColor = canvas.setBackgroundColor.bind(canvas);
+    canvas.setBackgroundColor = ((
+      backgroundColor: string | Pattern | Gradient,
+      callback?: (canvas: Canvas) => void,
+    ) => {
+      originalSetBackgroundColor(backgroundColor, (renderedCanvas: Canvas) => {
+        if (callback) {
+          callback(renderedCanvas);
+        }
+        handleCanvasChange();
+      });
+      return canvas;
+    }) as any;
+
+    // Cleanup function
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      canvas.off('object:added', handleCanvasChange);
+      canvas.off('object:removed', handleCanvasChange);
+      canvas.off('object:modified', handleCanvasChange);
+
+      // Restore original setBackgroundColor method on cleanup
+      canvas.setBackgroundColor = originalSetBackgroundColor;
+    };
+  }, [canvas, designId, enabled, autoSaveInterval, saveNow]);
+
+  // Save on unmount if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChanges && canvas) {
+        saveCanvasState();
+      }
+    };
+  }, [hasUnsavedChanges, canvas, saveCanvasState]);
 
   return {
     hasUnsavedChanges,
     lastSaved,
     saveNow,
-    loadDesign,
     getPreviewData,
     undo,
     redo,
-    canUndo: currentHistoryIndex > 0,
-    canRedo: currentHistoryIndex < history.length - 1,
+    canUndo,
+    canRedo,
   };
 }

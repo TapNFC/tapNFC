@@ -1,32 +1,22 @@
-import type { CookieOptions } from '@supabase/ssr';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 
-export const createClient = async () => {
-  return createServerClient(
+// Create a version that doesn't use next/headers
+export const createClient = () => {
+  // Return a dummy client that will be replaced by the actual client in middleware
+  return createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookieStore = await cookies();
-          return cookieStore.get(name)?.value;
+        get: (_name) => {
+          // This will be replaced by the actual cookie in middleware
+          return undefined;
         },
-        async set(name: string, value: string, options: CookieOptions) {
-          try {
-            const cookieStore = await cookies();
-            cookieStore.set({ name, value, ...options });
-          } catch (error: unknown) {
-            console.error('Error setting cookie:', error);
-          }
+        set: (_name, _value, _options) => {
+          // This will be replaced by the actual cookie setter in middleware
         },
-        async remove(name: string, _options: CookieOptions) {
-          try {
-            const cookieStore = await cookies();
-            cookieStore.delete(name);
-          } catch (error: unknown) {
-            console.error('Error removing cookie:', error);
-          }
+        remove: (_name, _options) => {
+          // This will be replaced by the actual cookie remover in middleware
         },
       },
     },

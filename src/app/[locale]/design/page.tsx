@@ -5,11 +5,11 @@ import { DesignGallerySkeleton } from '@/components/design-editor/components/Des
 import { DesignPageHeader } from '@/components/design-editor/components/DesignPageHeader';
 import { DesignGallery } from '@/components/design-editor/DesignGallery';
 import { ModernHeader } from '@/components/layout/modern-header';
-import { createClient } from '@/utils/supabase/server';
+import { createAppServerClient } from '@/utils/supabase/server-app';
 
 // Helper function to get user profile data
 async function getUserProfile(): Promise<UserProfile | undefined> {
-  const supabase = await createClient();
+  const supabase = createAppServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

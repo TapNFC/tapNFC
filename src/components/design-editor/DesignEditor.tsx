@@ -103,6 +103,10 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     return data;
   }, [getPreviewData, hasUnsavedChanges, canvasVersion]);
 
+  const handleManualSave = async () => {
+    await saveNow();
+  };
+
   // Log component lifecycle
   useEffect(() => {
     console.warn('DesignEditor mounted, designId:', designId);
@@ -132,7 +136,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         sidebarCollapsed={sidebarCollapsed}
         hasUnsavedChanges={hasUnsavedChanges}
         lastSaved={lastSaved}
-        onManualSave={saveNow}
+        onManualSave={handleManualSave}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}

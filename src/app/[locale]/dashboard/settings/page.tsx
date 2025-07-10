@@ -1,45 +1,39 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { SettingsClient } from '@/components/dashboard/settings-client';
-import { createClient } from '@/utils/supabase/server';
+import { createAppServerClient } from '@/utils/supabase/server-app';
 
 export const metadata: Metadata = {
-  title: 'Account Settings',
+  title: 'Settings',
   description: 'Manage your account settings and preferences',
 };
 
-function SettingsSkeleton() {
-  return (
-    <div className="space-y-8 p-8 py-2">
-      <div className="animate-pulse space-y-8">
-        {/* Header skeleton */}
-        <div className="flex justify-between">
-          <div className="h-16 w-64 rounded-lg bg-slate-200 dark:bg-slate-700"></div>
-          <div className="h-10 w-32 rounded-lg bg-slate-200 dark:bg-slate-700"></div>
-        </div>
-
-        {/* Settings card skeletons */}
-        <div className="h-64 rounded-lg bg-slate-200 dark:bg-slate-700"></div>
-        <div className="h-72 rounded-lg bg-slate-200 dark:bg-slate-700"></div>
-      </div>
-    </div>
-  );
-}
-
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = createAppServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/sign-in');
+    // This should theoretically not be reached if the layout handles redirection
+    return null;
   }
 
   return (
-    <Suspense fallback={<SettingsSkeleton />}>
-      <SettingsClient user={user} />
-    </Suspense>
+    <div>
+      <h1 className="mb-6 text-3xl font-bold">Settings</h1>
+
+      <Suspense fallback={(
+        <div className="flex h-64 w-full items-center justify-center">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="text-center">
+              <div className="size-8 animate-spin rounded-full border-y-2 border-emerald-500"></div>
+            </div>
+            <div className="text-sm text-slate-500">Loading settings...</div>
+          </div>
+        </div>
+      )}
+      >
+        {user && <SettingsClient user={user} />}
+      </Suspense>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { designDB } from '@/lib/indexedDB';
+import { toast } from 'sonner';
+import { designService } from '@/services/designService';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
 
 type UseDesignLoaderProps = {
@@ -22,67 +23,68 @@ export function useDesignLoader({
       return;
     }
 
-    const loadFromIndexedDB = async (existingDesign: any) => {
+    const loadFromSupabase = async () => {
       try {
-        console.warn('Loading existing design from IndexedDB:', designId);
+        console.warn('Loading design from Supabase:', designId);
 
-        const canvasDataToLoad = existingDesign.canvasData;
-        if (!canvasDataToLoad.objects) {
-          console.warn('Canvas data is missing objects array, creating empty array');
-          canvasDataToLoad.objects = [];
-        }
+        // Fetch design from Supabase
+        const design = await designService.getDesignById(designId);
 
-        canvas.loadFromJSON?.(canvasDataToLoad, () => {
-          try {
-            if (existingDesign.metadata?.width && existingDesign.metadata?.height) {
-              canvas.setDimensions?.({
-                width: existingDesign.metadata.width,
-                height: existingDesign.metadata.height,
-              });
-            }
+        if (design?.canvas_data?.canvasJSON) {
+          const canvasDataToLoad = design.canvas_data.canvasJSON;
 
-            if (existingDesign.metadata?.backgroundColor) {
-              canvas.setBackgroundColor?.(existingDesign.metadata.backgroundColor, () => {
+          if (!canvasDataToLoad.objects) {
+            console.warn('Canvas data is missing objects array, creating empty array');
+            canvasDataToLoad.objects = [];
+          }
+
+          canvas.loadFromJSON?.(canvasDataToLoad, () => {
+            try {
+              // Set canvas dimensions if available
+              if (design.canvas_data.width && design.canvas_data.height) {
+                canvas.setDimensions?.({
+                  width: design.canvas_data.width,
+                  height: design.canvas_data.height,
+                });
+              }
+
+              // Set background color if available
+              if (design.canvas_data.backgroundColor) {
+                canvas.setBackgroundColor?.(design.canvas_data.backgroundColor, () => {
+                  canvas.renderAll?.();
+                });
+              } else {
                 canvas.renderAll?.();
-              });
-            } else {
-              canvas.renderAll?.();
+              }
+
+              setIsDesignLoaded(true);
+              console.warn('Design loaded successfully from Supabase');
+            } catch (renderError) {
+              console.error('Error during canvas rendering after load:', renderError);
+              toast.error('Error rendering design');
+              setIsDesignLoaded(true);
             }
-
-            setIsDesignLoaded(true);
-            console.warn('Design loaded successfully from IndexedDB');
-          } catch (renderError) {
-            console.error('Error during canvas rendering after load:', renderError);
-            setIsDesignLoaded(true);
-          }
-        });
-      } catch (loadError) {
-        console.error('Error loading canvas JSON from IndexedDB:', loadError);
-        setIsDesignLoaded(true);
-      }
-    };
-
-    const loadFromLocalStorage = async (savedData: string) => {
-      try {
-        const canvasData = JSON.parse(savedData);
-        console.warn('Loading existing design from localStorage:', designId);
-
-        if (!canvasData?.objects) {
-          canvasData.objects = [];
+          });
+          return;
         }
 
-        canvas.loadFromJSON?.(canvasData, () => {
-          try {
-            canvas.renderAll?.();
-            setIsDesignLoaded(true);
-            console.warn('Design loaded successfully from localStorage');
-          } catch (renderError) {
-            console.error('Error rendering localStorage data:', renderError);
-            setIsDesignLoaded(true);
-          }
+        // No existing design found in Supabase, create a new empty canvas
+        console.warn('No existing design found in Supabase, starting with empty canvas');
+
+        // Initialize with default canvas settings
+        canvas.setDimensions?.({
+          width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
+          height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
         });
+
+        canvas.setBackgroundColor?.(DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR, () => {
+          canvas.renderAll?.();
+        });
+
+        setIsDesignLoaded(true);
       } catch (error) {
-        console.error('Error parsing saved design data:', error);
+        console.error('Error loading design from Supabase:', error);
+        toast.error('Error loading design');
         setIsDesignLoaded(true);
       }
     };
@@ -103,27 +105,11 @@ export function useDesignLoader({
           return;
         }
 
-        // Try loading from IndexedDB first
-        const existingDesign = await designDB.getDesign(designId);
-        if (existingDesign?.canvasData) {
-          await loadFromIndexedDB(existingDesign);
-          return;
-        }
-
-        // Fallback to localStorage
-        const savedData = localStorage.getItem(
-          `${DESIGN_EDITOR_CONFIG.STORAGE_KEYS.DESIGN_PREFIX}${designId}`,
-        );
-        if (savedData) {
-          await loadFromLocalStorage(savedData);
-          return;
-        }
-
-        // No existing design found
-        console.warn('No existing design found, starting with empty canvas');
-        setIsDesignLoaded(true);
+        // Load from Supabase
+        await loadFromSupabase();
       } catch (error) {
         console.error('Error loading existing design:', error);
+        toast.error('Error loading design');
         setIsDesignLoaded(true);
       }
     };
