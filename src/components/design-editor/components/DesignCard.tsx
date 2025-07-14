@@ -1,9 +1,19 @@
 'use client';
 
 import type { Design } from '@/types/design';
-import { Copy, Download, Edit, Eye, MoreHorizontal, Palette, Share, Trash2 } from 'lucide-react';
+import {
+  Copy,
+  Download,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Palette,
+  Share,
+  Trash2,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +27,7 @@ import {
 type DesignCardProps = {
   design: Design;
   locale: string;
+  viewMode?: 'grid' | 'list';
   onDelete: (id: string, name: string) => void;
   onDuplicate: (design: Design) => void;
   onShare: (design: Design) => void;
@@ -58,67 +69,188 @@ const formatTimeAgo = (dateString?: string) => {
 export function DesignCard({
   design,
   locale,
+  viewMode = 'grid',
   onDelete,
   onDuplicate,
   onShare,
   onDownload,
 }: DesignCardProps) {
-  return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl bg-gradient-to-b from-background to-background/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:from-gray-800/90 dark:to-gray-900/90">
-      {/* Card Header - Preview Image */}
-      <Link
-        href={`/${locale}/design/${design.id}`}
-        className="relative block aspect-[4/3] overflow-hidden"
-      >
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="bg-white/20 hover:bg-white/30"
-            >
-              <Edit className="mr-2 size-4" />
-              Edit Design
-            </Button>
-          </div>
+  if (viewMode === 'list') {
+    return (
+      <div className="flex w-full items-center gap-4 rounded-lg border bg-white/80 p-4 transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
+        <div className="relative aspect-video w-48 shrink-0">
+          {design.preview_url
+            ? (
+                <Image
+                  src={design.preview_url}
+                  alt={design.name}
+                  className="size-full rounded-md object-contain"
+                  width={150}
+                  height={100}
+                />
+              )
+            : (
+                <div className="flex size-full items-center justify-center rounded-md bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
+                  <Palette className="size-12 text-muted-foreground/40" />
+                </div>
+              )}
         </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-slate-900 dark:text-white">
+            {design.name}
+          </h3>
+          {design.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+              {design.description}
+            </p>
+          )}
+          {design.tags && design.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {design.tags.slice(0, 3).map(tag => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <div className="hidden items-center md:flex">
+            <Eye className="mr-1 size-4" />
+            <span>
+              Updated
+              {formatTimeAgo(design.updated_at)}
+            </span>
+          </div>
+          <Link href={`/${locale}/design/${design.id}`} passHref>
+            <Button variant="outline" size="sm">
+              <Edit className="mr-2 size-4" />
+              Edit
+            </Button>
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[180px]">
+              <DropdownMenuItem onClick={() => onDuplicate(design)}>
+                <Copy className="mr-2 size-4" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onShare(design)}>
+                <Share className="mr-2 size-4" />
+                {design.is_public ? 'Make Private' : 'Make Public'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDownload(design)}>
+                <Download className="mr-2 size-4" />
+                Download
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                onClick={() => onDelete(design.id, design.name)}
+              >
+                <Trash2 className="mr-2 size-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group overflow-hidden rounded-lg border border-slate-200/60 bg-white/80 transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
+      {/* Thumbnail */}
+      <div className="relative aspect-video">
         {design.preview_url
           ? (
               <Image
                 src={design.preview_url}
                 alt={design.name}
-                className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="size-full object-contain transition-transform duration-500 group-hover:scale-105"
                 width={400}
                 height={300}
                 priority
               />
             )
           : (
-              <div className="flex size-full items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
                 <Palette className="size-16 text-muted-foreground/40" />
               </div>
             )}
 
-        {/* Quick Actions */}
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="icon"
-            className="size-8 rounded-full bg-white/10 opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20 group-hover:opacity-100"
-            onClick={() => onDuplicate(design)}
-          >
-            <Copy className="size-4" />
-            <span className="sr-only">Duplicate</span>
+        {/* Premium/Popular indicators */}
+        <div className="absolute left-3 top-3 flex items-center gap-2">
+          {design.is_template && (
+            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
+              Template
+            </Badge>
+          )}
+          {design.is_public && !design.is_template && (
+            <Badge className="bg-gradient-to-r from-purple-400 to-indigo-400 text-white">
+              Public
+            </Badge>
+          )}
+        </div>
+
+        {/* Overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <Link href={`/${locale}/design/${design.id}`}>
+            <Button size="sm" variant="secondary">
+              <Edit className="mr-1 size-4" />
+              Edit
+            </Button>
+          </Link>
+          <Button size="sm" variant="secondary" onClick={() => onDuplicate(design)}>
+            <Copy className="mr-1 size-4" />
+            Copy
           </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-3 p-4">
+        <div>
+          <h3 className="font-semibold text-slate-900 dark:text-white">
+            {design.name}
+          </h3>
+          {design.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+              {design.description}
+            </p>
+          )}
+        </div>
+
+        {/* Tags */}
+        {design.tags && design.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {design.tags.slice(0, 3).map(tag => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <Eye className="mr-1 size-4" />
+              <span>
+                Updated
+                {formatTimeAgo(design.updated_at)}
+              </span>
+            </div>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="size-8 rounded-full bg-white/10 opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20 group-hover:opacity-100"
-              >
+              <Button variant="ghost" size="icon" className="size-8">
                 <MoreHorizontal className="size-4" />
-                <span className="sr-only">More options</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[180px]">
@@ -141,61 +273,14 @@ export function DesignCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </Link>
 
-      {/* Card Content */}
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex-1 space-y-3">
-          {/* Title and Description */}
-          <div>
-            <h3 className="font-semibold tracking-tight text-foreground">
-              <Link
-                href={`/${locale}/design/${design.id}`}
-                className="hover:text-primary"
-              >
-                {design.name}
-              </Link>
-            </h3>
-            {design.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {design.description}
-              </p>
-            )}
-          </div>
-
-          {/* Tags and Badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            {design.is_template && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                Template
-              </Badge>
-            )}
-            {design.is_public && !design.is_template && (
-              <Badge className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900/70">
-                Public
-              </Badge>
-            )}
-            {design.tags?.map(tag => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="bg-background/50 backdrop-blur-sm hover:bg-muted/50"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Card Footer */}
-        <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Eye className="size-3" />
-            Updated
-            {' '}
-            {formatTimeAgo(design.updated_at)}
-          </span>
-        </div>
+        {/* Action */}
+        <Link href={`/${locale}/design/${design.id}`} className="block">
+          <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
+            <Edit className="mr-2 size-4" />
+            Edit Design
+          </Button>
+        </Link>
       </div>
     </div>
   );

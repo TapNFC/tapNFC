@@ -4,7 +4,7 @@ import type { Design } from '@/types/design';
 import { Copy, Download, Edit, MoreHorizontal, Palette, Share, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useDesigns } from '@/hooks/useDesigns';
 import { designService } from '@/services/designService';
+import { DesignCard } from './components/DesignCard';
 import { DesignGallerySkeleton } from './components/DesignGallerySkeleton';
+import { DeleteDesignDialog } from './components/dialogs/DeleteDesignDialog';
 
 type DesignGalleryProps = {
   view: 'grid' | 'list';
@@ -38,6 +40,8 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
     updateDesign,
     createDesign,
   } = useDesigns({ category: category || 'all' });
+
+  const [designToDelete, setDesignToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Search designs when search query changes
   useEffect(() => {
@@ -111,12 +115,17 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
   }, [createDesign]);
 
   const handleDelete = useCallback(async (id: string, name: string) => {
+    setDesignToDelete({ id, name });
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!designToDelete) {
+      return;
+    }
+
     try {
-      const success = await deleteDesign(id, name);
+      const success = await deleteDesign(designToDelete.id, designToDelete.name);
       if (success) {
-        // Update the local designs state to remove the deleted design
-        // This will be removed later. For now, it will cause an error since setDesigns is a no-op
-        // setDesigns(prevDesigns => prevDesigns.filter(design => design.id !== id));
         toast.success('Design deleted successfully');
       } else {
         toast.error('Failed to delete design');
@@ -124,8 +133,10 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
     } catch (error) {
       console.error('Failed to delete design:', error);
       toast.error('Failed to delete design');
+    } finally {
+      setDesignToDelete(null);
     }
-  }, [deleteDesign]);
+  }, [deleteDesign, designToDelete]);
 
   const handleDownload = useCallback(async (design: Design) => {
     try {
@@ -258,129 +269,17 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
     <div className="pb-10">
       {view === 'grid'
         ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {designs.map(design => (
-                <div
+                <DesignCard
                   key={design.id}
-                  className="group relative flex flex-col overflow-hidden rounded-lg border bg-background transition-shadow duration-300 hover:shadow-xl"
-                >
-                  <Link
-                    href={`/${locale}/design/${design.id}`}
-                    className="relative block aspect-[4/3] overflow-hidden bg-muted"
-                  >
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      <span className="rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
-                        Edit Design
-                      </span>
-                    </div>
-                    {design.preview_url
-                      ? (
-                          <Image
-                            src={design.preview_url}
-                            alt={design.name}
-                            className="size-full object-contain transition-transform duration-300 group-hover:scale-105"
-                            width={400}
-                            height={300}
-                          />
-                        )
-                      : (
-                          <div className="flex size-full items-center justify-center">
-                            <Palette className="size-12 text-muted-foreground/30" />
-                          </div>
-                        )}
-                  </Link>
-
-                  <div className="flex flex-1 flex-col p-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">
-                        <Link
-                          href={`/${locale}/design/${design.id}`}
-                          className="hover:underline"
-                        >
-                          {design.name}
-                        </Link>
-                      </h3>
-                      {design.description && (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {design.description}
-                        </p>
-                      )}
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {design.is_template && (
-                          <Badge variant="secondary">Template</Badge>
-                        )}
-                        {design.is_public && !design.is_template && (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                            Public
-                          </Badge>
-                        )}
-                        {design.tags?.map(tag => (
-                          <Badge key={tag} variant="outline">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-                      <span>
-                        Updated
-                        {' '}
-                        {formatTimeAgo(design.updated_at)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="absolute right-3 top-3 z-20">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="size-8 rounded-full opacity-0 shadow-lg transition-all duration-300 group-hover:opacity-100"
-                        >
-                          <MoreHorizontal className="size-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[180px]">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/${locale}/design/${design.id}`}
-                            className="cursor-pointer"
-                          >
-                            <Edit className="mr-2 size-4" />
-                            Edit Design
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDuplicate(design)}
-                        >
-                          <Copy className="mr-2 size-4" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleShare(design)}>
-                          <Share className="mr-2 size-4" />
-                          {design.is_public ? 'Make Private' : 'Make Public'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDownload(design)}
-                        >
-                          <Download className="mr-2 size-4" />
-                          Download
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
-                          onClick={() => handleDelete(design.id, design.name)}
-                        >
-                          <Trash2 className="mr-2 size-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                  design={design}
+                  locale={locale}
+                  onDelete={handleDelete}
+                  onDuplicate={handleDuplicate}
+                  onShare={handleShare}
+                  onDownload={handleDownload}
+                />
               ))}
             </div>
           )
@@ -390,96 +289,76 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
                 {designs.map(design => (
                   <div
                     key={design.id}
-                    className="group grid grid-cols-[auto,1fr,auto] items-center gap-4 p-4 transition-colors hover:bg-muted/50"
+                    className="group flex items-center justify-between p-4 hover:bg-muted/50"
                   >
-                    <Link
-                      href={`/${locale}/design/${design.id}`}
-                      className="relative block size-16 shrink-0 overflow-hidden rounded-md"
-                    >
-                      {design.preview_url
-                        ? (
-                            <Image
-                              src={design.preview_url}
-                              alt={design.name}
-                              className="size-full object-contain"
-                              width={64}
-                              height={64}
-                            />
-                          )
-                        : (
-                            <div className="flex size-full items-center justify-center bg-muted">
-                              <Palette className="size-8 text-muted-foreground/30" />
-                            </div>
+                    <div className="flex items-center gap-4">
+                      <div className="relative size-16 overflow-hidden rounded-md bg-muted">
+                        {design.preview_url
+                          ? (
+                              <Image
+                                src={design.preview_url}
+                                alt={design.name}
+                                className="size-full object-contain"
+                                width={64}
+                                height={64}
+                              />
+                            )
+                          : (
+                              <div className="flex size-full items-center justify-center">
+                                <Palette className="size-6 text-muted-foreground/30" />
+                              </div>
+                            )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">
+                          <Link
+                            href={`/${locale}/design/${design.id}`}
+                            className="hover:underline"
+                          >
+                            {design.name}
+                          </Link>
+                        </h3>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>
+                            Updated
+                            {formatTimeAgo(design.updated_at)}
+                          </span>
+                          {design.is_template && (
+                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
+                              Template
+                            </Badge>
                           )}
-                    </Link>
-
-                    <div className="min-w-0">
-                      <h3 className="truncate font-semibold text-foreground">
-                        <Link
-                          href={`/${locale}/design/${design.id}`}
-                          className="hover:underline"
-                        >
-                          {design.name}
-                        </Link>
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>
-                          Updated
-                          {' '}
-                          {formatTimeAgo(design.updated_at)}
-                        </span>
-                        {design.is_template && (
-                          <Badge variant="secondary">Template</Badge>
-                        )}
-                        {design.is_public && !design.is_template && (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                            Public
-                          </Badge>
-                        )}
+                          {design.is_public && !design.is_template && (
+                            <Badge className="bg-gradient-to-r from-purple-400 to-indigo-400 text-white">
+                              Public
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          asChild
-                          className="size-8"
-                        >
-                          <Link href={`/${locale}/design/${design.id}`}>
-                            <Edit className="size-4" />
-                            <span className="sr-only">Edit</span>
-                          </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/${locale}/design/${design.id}`}>
+                        <Button variant="secondary" size="sm">
+                          <Edit className="mr-2 size-4" />
+                          Edit
                         </Button>
-                      </div>
+                      </Link>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 rounded-full"
-                          >
+                          <Button variant="ghost" size="icon" className="size-8">
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Open menu</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px]">
-                          <DropdownMenuItem
-                            onClick={() => handleDuplicate(design)}
-                          >
+                        <DropdownMenuContent align="end" className="w-[180px]">
+                          <DropdownMenuItem onClick={() => handleDuplicate(design)}>
                             <Copy className="mr-2 size-4" />
                             Duplicate
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleShare(design)}
-                          >
+                          <DropdownMenuItem onClick={() => handleShare(design)}>
                             <Share className="mr-2 size-4" />
                             {design.is_public ? 'Make Private' : 'Make Public'}
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDownload(design)}
-                          >
+                          <DropdownMenuItem onClick={() => handleDownload(design)}>
                             <Download className="mr-2 size-4" />
                             Download
                           </DropdownMenuItem>
@@ -499,6 +378,12 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
               </div>
             </div>
           )}
+      <DeleteDesignDialog
+        isOpen={!!designToDelete}
+        designName={designToDelete?.name || ''}
+        onClose={() => setDesignToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

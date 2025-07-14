@@ -276,6 +276,7 @@ export function DesignCreationStepsDialog({
                                 {DESIGN_TAGS.map(tag => (
                                   <Button
                                     key={tag.id}
+                                    type="button"
                                     variant={selectedTags.includes(tag.id) ? 'primary' : 'outline'}
                                     size="sm"
                                     onClick={() => toggleTag(tag.id)}

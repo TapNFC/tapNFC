@@ -1,649 +1,414 @@
 'use client';
 
+import type { Design } from '@/types/design';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowUpDown,
-  Copy,
-  Download,
-  Edit,
-  Eye,
   Filter,
   Grid,
-  Heart,
-  LayoutGrid,
   List,
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
-  Star,
-  Tag,
-  X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDesigns } from '@/hooks/useDesigns';
 import { cn } from '@/lib/utils';
+import { DesignCard } from '../design-editor/components/DesignCard';
+import { DeleteDesignDialog } from '../design-editor/components/dialogs/DeleteDesignDialog';
 
-type Template = {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  thumbnail: string;
-  isPremium: boolean;
-  isPopular: boolean;
-  downloads: number;
-  rating: number;
-  tags: string[];
-  createdAt: string;
-  author: string;
-};
+function TemplatesClientSkeleton() {
+  return (
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Header */}
+      <header className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-48 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+          <div className="h-7 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="h-12 w-40 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+      </header>
 
-const mockTemplates: Template[] = [
-  {
-    id: '1',
-    name: 'Business Card Pro',
-    description: 'Professional business card template with QR code integration',
-    category: 'Business',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: true,
-    isPopular: true,
-    downloads: 2847,
-    rating: 4.9,
-    tags: ['business', 'professional', 'contact'],
-    createdAt: '2024-01-15',
-    author: 'QR Studio',
-  },
-  {
-    id: '2',
-    name: 'Restaurant Menu',
-    description: 'Modern restaurant menu template with QR ordering system',
-    category: 'Food & Dining',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: false,
-    isPopular: true,
-    downloads: 1923,
-    rating: 4.7,
-    tags: ['restaurant', 'menu', 'food'],
-    createdAt: '2024-01-12',
-    author: 'QR Studio',
-  },
-  {
-    id: '3',
-    name: 'Event Invitation',
-    description: 'Elegant event invitation with RSVP QR code',
-    category: 'Events',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: false,
-    isPopular: false,
-    downloads: 856,
-    rating: 4.5,
-    tags: ['event', 'invitation', 'rsvp'],
-    createdAt: '2024-01-10',
-    author: 'Community',
-  },
-  {
-    id: '4',
-    name: 'Product Showcase',
-    description: 'Showcase your products with interactive QR codes',
-    category: 'E-commerce',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: true,
-    isPopular: false,
-    downloads: 1247,
-    rating: 4.6,
-    tags: ['product', 'showcase', 'ecommerce'],
-    createdAt: '2024-01-08',
-    author: 'QR Studio',
-  },
-  {
-    id: '5',
-    name: 'Social Media Hub',
-    description: 'Connect all your social media profiles in one place',
-    category: 'Social',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: false,
-    isPopular: true,
-    downloads: 3421,
-    rating: 4.8,
-    tags: ['social', 'links', 'profile'],
-    createdAt: '2024-01-05',
-    author: 'Community',
-  },
-  {
-    id: '6',
-    name: 'Portfolio Gallery',
-    description: 'Creative portfolio template for artists and designers',
-    category: 'Creative',
-    thumbnail: '/api/placeholder/300/200',
-    isPremium: true,
-    isPopular: false,
-    downloads: 674,
-    rating: 4.4,
-    tags: ['portfolio', 'creative', 'gallery'],
-    createdAt: '2024-01-03',
-    author: 'QR Studio',
-  },
-];
+      {/* Controls */}
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="h-10 flex-1 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="flex items-center justify-end gap-2">
+          <div className="h-7 w-12 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+          <div className="h-10 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
 
-const categories = [
-  { id: 'all', name: 'All', count: 24 },
-  { id: 'business', name: 'Business', count: 8 },
-  { id: 'food', name: 'Food', count: 6 },
-  { id: 'events', name: 'Events', count: 4 },
-  { id: 'ecommerce', name: 'E-commerce', count: 3 },
-  { id: 'social', name: 'Social', count: 2 },
-  { id: 'creative', name: 'Creative', count: 1 },
-];
+      {/* Tags Filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="mr-2 size-5 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+        ))}
+      </div>
 
-type SortOption = 'popular' | 'recent' | 'downloads' | 'rating';
+      {/* Grid */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="space-y-3 rounded-lg border border-gray-200/60 bg-white/80 p-4 dark:border-gray-700/60 dark:bg-gray-800/80">
+            <div className="aspect-video w-full animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+            <div className="h-5 w-3/4 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 w-1/2 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700" />
+            <div className="flex gap-2">
+              <div className="h-5 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="h-5 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function TemplatesClient() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [designToDelete, setDesignToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
-  // Derived state
-  const filteredTemplates = useMemo(() => {
-    // Filter by search query and category
-    const filtered = mockTemplates.filter((template) => {
-      const matchesSearch = !searchQuery
-        || template.name.toLowerCase().includes(searchQuery.toLowerCase())
-        || template.description.toLowerCase().includes(searchQuery.toLowerCase())
-        || template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+  const {
+    designs: templates,
+    loading,
+    error,
+    deleteDesign,
+    searchDesigns,
+    refreshDesigns,
+    updateDesign,
+    createDesign,
+  } = useDesigns({ category: 'Templates' });
 
-      const matchesCategory = selectedCategory === 'all'
-        || template.category.toLowerCase().includes(selectedCategory.toLowerCase());
-
-      // Additional filter logic would go here
-      const matchesActiveFilters = !activeFilters.length
-        || (template.isPremium && activeFilters.includes('premium'))
-        || (template.isPopular && activeFilters.includes('popular'));
-
-      return matchesSearch && matchesCategory && (activeFilters.length ? matchesActiveFilters : true);
-    });
-
-    // Sort logic
-    switch (sortBy) {
-      case 'popular':
-        return filtered.sort((a, b) => b.downloads - a.downloads);
-      case 'recent':
-        return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      case 'downloads':
-        return filtered.sort((a, b) => b.downloads - a.downloads);
-      case 'rating':
-        return filtered.sort((a, b) => b.rating - a.rating);
-      default:
-        return filtered;
-    }
-  }, [searchQuery, selectedCategory, sortBy, activeFilters]);
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-  };
-
-  const toggleFilter = (filter: string) => {
-    if (activeFilters.includes(filter)) {
-      setActiveFilters(activeFilters.filter(f => f !== filter));
+  // Reset search when tags change or on initial load
+  useEffect(() => {
+    // When tags change, we might want to reset the search to show all relevant results
+    if (searchQuery) {
+      searchDesigns(searchQuery);
     } else {
-      setActiveFilters([...activeFilters, filter]);
+      refreshDesigns();
+    }
+  }, [searchQuery, refreshDesigns]);
+
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    templates.forEach((template) => {
+      if (template.tags) {
+        template.tags.forEach(tag => tags.add(tag));
+      }
+    });
+    return ['All', ...Array.from(tags)];
+  }, [templates]);
+
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((template) => {
+      const searchMatch
+        = searchQuery.trim() === ''
+          || template.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const tagsMatch
+        = selectedTags.length === 0
+          || selectedTags.includes('All')
+          || (template.tags
+            && selectedTags.some(tag =>
+              (template.tags as string[]).includes(tag),
+            ));
+
+      return searchMatch && tagsMatch;
+    });
+  }, [templates, searchQuery, selectedTags]);
+
+  const handleTagClick = (tag: string) => {
+    if (tag === 'All') {
+      setSelectedTags([]);
+    } else {
+      setSelectedTags(prev =>
+        prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag],
+      );
     }
   };
 
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedCategory('all');
-    setActiveFilters([]);
-  };
+  const handleDuplicate = useCallback(
+    async (design: Design) => {
+      try {
+        // Create a duplicate design
+        const duplicateData = {
+          user_id: design.user_id,
+          name: `${design.name} (Copy)`,
+          canvas_data: design.canvas_data,
+          preview_url: design.preview_url,
+          is_template: false, // Always create as a regular design, not a template
+          is_public: false, // Always create as private
+        };
+
+        const newDesign = await createDesign(duplicateData);
+        if (newDesign) {
+          toast.success('Template duplicated successfully');
+        } else {
+          toast.error('Failed to duplicate template');
+        }
+      } catch (err) {
+        console.error('Failed to duplicate template:', err);
+        toast.error('Failed to duplicate template');
+      }
+    },
+    [createDesign],
+  );
+
+  const handleDelete = useCallback(async (id: string, name: string) => {
+    setDesignToDelete({ id, name });
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!designToDelete) {
+      return;
+    }
+
+    try {
+      const success = await deleteDesign(
+        designToDelete.id,
+        designToDelete.name,
+      );
+      if (success) {
+        toast.success('Template deleted successfully');
+        refreshDesigns(); // Refresh the list after deletion
+      } else {
+        toast.error('Failed to delete template');
+      }
+    } catch (err) {
+      console.error('Failed to delete template:', err);
+      toast.error('Failed to delete template');
+    } finally {
+      setDesignToDelete(null);
+    }
+  }, [deleteDesign, designToDelete, refreshDesigns]);
+
+  const handleShare = useCallback(
+    async (design: Design) => {
+      try {
+        // Toggle the is_public flag
+        const updatedDesign = await updateDesign(design.id, {
+          is_public: !design.is_public,
+        });
+
+        if (updatedDesign) {
+          toast.success(
+            updatedDesign.is_public
+              ? 'Template is now public'
+              : 'Template is now private',
+          );
+        }
+      } catch (err) {
+        console.error('Failed to update template visibility:', err);
+        toast.error('Failed to update template visibility');
+      }
+    },
+    [updateDesign],
+  );
+
+  const handleDownload = useCallback(async (design: Design) => {
+    try {
+      // Create a JSON blob with the design data
+      const designJson = JSON.stringify(
+        {
+          id: design.id,
+          name: design.name,
+          type: 'template',
+          canvasData: design.canvas_data || {},
+          metadata: {
+            title: design.name,
+            is_template: true,
+            is_public: design.is_public,
+          },
+          exportedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      );
+
+      // Download as JSON file
+      const blob = new Blob([designJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${design.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Template downloaded successfully');
+    } catch (err) {
+      console.error('Failed to download template:', err);
+      toast.error('Failed to download template');
+    }
+  }, []);
+
+  if (loading) {
+    return <TemplatesClientSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[400px] w-full flex-col items-center justify-center rounded-lg border border-dashed bg-gray-50 p-8 text-center dark:bg-gray-900/10">
+        <div className="text-2xl font-semibold text-red-500">
+          Failed to load templates
+        </div>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          {error || 'An unexpected error occurred.'}
+        </p>
+        <Button
+          variant="outline"
+          className="mt-6"
+          onClick={() => window.location.reload()}
+        >
+          <RefreshCw className="mr-2 size-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-full space-y-4 p-4 pt-2">
-      {/* Header - More compact */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0"
-      >
-        <div className="flex items-center space-x-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            QR Templates
-          </h1>
-          <Badge variant="outline" className="h-6 rounded-xl">
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Header */}
+      <header className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Templates</h1>
+          <Badge variant="secondary" className="rounded-full px-3 py-1 text-sm">
             {filteredTemplates.length}
             {' '}
             templates
           </Badge>
         </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            asChild
-            size="sm"
-            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700"
-          >
-            <Link href="/design/new">
-              <Plus className="mr-1 size-4" />
-              Create Template
-            </Link>
+        <Link href="/design">
+          <Button size="lg" className="flex items-center gap-2">
+            <Plus className="size-5" />
+            <span>Create Template</span>
           </Button>
-        </div>
-      </motion.div>
+        </Link>
+      </header>
 
-      {/* Controls Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-        className="sticky top-0 z-20 flex flex-wrap gap-2 rounded-xl border bg-white/90 p-2 backdrop-blur-lg dark:border-slate-700 dark:bg-slate-900/90 sm:flex-nowrap"
-      >
-        {/* Search */}
-        <div className="relative min-w-[180px] grow">
-          <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+      {/* Controls */}
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Search templates..."
+            placeholder="Search templates by name..."
             value={searchQuery}
-            onChange={e => handleSearch(e.target.value)}
-            className="h-9 bg-transparent pl-8"
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full rounded-full bg-white pl-10 pr-4 dark:bg-gray-800"
           />
-          {searchQuery && (
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">View:</span>
+          <div className="flex items-center rounded-full border bg-white p-1 dark:bg-gray-800">
             <Button
-              variant="ghost"
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
-              className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
-              onClick={() => handleSearch('')}
+              className="size-8 rounded-full"
+              onClick={() => setViewMode('grid')}
             >
-              <X className="size-3" />
+              <Grid className="size-4" />
             </Button>
-          )}
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="size-8 rounded-full"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="size-4" />
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {/* Filters button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1">
-              <Filter className="size-4" />
-              <span className="hidden sm:inline">Filters</span>
-              {activeFilters.length > 0 && (
-                <Badge className="ml-1 bg-purple-500 text-white">{activeFilters.length}</Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Filter Templates</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex items-center justify-between" onClick={() => toggleFilter('premium')}>
-              Premium
-              <Star className={cn('size-4', activeFilters.includes('premium') ? 'text-yellow-400' : 'text-slate-400')} />
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex items-center justify-between" onClick={() => toggleFilter('popular')}>
-              Popular
-              <Sparkles className={cn('size-4', activeFilters.includes('popular') ? 'text-purple-400' : 'text-slate-400')} />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={resetFilters} disabled={!searchQuery && selectedCategory === 'all' && !activeFilters.length}>
-              <RefreshCw className="mr-2 size-4" />
-              {' '}
-              Reset Filters
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Sort dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1">
-              <ArrowUpDown className="size-4" />
-              <span className="hidden sm:inline">Sort</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSortBy('popular')} className="flex items-center justify-between">
-              Popular
-              {sortBy === 'popular' && <Star className="size-4 text-yellow-400" />}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('recent')} className="flex items-center justify-between">
-              Recent
-              {sortBy === 'recent' && <Star className="size-4 text-yellow-400" />}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('downloads')} className="flex items-center justify-between">
-              Most Downloads
-              {sortBy === 'downloads' && <Star className="size-4 text-yellow-400" />}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('rating')} className="flex items-center justify-between">
-              Highest Rated
-              {sortBy === 'rating' && <Star className="size-4 text-yellow-400" />}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* View mode switch */}
-        <div className="flex h-9 items-center rounded-md border p-1">
+      {/* Tags Filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter className="mr-2 size-5 text-gray-500" />
+        {allTags.map(tag => (
           <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="size-7"
-            onClick={() => setViewMode('grid')}
+            key={tag}
+            variant={
+              selectedTags.includes(tag)
+              || (tag === 'All' && selectedTags.length === 0)
+                ? 'primary'
+                : 'outline'
+            }
+            size="sm"
+            className="rounded-full"
+            onClick={() => handleTagClick(tag)}
           >
-            <Grid className="size-4" />
+            {tag}
           </Button>
-          <Button
-            variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="size-7"
-            onClick={() => setViewMode('compact')}
-          >
-            <LayoutGrid className="size-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="size-7"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="size-4" />
-          </Button>
-        </div>
-      </motion.div>
+        ))}
+      </div>
 
-      {/* Category Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <Tabs
-          value={selectedCategory}
-          onValueChange={handleCategoryChange}
-          className="w-full"
-        >
-          <TabsList className="mb-4 grid w-full auto-cols-fr grid-flow-col overflow-x-auto rounded-xl bg-white/80 p-1 backdrop-blur-lg dark:bg-slate-800/80">
-            {categories.map(category => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="flex items-center gap-2 px-3"
-              >
-                <span>{category.name}</span>
-                <Badge variant="secondary" className="ml-1 rounded-full">
-                  {category.count}
-                </Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </motion.div>
-
-      {/* Templates Display */}
-      <AnimatePresence mode="wait">
+      {/* Templates Grid / List */}
+      <AnimatePresence>
         <motion.div
           key={viewMode}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-        >
-          {viewMode === 'list'
-            ? (
-              // List View
-                <div className="rounded-lg border bg-white/50 dark:border-slate-700 dark:bg-slate-800/50">
-                  {filteredTemplates.map((template, index) => (
-                    <motion.div
-                      key={template.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: 0.05 * index }}
-                      className="group flex items-center justify-between border-b p-3 last:border-0 dark:border-slate-700"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-12 w-16 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-700">
-                          {template.isPremium && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="flex items-center font-medium">
-                            {template.name}
-                            {template.isPremium && <Star className="ml-1 size-3 text-yellow-400" />}
-                            {template.isPopular && <Sparkles className="ml-1 size-3 text-purple-400" />}
-                          </h3>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            <span>{template.category}</span>
-                            <span className="flex items-center">
-                              <Star className="mr-1 size-3 text-yellow-400" />
-                              {' '}
-                              {template.rating}
-                            </span>
-                            <span>
-                              {template.downloads.toLocaleString()}
-                              {' '}
-                              uses
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button size="sm" variant="ghost" className="size-8 p-0">
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="size-8 p-0">
-                          <Heart className="size-4" />
-                        </Button>
-                        <Button size="sm" variant="primary" className="h-8">
-                          <Copy className="mr-1 size-3" />
-                          Use
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )
-            : viewMode === 'compact'
-              ? (
-                // Compact Grid View
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {filteredTemplates.map((template, index) => (
-                      <motion.div
-                        key={template.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: 0.05 * index }}
-                        className="group relative"
-                      >
-                        <Card className="overflow-hidden border-slate-200/60 bg-white/80 transition-all duration-150 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
-                          {/* Thumbnail */}
-                          <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-700">
-                            {/* Premium/Popular indicators */}
-                            <div className="absolute left-2 top-2 z-10 flex gap-1">
-                              {template.isPremium && (
-                                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
-                                  <Star className="mr-1 size-3" />
-                                  Pro
-                                </Badge>
-                              )}
-                              {template.isPopular && !template.isPremium && (
-                                <Badge className="bg-gradient-to-r from-purple-400 to-indigo-400 text-white">
-                                  <Sparkles className="mr-1 size-3" />
-                                  Popular
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Quick actions overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                              <Button size="sm" variant="secondary">
-                                <Eye className="size-4" />
-                              </Button>
-                              <Button size="sm" variant="secondary">
-                                <Edit className="size-4" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-3">
-                            <div className="mb-2">
-                              <h3 className="truncate font-medium">{template.name}</h3>
-                              <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <div className="flex items-center">
-                                  <Star className="mr-1 size-3 text-yellow-400" />
-                                  {' '}
-                                  {template.rating}
-                                </div>
-                                <span>•</span>
-                                <span>
-                                  {template.downloads.toLocaleString()}
-                                  {' '}
-                                  uses
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Action */}
-                            <Button size="sm" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
-                              <Copy className="mr-1 size-3" />
-                              {' '}
-                              Use Template
-                            </Button>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                )
-              : (
-                // Standard Grid View
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredTemplates.map((template, index) => (
-                      <motion.div
-                        key={template.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: 0.05 * index }}
-                        className="group"
-                      >
-                        <Card className="overflow-hidden border-slate-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
-                          {/* Template Thumbnail */}
-                          <div className="relative aspect-video overflow-hidden bg-gradient-to-tr from-slate-100 to-white dark:from-slate-800 dark:to-slate-700">
-                            {template.isPremium && (
-                              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-400/20" />
-                            )}
-
-                            {/* Badges */}
-                            <div className="absolute left-3 top-3 flex items-center space-x-2">
-                              {template.isPremium && (
-                                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                                  <Star className="mr-1 size-3" />
-                                  Premium
-                                </Badge>
-                              )}
-                              {template.isPopular && (
-                                <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
-                                  <Sparkles className="mr-1 size-3" />
-                                  Popular
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Overlay on hover */}
-                            <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                              <Button size="sm" variant="secondary">
-                                <Eye className="mr-1 size-4" />
-                                Preview
-                              </Button>
-                              <Button size="sm" variant="secondary">
-                                <Edit className="mr-1 size-4" />
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-4">
-                            <div className="mb-2 flex items-center justify-between">
-                              <h3 className="font-semibold text-slate-900 dark:text-white">
-                                {template.name}
-                              </h3>
-                              <Badge variant="outline" className="text-xs">
-                                {template.category}
-                              </Badge>
-                            </div>
-
-                            <p className="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-                              {template.description}
-                            </p>
-
-                            {/* Tags */}
-                            <div className="mb-3 flex flex-wrap gap-1">
-                              {template.tags.slice(0, 3).map(tag => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  <Tag className="mr-1 size-3" />
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-
-                            {/* Stats */}
-                            <div className="mb-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex items-center">
-                                  <Star className="mr-1 size-4 fill-yellow-400 text-yellow-400" />
-                                  <span>{template.rating}</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <Download className="mr-1 size-4" />
-                                  <span>{template.downloads.toLocaleString()}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Actions */}
-                            <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
-                              <Copy className="mr-2 size-4" />
-                              Use Template
-                            </Button>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-
-          {/* Empty State */}
-          {filteredTemplates.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center rounded-lg border bg-white/50 p-12 text-center dark:border-slate-700 dark:bg-slate-800/50"
-            >
-              <Search className="mb-3 size-8 text-slate-400" />
-              <h3 className="mb-2 text-lg font-medium text-slate-900 dark:text-white">
-                No templates found
-              </h3>
-              <p className="mb-4 max-w-md text-sm text-slate-600 dark:text-slate-400">
-                We couldn't find any templates matching your search. Try adjusting your filters or browse a different category.
-              </p>
-              <Button onClick={resetFilters}>
-                <RefreshCw className="mr-2 size-4" />
-                Reset Filters
-              </Button>
-            </motion.div>
+          className={cn(
+            'grid gap-6',
+            viewMode === 'grid'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3'
+              : 'grid-cols-1',
           )}
+        >
+          {filteredTemplates.map(template => (
+            <DesignCard
+              key={template.id}
+              design={template}
+              locale="en"
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+              onShare={handleShare}
+              onDownload={handleDownload}
+              viewMode={viewMode}
+            />
+          ))}
         </motion.div>
       </AnimatePresence>
+
+      {/* Empty State */}
+      {filteredTemplates.length === 0 && !loading && (
+        <div className="flex min-h-[400px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 p-8 text-center dark:bg-gray-900/10">
+          <div className="text-2xl font-semibold text-gray-600 dark:text-gray-300">
+            No templates found
+          </div>
+          <p className="mt-2 max-w-md text-center text-sm text-gray-500 dark:text-gray-400">
+            {searchQuery
+              ? `No templates match your search for "${searchQuery}". Try a different search term.`
+              : 'There are no templates with the selected tags. Try selecting different tags or creating a new template.'}
+          </p>
+          <Link href="/design/new" className="mt-6">
+            <Button>
+              <Plus className="mr-2 size-4" />
+              Create Your First Template
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      <DeleteDesignDialog
+        isOpen={!!designToDelete}
+        designName={designToDelete?.name || ''}
+        onClose={() => setDesignToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

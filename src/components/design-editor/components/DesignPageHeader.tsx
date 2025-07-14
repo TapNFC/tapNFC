@@ -83,10 +83,10 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
                 <Sparkles className="size-7 text-white" />
               </div>
               <div>
-                <h1 className="bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-4xl font-bold text-transparent">
+                <h1 className="bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-2xl font-bold text-transparent">
                   Your Designs
                 </h1>
-                <p className="text-lg font-medium text-gray-600/80">
+                <p className="text-base font-medium text-gray-600/80">
                   Create and manage your design templates with ease
                 </p>
               </div>

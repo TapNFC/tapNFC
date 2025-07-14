@@ -14,7 +14,6 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -252,15 +251,6 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
                               >
                                 {item.label}
                               </span>
-
-                              {item.isNew && (
-                                <Badge
-                                  variant="default"
-                                  className="rounded-full bg-green-500 px-2.5 py-1 text-xs text-white"
-                                >
-                                  New
-                                </Badge>
-                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
