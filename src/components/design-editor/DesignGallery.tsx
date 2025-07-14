@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useDesigns } from '@/hooks/useDesigns';
 import { designService } from '@/services/designService';
+import { createClient } from '@/utils/supabase/client';
 import { DesignCard } from './components/DesignCard';
 import { DesignGallerySkeleton } from './components/DesignGallerySkeleton';
 import { DeleteDesignDialog } from './components/dialogs/DeleteDesignDialog';
@@ -42,6 +43,16 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
   } = useDesigns({ category: category || 'all' });
 
   const [designToDelete, setDesignToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    fetchUserId();
+  }, []);
 
   // Search designs when search query changes
   useEffect(() => {
@@ -91,10 +102,14 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
   }, [search, category, tag]);
 
   const handleDuplicate = useCallback(async (design: Design) => {
+    if (!currentUserId) {
+      toast.error('You must be logged in to duplicate designs.');
+      return;
+    }
     try {
       // Create a duplicate design
       const duplicateData = {
-        user_id: design.user_id,
+        user_id: currentUserId as string, // Assert as string after null check
         name: `${design.name} (Copy)`,
         canvas_data: design.canvas_data,
         preview_url: design.preview_url,
@@ -112,7 +127,7 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
       console.error('Failed to duplicate design:', error);
       toast.error('Failed to duplicate design');
     }
-  }, [createDesign]);
+  }, [createDesign, currentUserId]);
 
   const handleDelete = useCallback(async (id: string, name: string) => {
     setDesignToDelete({ id, name });
@@ -275,6 +290,7 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
                   key={design.id}
                   design={design}
                   locale={locale}
+                  currentUserId={currentUserId}
                   onDelete={handleDelete}
                   onDuplicate={handleDuplicate}
                   onShare={handleShare}
@@ -354,22 +370,29 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
                             <Copy className="mr-2 size-4" />
                             Duplicate
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare(design)}>
-                            <Share className="mr-2 size-4" />
-                            {design.is_public ? 'Make Private' : 'Make Public'}
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDownload(design)}>
                             <Download className="mr-2 size-4" />
                             Download
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
-                            onClick={() => handleDelete(design.id, design.name)}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {/* Conditional rendering for 'Make Public/Private' and 'Delete' */}
+                          {(design.user_id === currentUserId || !design.is_public) && (
+                            <DropdownMenuItem onClick={() => handleShare(design)}>
+                              <Share className="mr-2 size-4" />
+                              {design.is_public ? 'Make Private' : 'Make Public'}
+                            </DropdownMenuItem>
+                          )}
+                          {design.user_id === currentUserId && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                                onClick={() => handleDelete(design.id, design.name)}
+                              >
+                                <Trash2 className="mr-2 size-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

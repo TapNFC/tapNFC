@@ -63,14 +63,18 @@ export function RealTimePreview({
   const effectiveBackgroundStyle = useMemo(() => {
     if (typeof backgroundColor === 'string') {
       return { backgroundColor };
-    } else if (backgroundColor && typeof backgroundColor === 'object' && Array.isArray((backgroundColor as FabricGradient)?.colorStops)) {
-      const gradient = backgroundColor as FabricGradient;
-      // Defaulting to a diagonal gradient (135deg or to bottom right)
-      const direction = '135deg'; // Or 'to bottom right'
-      const stops = (gradient.colorStops || [])
-        .map(stop => `${stop?.color || '#FFFFFF'} ${stop?.offset !== undefined ? stop.offset * 100 : 0}%`)
-        .join(', ');
-      return { background: `linear-gradient(${direction}, ${stops})` };
+    } else if (backgroundColor && typeof backgroundColor === 'object') {
+      // Check if it's a Fabric.js gradient object (or similar structure with toObject)
+      const fabricObject = (backgroundColor as any).toObject ? (backgroundColor as any).toObject(['colorStops', 'type', 'coords']) : backgroundColor;
+
+      if (fabricObject && fabricObject.type === 'linear' && Array.isArray(fabricObject.colorStops)) {
+        const gradient = fabricObject as FabricGradient;
+        const direction = '135deg';
+        const stops = (gradient.colorStops || [])
+          .map(stop => `${stop?.color || '#FFFFFF'} ${stop?.offset !== undefined ? stop.offset * 100 : 0}%`)
+          .join(', ');
+        return { background: `linear-gradient(${direction}, ${stops})` };
+      }
     }
     return { backgroundColor: '#ffffff' }; // Fallback to white if format is unexpected
   }, [backgroundColor]);
@@ -120,6 +124,8 @@ export function RealTimePreview({
           boxSizing: 'border-box',
           display: 'flex',
           alignItems: 'flex-start',
+          fontStyle: obj.fontStyle === 'italic' ? 'italic' : 'normal',
+          textDecoration: `${obj.underline ? 'underline' : ''} ${obj.linethrough ? 'line-through' : ''}`.trim(),
         };
 
         return (

@@ -286,7 +286,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
               <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
                 <ElementsPanel
                   onAddShape={handleAddShape}
-                  onAddButton={handleAddButton}
                   onAddLink={handleAddLink}
                 />
               </div>

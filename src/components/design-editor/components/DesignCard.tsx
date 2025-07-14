@@ -28,6 +28,7 @@ type DesignCardProps = {
   design: Design;
   locale: string;
   viewMode?: 'grid' | 'list';
+  currentUserId?: string | null;
   onDelete: (id: string, name: string) => void;
   onDuplicate: (design: Design) => void;
   onShare: (design: Design) => void;
@@ -70,11 +71,14 @@ export function DesignCard({
   design,
   locale,
   viewMode = 'grid',
+  currentUserId,
   onDelete,
   onDuplicate,
   onShare,
   onDownload,
 }: DesignCardProps) {
+  const isOwner = design.user_id === currentUserId;
+
   if (viewMode === 'list') {
     return (
       <div className="flex w-full items-center gap-4 rounded-lg border bg-white/80 p-4 transition-all duration-300 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80">
@@ -122,12 +126,20 @@ export function DesignCard({
               {formatTimeAgo(design.updated_at)}
             </span>
           </div>
-          <Link href={`/${locale}/design/${design.id}`} passHref>
-            <Button variant="outline" size="sm">
-              <Edit className="mr-2 size-4" />
-              Edit
+          {isOwner && (
+            <Link href={`/${locale}/design/${design.id}`} passHref>
+              <Button variant="outline" size="sm">
+                <Edit className="mr-2 size-4" />
+                Edit
+              </Button>
+            </Link>
+          )}
+          {(isOwner || (design.is_public && !isOwner)) && (
+            <Button variant="outline" size="sm" onClick={() => onDuplicate(design)}>
+              <Copy className="mr-2 size-4" />
+              Copy
             </Button>
-          </Link>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="size-8">
@@ -139,22 +151,28 @@ export function DesignCard({
                 <Copy className="mr-2 size-4" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onShare(design)}>
-                <Share className="mr-2 size-4" />
-                {design.is_public ? 'Make Private' : 'Make Public'}
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDownload(design)}>
                 <Download className="mr-2 size-4" />
                 Download
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
-                onClick={() => onDelete(design.id, design.name)}
-              >
-                <Trash2 className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
+              {isOwner && (
+                <DropdownMenuItem onClick={() => onShare(design)}>
+                  <Share className="mr-2 size-4" />
+                  {design.is_public ? 'Make Private' : 'Make Public'}
+                </DropdownMenuItem>
+              )}
+              {isOwner && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                    onClick={() => onDelete(design.id, design.name)}
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -199,16 +217,20 @@ export function DesignCard({
 
         {/* Overlay on hover */}
         <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <Link href={`/${locale}/design/${design.id}`}>
-            <Button size="sm" variant="secondary">
-              <Edit className="mr-1 size-4" />
-              Edit
+          {isOwner && (
+            <Link href={`/${locale}/design/${design.id}`}>
+              <Button size="sm" variant="secondary">
+                <Edit className="mr-1 size-4" />
+                Edit
+              </Button>
+            </Link>
+          )}
+          {(isOwner || (design.is_public && !isOwner)) && (
+            <Button size="sm" variant="secondary" onClick={() => onDuplicate(design)}>
+              <Copy className="mr-1 size-4" />
+              Copy
             </Button>
-          </Link>
-          <Button size="sm" variant="secondary" onClick={() => onDuplicate(design)}>
-            <Copy className="mr-1 size-4" />
-            Copy
-          </Button>
+          )}
         </div>
       </div>
 
@@ -243,6 +265,8 @@ export function DesignCard({
               <Eye className="mr-1 size-4" />
               <span>
                 Updated
+                {' '}
+
                 {formatTimeAgo(design.updated_at)}
               </span>
             </div>
@@ -254,33 +278,54 @@ export function DesignCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[180px]">
-              <DropdownMenuItem onClick={() => onShare(design)}>
-                <Share className="mr-2 size-4" />
-                {design.is_public ? 'Make Private' : 'Make Public'}
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDownload(design)}>
                 <Download className="mr-2 size-4" />
                 Download
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
-                onClick={() => onDelete(design.id, design.name)}
-              >
-                <Trash2 className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
+              {isOwner && (
+                <DropdownMenuItem onClick={() => onShare(design)}>
+                  <Share className="mr-2 size-4" />
+                  {design.is_public ? 'Make Private' : 'Make Public'}
+                </DropdownMenuItem>
+              )}
+
+              {isOwner && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-500 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+                    onClick={() => onDelete(design.id, design.name)}
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {/* Action */}
-        <Link href={`/${locale}/design/${design.id}`} className="block">
-          <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
-            <Edit className="mr-2 size-4" />
-            Edit Design
-          </Button>
-        </Link>
+        {isOwner
+          ? (
+              <Link href={`/${locale}/design/${design.id}`} className="block">
+                <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700">
+                  <Edit className="mr-2 size-4" />
+                  Edit Design
+                </Button>
+              </Link>
+            )
+          : design.is_public && !isOwner
+            ? (
+                <Button
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700"
+                  onClick={() => onDuplicate(design)}
+                >
+                  <Copy className="mr-2 size-4" />
+                  Copy Design
+                </Button>
+              )
+            : null}
       </div>
     </div>
   );

@@ -178,7 +178,7 @@ export function useCanvasAutoSave({
         canvasData: canvasJSON,
         width: canvas.getWidth(),
         height: canvas.getHeight(),
-        backgroundColor: canvas.backgroundColor?.toString() || '#ffffff',
+        backgroundColor: canvas.backgroundColor || '#ffffff', // Removed .toString()
       };
     } catch (error) {
       console.error('Failed to get preview data:', error);

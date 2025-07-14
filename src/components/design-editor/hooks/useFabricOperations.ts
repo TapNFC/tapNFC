@@ -264,8 +264,9 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...commonProps,
             width: 100,
             height: 60,
-            rx: 8, // Rounded corners
-            ry: 8,
+            rx: 0, // Set to 0 for sharp corners
+            ry: 0, // Set to 0 for sharp corners
+            strokeWidth: 1, // Set to 1px border
           });
           break;
         case 'outlined-rectangle':
@@ -273,8 +274,9 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...outlinedCommonProps,
             width: 100,
             height: 60,
-            rx: 8,
-            ry: 8,
+            rx: 0, // Set to 0 for sharp corners
+            ry: 0, // Set to 0 for sharp corners
+            strokeWidth: 1, // Set to 1px border
           });
           break;
         case 'circle':
