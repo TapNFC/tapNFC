@@ -39,6 +39,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fill: '#333',
             width: 300,
             textAlign: 'center',
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
         case 'add-subheading':
@@ -51,6 +53,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fill: '#555',
             width: 250,
             textAlign: 'center',
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
         case 'add-body':
@@ -63,12 +67,16 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fontFamily: 'Inter',
             fill: '#666',
             width: 200,
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
       }
       if (textObject) {
         // Add custom property to identify text type later if needed
         (textObject as any).elementType = 'text';
+        // Ensure text renders at correct size by explicitly setting height
+        textObject.set('height', textObject.fontSize * (textObject.lineHeight || 1.2));
         canvas.add(textObject);
         canvas.setActiveObject?.(textObject);
         canvas.renderAll?.();

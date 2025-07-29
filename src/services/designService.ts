@@ -150,6 +150,11 @@ export const designService = {
 
   // Get designs by tag
   async getDesignsByTag(tag: string): Promise<Design[]> {
+    if (!tag) {
+      console.error('Error fetching designs by tag: tag parameter is empty');
+      return [];
+    }
+
     const supabase = createClient();
     const { data, error } = await supabase
       .from('designs')

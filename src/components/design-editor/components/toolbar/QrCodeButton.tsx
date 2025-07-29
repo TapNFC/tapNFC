@@ -1,6 +1,7 @@
 import type { DesignData } from '@/lib/indexedDB';
-import { QrCode } from 'lucide-react';
+import { Loader2, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { designDB } from '@/lib/indexedDB';
@@ -16,11 +17,14 @@ type QrCodeButtonProps = {
 
 export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas }: QrCodeButtonProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleProceedToQrCode = async () => {
-    if (disabled) {
+    if (disabled || isLoading) {
       return;
     }
+
+    setIsLoading(true);
 
     // Save the current canvas data to IndexedDB before proceeding
     if (canvas) {
@@ -35,6 +39,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
 
         if (!canvasData) {
           toast.error('Failed to get canvas data. Cannot proceed.');
+          setIsLoading(false);
           return;
         }
 
@@ -74,28 +79,39 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
         localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
 
         toast.success('Design saved locally.');
+
+        // Navigate to the QR code generation page
+        router.push(`/${locale}/design/${designId}/qr-code`);
       } catch (error) {
         console.error('Failed to save design data:', error);
         toast.error('Failed to save design data. Please try again.');
-        return;
+        setIsLoading(false);
       }
     } else {
       toast.error('Canvas not ready. Please wait a moment and try again.');
-      return;
+      setIsLoading(false);
     }
-
-    // Navigate to the QR code generation page
-    router.push(`/${locale}/design/${designId}/qr-code`);
   };
 
   return (
     <Button
       onClick={handleProceedToQrCode}
-      disabled={disabled || !canvas}
+      disabled={disabled || !canvas || isLoading}
       className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg transition-all duration-300 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
     >
-      <QrCode className="size-4" />
-      <span>Proceed to QR Code</span>
+      {isLoading
+        ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              <span>Processing...</span>
+            </>
+          )
+        : (
+            <>
+              <QrCode className="size-4" />
+              <span>Proceed to QR Code</span>
+            </>
+          )}
     </Button>
   );
 }

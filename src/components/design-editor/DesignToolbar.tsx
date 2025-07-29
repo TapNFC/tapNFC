@@ -28,7 +28,6 @@ import { createClient } from '@/utils/supabase/client';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { EditableDesignName } from './components/toolbar/EditableDesignName';
-import { FileMenu } from './components/toolbar/FileMenu';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { StatusIndicator } from './components/toolbar/StatusIndicator';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
@@ -331,19 +330,7 @@ export function DesignToolbar({
   //   }
   // };
 
-  const handleProceedToQrCode = () => {
-    if (!canvas) {
-      toast.error('Canvas not ready');
-      return;
-    }
-
-    // The QrCodeButton component will handle the saving
-    // This is just a backup validation
-    const objects = canvas.getObjects();
-    if (objects.length === 0) {
-      toast.error('Canvas is empty. Add some elements before generating QR code.');
-    }
-  };
+  // Remove handleProceedToQrCode function since it's no longer needed
 
   const handleUndo = () => {
     if (onUndo) {
@@ -415,11 +402,7 @@ export function DesignToolbar({
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
-          <FileMenu
-            onSaveTemplate={() => setShowSaveDialog?.(true)}
-            onLoadTemplate={() => setShowLoadDialog?.(true)}
-            onExport={handleProceedToQrCode}
-          />
+          <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
           {/* Action Tools */}
           <div className="flex items-center space-x-1">
@@ -498,7 +481,7 @@ export function DesignToolbar({
                   <span className="font-medium">Save Now</span>
                 )}
           </Button>
-
+          {/* Add QrCodeButton here */}
           <QrCodeButton
             designId={designId}
             locale={locale}

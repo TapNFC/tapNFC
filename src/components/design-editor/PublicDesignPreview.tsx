@@ -354,6 +354,13 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
           textElement.style.pointerEvents = 'none';
           textElement.style.whiteSpace = 'pre-wrap';
           textElement.style.lineHeight = `${obj.lineHeight || 1.2}`;
+          // Add these properties to fix text rendering
+          textElement.style.boxSizing = 'border-box';
+          textElement.style.padding = '0';
+          textElement.style.margin = '0';
+          textElement.style.minHeight = `${(obj.fontSize || 16) * (obj.lineHeight || 1.2)}px`;
+          textElement.style.transformOrigin = 'left top';
+          textElement.style.overflow = 'visible';
 
           containerRef.current?.appendChild(textElement);
         } else if (obj.type === 'rect') {

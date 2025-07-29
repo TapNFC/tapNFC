@@ -1,6 +1,5 @@
 import type { DesignPageWithSearchParams, UserProfile } from '@/types/design';
 import { Suspense } from 'react';
-import { DesignFilters } from '@/components/design-editor/components/DesignFilters';
 import { DesignGallerySkeleton } from '@/components/design-editor/components/DesignGallerySkeleton';
 import { DesignPageHeader } from '@/components/design-editor/components/DesignPageHeader';
 import { DesignGallery } from '@/components/design-editor/DesignGallery';
@@ -42,13 +41,13 @@ export default async function DesignPage({ params, searchParams }: DesignPageWit
       <DesignPageHeader locale={locale} />
 
       {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 pt-2 sm:px-6 lg:px-8">
         {/* Filters and Search */}
-        <DesignFilters
+        {/* <DesignFilters
           view={view}
           search={search}
           category={category}
-        />
+        /> */}
 
         {/* Design Gallery */}
         <Suspense fallback={<DesignGallerySkeleton view={view} />}>

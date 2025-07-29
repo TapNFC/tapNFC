@@ -126,6 +126,13 @@ export function RealTimePreview({
           alignItems: 'flex-start',
           fontStyle: obj.fontStyle === 'italic' ? 'italic' : 'normal',
           textDecoration: `${obj.underline ? 'underline' : ''} ${obj.linethrough ? 'line-through' : ''}`.trim(),
+          // Add these properties to fix text rendering
+          width: obj.type === 'textbox' ? `${width}px` : 'auto',
+          minHeight: `${fontSize * (obj.lineHeight || 1.2)}px`,
+          justifyContent: obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start',
+          padding: '0',
+          margin: '0',
+          transformOrigin: 'left top',
         };
 
         return (
@@ -272,6 +279,15 @@ export function RealTimePreview({
                       boxSizing: 'border-box',
                       display: 'flex',
                       alignItems: 'flex-start',
+                      // Add these properties to fix grouped text rendering
+                      width: groupObj.type === 'textbox' ? `${groupObjWidth}px` : 'auto',
+                      minHeight: `${groupTextFontSize * (groupObj.lineHeight || 1.2)}px`,
+                      justifyContent: groupObj.textAlign === 'center' ? 'center' : groupObj.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                      fontStyle: groupObj.fontStyle === 'italic' ? 'italic' : 'normal',
+                      textDecoration: `${groupObj.underline ? 'underline' : ''} ${groupObj.linethrough ? 'line-through' : ''}`.trim(),
+                      padding: '0',
+                      margin: '0',
+                      transformOrigin: 'left top',
                     }}
                   >
                     {groupObj.text || ''}

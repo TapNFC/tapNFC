@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, ImageIcon, Plus, Wifi } from 'lucide-react';
+import { ImageIcon, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -39,32 +39,33 @@ const DESIGN_TYPES: DesignType[] = [
     description: 'Transform your images into interactive QR codes',
     icon: <ImageIcon className="size-10" />,
     color: 'text-purple-500',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-purple-600',
-    path: (locale, designId) => `/${locale}/design/image-to-qr/${designId}`,
-  },
-  {
-    id: 'pdf-to-qr',
-    title: 'PDF to QR',
-    description: 'Convert your PDF documents into scannable QR codes',
-    icon: <FileText className="size-10" />,
-    color: 'text-red-500',
     gradientFrom: 'from-red-500',
     gradientTo: 'to-red-600',
     comingSoon: true,
-    path: locale => `/${locale}/design`,
+    path: (locale, designId) => `/${locale}/design/image-to-qr/${designId}`,
   },
-  {
-    id: 'wifi-to-qr',
-    title: 'WiFi to QR',
-    description: 'Generate QR codes for instant WiFi access',
-    icon: <Wifi className="size-10" />,
-    color: 'text-green-500',
-    gradientFrom: 'from-green-500',
-    gradientTo: 'to-green-600',
-    comingSoon: true,
-    path: locale => `/${locale}/design`,
-  },
+  // {
+  //   id: 'pdf-to-qr',
+  //   title: 'PDF to QR',
+  //   description: 'Convert your PDF documents into scannable QR codes',
+  //   icon: <FileText className="size-10" />,
+  //   color: 'text-red-500',
+  //   gradientFrom: 'from-red-500',
+  //   gradientTo: 'to-red-600',
+  //   comingSoon: true,
+  //   path: locale => `/${locale}/design`,
+  // },
+  // {
+  //   id: 'wifi-to-qr',
+  //   title: 'WiFi to QR',
+  //   description: 'Generate QR codes for instant WiFi access',
+  //   icon: <Wifi className="size-10" />,
+  //   color: 'text-green-500',
+  //   gradientFrom: 'from-green-500',
+  //   gradientTo: 'to-green-600',
+  //   comingSoon: true,
+  //   path: locale => `/${locale}/design`,
+  // },
 ];
 
 type DesignTypeCardProps = {
@@ -200,7 +201,7 @@ export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialo
               </DialogHeader>
 
               <motion.div
-                className="grid grid-cols-1 gap-6 py-6 sm:grid-cols-2 lg:grid-cols-4"
+                className="grid grid-cols-1 gap-6 py-6 sm:grid-cols-2 lg:grid-cols-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}

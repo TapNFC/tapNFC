@@ -79,7 +79,7 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
         let fetchedDesigns: Design[] = [];
 
         // If tag is provided, fetch designs by tag
-        if (tag) {
+        if (tag && tag.trim() !== '') {
           fetchedDesigns = await designService.getDesignsByTag(tag);
         } else if (search) {
           fetchedDesigns = await designService.searchDesigns(search);

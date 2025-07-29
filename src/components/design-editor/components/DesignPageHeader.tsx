@@ -1,24 +1,21 @@
 'use client';
 
-import { Database, Folder, Plus, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { DesignTypeDialog } from '@/components/design-editor/components/dialogs/DesignTypeDialog';
 import { Button } from '@/components/ui/button';
 import { designDB } from '@/lib/indexedDB';
-import { createSampleDesigns } from '@/lib/sampleDesigns';
 
 type DesignPageHeaderProps = {
   locale: string;
 };
 
 export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
-  const [stats, setStats] = useState({
+  const [, setStats] = useState({
     totalDesigns: 0,
     totalTemplates: 0,
     recentCount: 0,
   });
-  const [showSampleButton, setShowSampleButton] = useState(false);
   const [designTypeDialogOpen, setDesignTypeDialogOpen] = useState(false);
 
   const loadStats = async () => {
@@ -42,14 +39,10 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
         totalTemplates: validTemplates.length,
         recentCount: recentDesigns.length,
       });
-
-      // Show sample button if no data exists
-      setShowSampleButton(validDesigns.length === 0 && validTemplates.length === 0);
     } catch (error) {
       console.error('Failed to load design statistics:', error);
       // Optionally reset stats or set an error state
       setStats({ totalDesigns: 0, totalTemplates: 0, recentCount: 0 });
-      setShowSampleButton(true); // Or based on error handling strategy
     }
   };
 
@@ -57,24 +50,12 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
     loadStats();
   }, []);
 
-  const handleCreateSampleData = async () => {
-    try {
-      toast.loading('Creating sample designs...');
-      await createSampleDesigns();
-      await loadStats(); // Refresh stats
-      toast.success('Sample designs created successfully!');
-    } catch (error) {
-      console.error('Failed to create sample data:', error);
-      toast.error('Failed to create sample data');
-    }
-  };
-
   return (
     <div className="relative bg-white/70 shadow-lg shadow-blue-100/20 backdrop-blur-xl">
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 py-8 pt-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           {/* Header Content */}
           <div className="space-y-4">
@@ -92,55 +73,10 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
               </div>
             </div>
 
-            {/* Statistics */}
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm">
-                <div className="rounded-lg bg-blue-100 p-1.5">
-                  <Folder className="size-4 text-blue-600" />
-                </div>
-                <div className="text-sm">
-                  <span className="font-semibold text-gray-900">{stats?.totalDesigns ?? 0}</span>
-                  <span className="ml-1 text-gray-600">Designs</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm">
-                <div className="rounded-lg bg-yellow-100 p-1.5">
-                  <Star className="size-4 text-yellow-600" />
-                </div>
-                <div className="text-sm">
-                  <span className="font-semibold text-gray-900">{stats?.totalTemplates ?? 0}</span>
-                  <span className="ml-1 text-gray-600">Templates</span>
-                </div>
-              </div>
-
-              {(stats?.recentCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm">
-                  <div className="rounded-lg bg-green-100 p-1.5">
-                    <TrendingUp className="size-4 text-green-600" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-semibold text-gray-900">{stats.recentCount}</span>
-                    <span className="ml-1 text-gray-600">Recent</span>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex shrink-0 items-center gap-3">
-            {/* Sample Data Button (only show if no data exists) */}
-            {showSampleButton && (
-              <Button
-                onClick={handleCreateSampleData}
-                variant="outline"
-                className="border-white/30 bg-white/60 backdrop-blur-sm transition-all duration-200 hover:bg-white/80"
-              >
-                <Database className="mr-2 size-4" />
-                Add Sample Data
-              </Button>
-            )}
 
             {/* Create Button */}
             <Button

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { DESIGN_EDITOR_CONFIG } from '@/components/design-editor/constants';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -128,9 +129,9 @@ export function DesignCreationStepsDialog({
         tags: data.tags,
         canvas_data: {
           canvasJSON: { objects: [] },
-          width: 800,
-          height: 600,
-          backgroundColor: '#ffffff',
+          width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
+          height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
+          backgroundColor: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR,
         },
         preview_url: null,
         is_template: false,
