@@ -59,7 +59,7 @@ export function useCanvasAutoSave({
 
     try {
       // Serialize the entire canvas state, including the background
-      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
 
       // Get existing design to update or check if it's new
       const existingDesign = await designService.getDesignById(designId);
@@ -135,7 +135,7 @@ export function useCanvasAutoSave({
 
         // Add to history if it's the first save or if there are unsaved changes
         if (isFirstSaveRef.current || hasUnsavedChanges) {
-          const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+          const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
 
           // If we've gone back in history and made changes, remove future states
           if (historyPositionRef.current < historyRef.current.length - 1) {
@@ -172,16 +172,17 @@ export function useCanvasAutoSave({
     }
 
     try {
-      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
 
-      return {
+      const result = {
         canvasData: canvasJSON,
         width: canvas.getWidth(),
         height: canvas.getHeight(),
         backgroundColor: canvas.backgroundColor || '#ffffff', // Removed .toString()
       };
-    } catch (error) {
-      console.error('Failed to get preview data:', error);
+
+      return result;
+    } catch {
       return null;
     }
   }, [canvas]);
@@ -240,7 +241,7 @@ export function useCanvasAutoSave({
             canvas.renderAll();
 
             // Initialize history with current state
-            const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+            const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
             historyRef.current = [initialState];
             historyPositionRef.current = 0;
             setCanUndo(false);
@@ -252,7 +253,7 @@ export function useCanvasAutoSave({
           });
         } else {
           // Initialize history with empty canvas
-          const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background']);
+          const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
           historyRef.current = [initialState];
           historyPositionRef.current = 0;
           setCanUndo(false);

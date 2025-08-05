@@ -23,7 +23,7 @@ export function useCanvasHistory({
     }
 
     try {
-      const canvasState = JSON.stringify(canvas.toJSON(['elementType', 'buttonData', 'linkData']));
+      const canvasState = JSON.stringify(canvas.toJSON(['elementType', 'buttonData', 'linkData', 'url', 'name']));
 
       // Remove any states after current index (when undoing then making new changes)
       historyStack.current = historyStack.current.slice(0, historyIndex.current + 1);
@@ -113,7 +113,7 @@ export function useCanvasHistory({
     }
 
     try {
-      const initialState = JSON.stringify(canvas.toJSON(['elementType', 'buttonData', 'linkData']));
+      const initialState = JSON.stringify(canvas.toJSON(['elementType', 'buttonData', 'linkData', 'url', 'name']));
       historyStack.current = [initialState];
       historyIndex.current = 0;
       setCanUndo(false);

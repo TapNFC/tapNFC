@@ -35,7 +35,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
           await storageService.deleteDesignPreview(existingDesign.preview_url);
         }
 
-        const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+        const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name']);
 
         if (!canvasData) {
           toast.error('Failed to get canvas data. Cannot proceed.');

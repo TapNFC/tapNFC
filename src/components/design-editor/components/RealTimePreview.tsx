@@ -1,7 +1,9 @@
 'use client';
 
 import { Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 // Define a type for Fabric-like gradient objects that might be passed
@@ -27,60 +29,54 @@ export function RealTimePreview({
   backgroundColor,
   className = '',
 }: RealTimePreviewProps) {
-  const [isVisible, setIsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Force re-render when canvas state changes by using a key
-  const canvasStateKey = useMemo(() => {
-    return JSON.stringify(canvasState);
-  }, [canvasState]);
-
-  // Memoize scale calculation to prevent unnecessary recalculations
+  // Calculate preview scale based on available space
   const getPreviewScale = useMemo(() => {
-    if (isFullscreen) {
-      return 1;
-    }
-    // Define the desired maximum dimensions for the small preview *container*
-    const smallPreviewContainerMaxWidth = 300; // Adjust as needed for default small preview width
-    const smallPreviewContainerMaxHeight = 225; // Adjust as needed for default small preview height
+    const maxWidth = 300;
+    const maxHeight = 400;
+    const scaleX = maxWidth / width;
+    const scaleY = maxHeight / height;
+    return Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+  }, [width, height]);
 
-    // Calculate the scale factor needed to fit the original canvas content
-    // (dimensions: `width` x `height`) into the small preview container.
-    const scaleFactor = Math.min(smallPreviewContainerMaxWidth / (width || 1), smallPreviewContainerMaxHeight / (height || 1), 1);
-    return scaleFactor > 0 ? scaleFactor : 1; // Ensure scale is positive, default to 1 if width/height is 0
-  }, [isFullscreen, width, height]);
+  // Calculate display dimensions
+  const displayDimensions = useMemo(() => ({
+    width: width * getPreviewScale,
+    height: height * getPreviewScale,
+  }), [width, height, getPreviewScale]);
 
-  // Memoize display dimensions
-  const displayDimensions = useMemo(() => {
-    const scale = getPreviewScale;
-    return {
-      width: width * scale,
-      height: height * scale,
-    };
-  }, [width, height, getPreviewScale]);
+  // Generate a key for the canvas state to force re-render when needed
+  const canvasStateKey = useMemo(() => {
+    return JSON.stringify(canvasState?.objects?.length || 0);
+  }, [canvasState?.objects?.length]);
 
+  // Handle background color/gradient
   const effectiveBackgroundStyle = useMemo(() => {
     if (typeof backgroundColor === 'string') {
       return { backgroundColor };
-    } else if (backgroundColor && typeof backgroundColor === 'object') {
-      // Check if it's a Fabric.js gradient object (or similar structure with toObject)
-      const fabricObject = (backgroundColor as any).toObject ? (backgroundColor as any).toObject(['colorStops', 'type', 'coords']) : backgroundColor;
+    }
 
-      if (fabricObject && fabricObject.type === 'linear' && Array.isArray(fabricObject.colorStops)) {
-        const gradient = fabricObject as FabricGradient;
-        const direction = '135deg';
-        const stops = (gradient.colorStops || [])
-          .map(stop => `${stop?.color || '#FFFFFF'} ${stop?.offset !== undefined ? stop.offset * 100 : 0}%`)
+    if (backgroundColor && typeof backgroundColor === 'object' && backgroundColor.type === 'linear') {
+      const gradient = backgroundColor as FabricGradient;
+      if (gradient.colorStops && gradient.colorStops.length > 0) {
+        const stops = gradient.colorStops
+          .map(stop => `${stop.color} ${stop.offset * 100}%`)
           .join(', ');
-        return { background: `linear-gradient(${direction}, ${stops})` };
+        return {
+          background: `linear-gradient(to right, ${stops})`,
+        };
       }
     }
+
     return { backgroundColor: '#ffffff' }; // Fallback to white if format is unexpected
   }, [backgroundColor]);
 
   // Memoize the heavy renderElements function to prevent recreation on every render
   const renderCanvasObjects = useMemo(() => {
+    // Remove console.log statements
     if (!canvasState?.objects || !Array.isArray(canvasState.objects)) {
       return [];
     }
@@ -174,32 +170,55 @@ export function RealTimePreview({
         );
       }
 
-      // Handle Triangle elements
-      if (obj.type === 'triangle') {
-        // For triangle, we'll use a div with a pseudo-element for the triangle shape
-        // Since CSS can't directly render triangles, we'd use a clever technique
-        // Here we're using a simplified approach with just coloring the div
-        return (
-          <div
-            key={`canvas-triangle-${obj.id || index}`}
-            style={{
-              ...baseStyle,
-              backgroundColor: obj.fill || '#cccccc',
-              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
-              boxSizing: 'border-box',
-            }}
-          />
-        );
-      }
-
       // Handle Image elements
       if (obj.type === 'image') {
+        // Handle social icons with special styling
+        if (obj.elementType === 'socialIcon') {
+          return (
+            <div
+              key={`canvas-social-icon-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: '2px solid rgba(59, 130, 246, 0.2)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = `rotate(${angle}deg) scale(1.1)`;
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = `rotate(${angle}deg) scale(1)`;
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <Image
+                src={obj.src || ''}
+                alt={obj.name || 'Social Icon'}
+                width={width}
+                height={height}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
+          );
+        }
+
+        // Regular image handling
         return (
-          <img
+          <Image
             key={`canvas-image-${obj.id || index}`}
             src={obj.src || ''}
             alt="Design element"
+            width={width}
+            height={height}
             style={{
               ...baseStyle,
               // objectFit: 'cover', // or 'contain', depending on desired behavior. Fabric default is like 'fill'
@@ -276,18 +295,12 @@ export function RealTimePreview({
                       textAlign: groupObj.textAlign || 'left',
                       whiteSpace: 'pre-wrap',
                       lineHeight: groupObj.lineHeight || 1.2,
-                      boxSizing: 'border-box',
                       display: 'flex',
                       alignItems: 'flex-start',
-                      // Add these properties to fix grouped text rendering
-                      width: groupObj.type === 'textbox' ? `${groupObjWidth}px` : 'auto',
-                      minHeight: `${groupTextFontSize * (groupObj.lineHeight || 1.2)}px`,
                       justifyContent: groupObj.textAlign === 'center' ? 'center' : groupObj.textAlign === 'right' ? 'flex-end' : 'flex-start',
                       fontStyle: groupObj.fontStyle === 'italic' ? 'italic' : 'normal',
                       textDecoration: `${groupObj.underline ? 'underline' : ''} ${groupObj.linethrough ? 'line-through' : ''}`.trim(),
-                      padding: '0',
-                      margin: '0',
-                      transformOrigin: 'left top',
+                      boxSizing: 'border-box',
                     }}
                   >
                     {groupObj.text || ''}
@@ -295,10 +308,12 @@ export function RealTimePreview({
                 );
               } else if (groupObj.type === 'image') {
                 return (
-                  <img
+                  <Image
                     key={`group-${obj.id || index}-image-${groupObj.id || groupIndex}`}
                     src={groupObj.src || ''}
                     alt="Grouped element"
+                    width={groupObjWidth}
+                    height={groupObjHeight}
                     style={{
                       ...groupObjStyle,
                       objectFit: 'fill',
@@ -327,7 +342,101 @@ export function RealTimePreview({
         />
       );
     });
-  }, [canvasState?.objects]);
+  }, [canvasState]);
+
+  const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!canvasState?.objects || !Array.isArray(canvasState.objects)) {
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / getPreviewScale;
+    const y = (e.clientY - rect.top) / getPreviewScale;
+
+    // Check if we clicked on an interactive element
+    for (const obj of canvasState.objects) {
+      if (!obj || !obj.left || !obj.top || !obj.width || !obj.height) {
+        continue;
+      }
+
+      const objLeft = obj.left;
+      const objTop = obj.top;
+      const objWidth = (obj.width || 0) * (obj.scaleX || 1);
+      const objHeight = (obj.height || 0) * (obj.scaleY || 1);
+
+      // Simple hit testing (can be improved with rotation support)
+      if (x >= objLeft && x <= objLeft + objWidth && y >= objTop && y <= objTop + objHeight) {
+        // Handle social icons - check both url and URL properties to be safe
+        if (obj.elementType === 'socialIcon') {
+          const url = obj.url || obj.URL;
+          if (!url) {
+            toast.error('This social icon has no URL configured.');
+            return;
+          }
+
+          // Create a temporary anchor element to use native browser navigation
+          const tempLink = document.createElement('a');
+          tempLink.href = url;
+          tempLink.target = '_blank';
+          tempLink.rel = 'noopener noreferrer';
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          return;
+        } else if (obj.type === 'image' && (obj.url || obj.URL)) {
+          // Create a temporary anchor element to use native browser navigation
+          const tempLink = document.createElement('a');
+          tempLink.href = obj.url || obj.URL;
+          tempLink.target = obj.linkData?.target || '_blank';
+          tempLink.rel = 'noopener noreferrer';
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          return;
+        }
+
+        // Handle links
+        if (obj.elementType === 'link' && obj.linkData?.url) {
+          // Create a temporary anchor element to use native browser navigation
+          const tempLink = document.createElement('a');
+          tempLink.href = obj.linkData.url;
+          tempLink.target = obj.linkData.target || '_blank';
+          tempLink.rel = 'noopener noreferrer';
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          return;
+        }
+
+        // Handle buttons
+        if (obj.elementType === 'button' && obj.buttonData?.action?.type === 'url' && obj.buttonData?.action?.value) {
+          // Create a temporary anchor element to use native browser navigation
+          const tempLink = document.createElement('a');
+          tempLink.href = obj.buttonData.action.value;
+          tempLink.target = '_blank';
+          tempLink.rel = 'noopener noreferrer';
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          return;
+        }
+      }
+    }
+  }, [canvasState, getPreviewScale]);
+
+  // Handle keyboard events for accessibility
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      // Simulate click for keyboard users
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      });
+      e.currentTarget.dispatchEvent(clickEvent);
+    }
+  }, []);
 
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -342,42 +451,35 @@ export function RealTimePreview({
       }
     } else if (document.fullscreenElement) {
       document.exitFullscreen?.();
-      (document as any).webkitExitFullscreen?.();
-      (document as any).mozCancelFullScreen?.();
-      (document as any).msExitFullscreen?.();
     }
-    // Note: setIsFullscreen is handled by the fullscreenchange event listener
   }, [isFullscreen]);
 
-  const handleShowPreview = useCallback(() => setIsVisible(true), []);
-  const handleHidePreview = useCallback(() => setIsVisible(false), []);
+  // Handle hide preview
+  const handleHidePreview = useCallback(() => {
+    setIsVisible(false);
+  }, []);
 
-  // Handle fullscreen events with proper cleanup
+  // Handle fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, []);
 
   if (!isVisible) {
-    return (
-      <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
-        <Button
-          onClick={handleShowPreview}
-          variant="outline"
-          size="sm"
-          className="bg-white shadow-lg hover:shadow-xl"
-        >
-          <Eye className="mr-2 size-4" />
-          Show Preview
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -435,7 +537,13 @@ export function RealTimePreview({
               overflow: 'hidden',
               transform: `scale(${getPreviewScale})`,
               transformOrigin: 'top left',
+              cursor: 'pointer', // Add pointer cursor to indicate interactivity
             }}
+            onClick={handlePreviewClick}
+            onKeyDown={handleKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-label="Interactive design preview"
           >
             {Array.isArray(renderCanvasObjects) && renderCanvasObjects.length > 0
               ? (

@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
+import { designDB } from '@/lib/indexedDB';
 import { CanvasContainer } from './components/CanvasContainer';
 import {
   MemoizedLinkEditPopup,
   MemoizedRealTimePreview,
   MemoizedTextToolbar,
 } from './components/OptimizedComponents';
+import { SocialIconEditPopup } from './components/SocialIconEditPopup';
 import { DESIGN_EDITOR_CONFIG } from './constants';
 import { DesignSidebar } from './DesignSidebar';
 import { DesignToolbar } from './DesignToolbar';
@@ -17,6 +20,7 @@ import { useDesignLoader } from './hooks/useDesignLoader';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLinkEditor } from './hooks/useLinkEditor';
+import { useSocialIconEditor } from './hooks/useSocialIconEditor';
 
 type DesignEditorProps = {
   designId: string;
@@ -36,7 +40,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     handleShowLoadDialog,
     sidebarCollapsed,
     handleToggleSidebar,
-    canvasVersion,
     incrementCanvasVersion,
     isDesignLoaded,
     setIsDesignLoaded,
@@ -53,7 +56,15 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   });
 
   // Extract link editing functionality to custom hook
-  const { linkEditPopup, handleUpdateLink, handleCloseLinkEdit } = useLinkEditor({ canvas });
+  const { linkEditPopup, handleLinkDoubleClick, handleUpdateLink, handleCloseLinkEdit } = useLinkEditor({ canvas });
+
+  // Add the social icon editor hook
+  const {
+    socialIconEditPopup,
+    handleSocialIconDoubleClick,
+    handleUpdateSocialIcon,
+    handleCloseSocialIconEdit,
+  } = useSocialIconEditor({ canvas });
 
   // Extract design loading logic to custom hook
   useDesignLoader({
@@ -68,7 +79,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   const {
     hasUnsavedChanges,
     lastSaved,
-    saveNow,
     getPreviewData,
     undo,
     redo,
@@ -97,30 +107,141 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     canRedo,
   });
 
-  // Get preview data for real-time preview - memoize to prevent unnecessary re-renders
-  const previewData = useMemo(() => {
-    const data = getPreviewData();
-    return data;
-  }, [getPreviewData, hasUnsavedChanges, canvasVersion]);
+  // Get preview data for real-time preview - use state to trigger updates
+  const [previewData, setPreviewData] = useState(() => getPreviewData());
+
+  // Update preview data when canvas changes
+  useEffect(() => {
+    if (canvas && isCanvasReady) {
+      const updatePreview = () => {
+        const data = getPreviewData();
+        if (data) {
+          setPreviewData(data);
+        }
+      };
+
+      // Update immediately
+      updatePreview();
+
+      // Set up event listeners for canvas changes
+      const handleCanvasChange = () => {
+        updatePreview();
+      };
+
+      canvas.on('object:added', handleCanvasChange);
+      canvas.on('object:removed', handleCanvasChange);
+      canvas.on('object:modified', handleCanvasChange);
+      canvas.on('object:moving', handleCanvasChange);
+      canvas.on('object:scaling', handleCanvasChange);
+      canvas.on('object:rotating', handleCanvasChange);
+
+      return () => {
+        canvas.off('object:added', handleCanvasChange);
+        canvas.off('object:removed', handleCanvasChange);
+        canvas.off('object:modified', handleCanvasChange);
+        canvas.off('object:moving', handleCanvasChange);
+        canvas.off('object:scaling', handleCanvasChange);
+        canvas.off('object:rotating', handleCanvasChange);
+      };
+    }
+    return undefined;
+  }, [canvas, isCanvasReady, getPreviewData]);
 
   const handleManualSave = async () => {
-    await saveNow();
+    if (!canvas || !designId) {
+      toast.error('Cannot save: Canvas or design ID not available');
+      return;
+    }
+
+    try {
+      // Get canvas data
+      const canvasData = canvas.toJSON();
+      const canvasImage = canvas.toDataURL('image/png');
+
+      // Create design data
+      const designData = {
+        id: designId,
+        canvasData,
+        metadata: {
+          width: canvas.getWidth(),
+          height: canvas.getHeight(),
+          backgroundColor: canvas.backgroundColor || '#ffffff',
+          title: `Design ${designId}`,
+          description: 'Saved design',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Save to IndexedDB
+      await designDB.saveDesign(designData);
+
+      // Save canvas image to localStorage for preview
+      localStorage.setItem(`design_preview_${designId}`, canvasImage);
+
+      toast.success('Design saved successfully!');
+    } catch {
+      toast.error('Failed to save design');
+    }
   };
 
-  // Log component lifecycle
-  useEffect(() => {
-    console.warn('DesignEditor mounted, designId:', designId);
-    return () => {
-      console.warn('DesignEditor unmounting, designId:', designId);
-    };
-  }, [designId]);
-
-  // Add this useEffect to track canvas readiness
+  // Track canvas readiness
   useEffect(() => {
     if (isCanvasReady) {
-      console.warn('Canvas is ready for design:', designId);
+      // Canvas is ready for design
     }
   }, [isCanvasReady, designId]);
+
+  // Update the useEffect for double-click handling
+  useEffect(() => {
+    if (!canvas || !fabric) {
+      return;
+    }
+
+    // Store the original event handler if it exists
+    const originalMouseDblClick = canvas.__eventListeners?.['mouse:dblclick'] || [];
+
+    // Remove any existing mouse:dblclick handlers to avoid duplicates
+    canvas.off('mouse:dblclick');
+
+    // Add our custom double-click handler
+    canvas.on('mouse:dblclick', (options: any) => {
+      const target = options.target;
+      if (!target) {
+        return;
+      }
+
+      if (target.elementType === 'socialIcon') {
+        handleSocialIconDoubleClick(target, options.e);
+      } else if (target.elementType === 'link') {
+        handleLinkDoubleClick(target, options.e);
+      } else if (target.elementType === 'button') {
+        // For buttons, we'll focus on the URL field in the properties panel
+        // and highlight it to draw attention to it
+        const urlInput = document.querySelector('#button-action-value') as HTMLInputElement;
+        if (urlInput) {
+          urlInput.focus();
+          urlInput.select();
+          // Scroll the properties panel to the action section if needed
+          urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
+
+    // Clean up event listeners on unmount
+    return () => {
+      if (canvas) {
+        canvas.off('mouse:dblclick');
+
+        // Restore original event handlers if they existed
+        if (originalMouseDblClick.length > 0) {
+          originalMouseDblClick.forEach((handler: any) => {
+            canvas.on('mouse:dblclick', handler);
+          });
+        }
+      }
+    };
+  }, [canvas, fabric, handleSocialIconDoubleClick, handleLinkDoubleClick]);
 
   return (
     <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.MAIN}>
@@ -190,6 +311,17 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         height={previewData?.height || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT}
         backgroundColor={previewData?.backgroundColor || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR}
       />
+
+      {/* Add the social icon edit popup */}
+      {socialIconEditPopup.isVisible && (
+        <SocialIconEditPopup
+          isVisible={socialIconEditPopup.isVisible}
+          iconObject={socialIconEditPopup.iconObject}
+          position={socialIconEditPopup.position}
+          onUpdateIcon={handleUpdateSocialIcon}
+          onClose={handleCloseSocialIconEdit}
+        />
+      )}
     </div>
   );
 }

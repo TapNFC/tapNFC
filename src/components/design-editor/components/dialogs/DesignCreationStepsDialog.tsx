@@ -17,22 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
 
-// Predefined tags for designs
-const DESIGN_TAGS = [
-  { id: 'social', label: 'Social Media' },
-  { id: 'business', label: 'Business' },
-  { id: 'personal', label: 'Personal' },
-  { id: 'marketing', label: 'Marketing' },
-  { id: 'education', label: 'Education' },
-  { id: 'event', label: 'Event' },
-  { id: 'other', label: 'Other' },
-];
-
 // Form validation schema
 const designFormSchema = z.object({
   name: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
-  tags: z.array(z.string()).optional(),
 });
 
 type DesignFormValues = z.infer<typeof designFormSchema>;
@@ -55,7 +43,6 @@ export function DesignCreationStepsDialog({
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -70,19 +57,8 @@ export function DesignCreationStepsDialog({
     defaultValues: {
       name: `New ${designTypeName}`,
       description: '',
-      tags: [],
     },
   });
-
-  // Handle tag selection
-  const toggleTag = (tagId: string) => {
-    const newSelectedTags = selectedTags.includes(tagId)
-      ? selectedTags.filter(id => id !== tagId)
-      : [...selectedTags, tagId];
-
-    setSelectedTags(newSelectedTags);
-    form.setValue('tags', newSelectedTags);
-  };
 
   const nextStep = (e?: React.MouseEvent) => {
     // Prevent default form submission if event is provided
@@ -126,7 +102,6 @@ export function DesignCreationStepsDialog({
         user_id: user.id,
         name: data.name,
         description: data.description,
-        tags: data.tags,
         canvas_data: {
           canvasJSON: { objects: [] },
           width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
@@ -167,21 +142,19 @@ export function DesignCreationStepsDialog({
             <div className="relative z-10 px-8 py-6">
               <DialogHeader className="mb-6">
                 <DialogTitle className="text-center text-3xl font-bold text-gray-900">
-                  {step === 1 ? 'Name Your Design' : step === 2 ? 'Add a Description' : 'Choose Tags'}
+                  {step === 1 ? 'Name Your Design' : 'Add a Description'}
                 </DialogTitle>
                 <DialogDescription className="mx-auto max-w-xl text-center text-base text-gray-600">
                   {step === 1
                     ? 'Give your design a meaningful name'
-                    : step === 2
-                      ? 'Add a description to help you remember what this design is for'
-                      : 'Select tags to categorize your design'}
+                    : 'Add a description to help you remember what this design is for'}
                 </DialogDescription>
               </DialogHeader>
 
               <Form {...form}>
                 <form
                   onSubmit={(e) => {
-                    if (step !== 3) {
+                    if (step !== 2) {
                       e.preventDefault();
                       return;
                     }
@@ -257,47 +230,6 @@ export function DesignCreationStepsDialog({
                     </motion.div>
                   )}
 
-                  {/* Step 3: Tags */}
-                  {step === 3 && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={form.control}
-                        name="tags"
-                        render={() => (
-                          <FormItem>
-                            <FormLabel>Tags (optional)</FormLabel>
-                            <FormControl>
-                              <div className="flex flex-wrap gap-2">
-                                {DESIGN_TAGS.map(tag => (
-                                  <Button
-                                    key={tag.id}
-                                    type="button"
-                                    variant={selectedTags.includes(tag.id) ? 'primary' : 'outline'}
-                                    size="sm"
-                                    onClick={() => toggleTag(tag.id)}
-                                    className="flex items-center gap-2"
-                                  >
-                                    {tag.label}
-                                  </Button>
-                                ))}
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Select tags to help organize your designs
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </motion.div>
-                  )}
-
                   {/* Navigation buttons */}
                   <div className="flex justify-between pt-4">
                     <Button
@@ -309,7 +241,7 @@ export function DesignCreationStepsDialog({
                       {step === 1 ? 'Cancel' : 'Back'}
                     </Button>
 
-                    {step < 3
+                    {step < 2
                       ? (
                           <Button
                             type="button"
@@ -340,7 +272,7 @@ export function DesignCreationStepsDialog({
               {/* Step indicator */}
               <div className="mt-8 flex justify-center">
                 <div className="flex items-center gap-2">
-                  {[1, 2, 3].map(s => (
+                  {[1, 2].map(s => (
                     <div
                       key={s}
                       className={`flex size-8 items-center justify-center rounded-full ${

@@ -28,6 +28,16 @@ export default withSentryConfig(
             protocol: 'https',
             hostname: 'wjdlnxhhcxiseutevgbk.supabase.co',
           },
+          {
+            protocol: 'http',
+            hostname: 'localhost',
+            port: '3000',
+          },
+          {
+            protocol: 'https',
+            hostname: 'localhost',
+            port: '3000',
+          },
         ],
       },
     }),

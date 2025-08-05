@@ -7,11 +7,14 @@ import {
   Bold,
   ChevronDown,
   ChevronUp,
+  Circle,
   Italic,
   Minus,
   Plus,
   Send,
+  Square,
   Strikethrough,
+  Type,
   Underline,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -72,7 +75,7 @@ const TEXT_ALIGNMENTS = [
 ] as const;
 
 export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  // Text properties
   const [fontFamily, setFontFamily] = useState('Inter');
   const [fontSize, setFontSize] = useState(16);
   const [isBold, setIsBold] = useState(false);
@@ -81,44 +84,70 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const [textAlign, setTextAlign] = useState('left');
   const [textColor, setTextColor] = useState('#000000');
+
+  // Shape properties
   const [fillColor, setFillColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(0);
+
+  // Common properties
   const [opacity, setOpacity] = useState(100);
 
   const isTextObject = selectedObject
     && (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox');
 
-  // Update visibility and properties based on selected object
+  const isShapeObject = selectedObject
+    && !isTextObject
+    && selectedObject.type !== 'image';
+
+  // Update properties based on selected object
   useEffect(() => {
     if (selectedObject) {
-      setIsVisible(true);
-
       // Update state based on selected object properties
       const updateState = () => {
         // Handle text objects
         if (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox') {
-          setFontFamily(selectedObject.fontFamily || 'Inter');
-          setFontSize(selectedObject.fontSize || 16);
-          setIsBold(selectedObject.fontWeight === 'bold');
-          setIsItalic(selectedObject.fontStyle === 'italic');
-          setIsUnderline(selectedObject.underline || false);
-          setIsStrikethrough(selectedObject.linethrough || false);
-          setTextAlign(selectedObject.textAlign || 'left');
-          setTextColor(selectedObject.fill || '#000000');
-          setFillColor(selectedObject.fill || '#000000');
-          setStrokeColor(selectedObject.stroke || '#000000');
-          setStrokeWidth(selectedObject.strokeWidth || 0);
+          const newFontFamily = selectedObject.fontFamily || 'Inter';
+          const newFontSize = selectedObject.fontSize || 16;
+          const newIsBold = selectedObject.fontWeight === 'bold';
+          const newIsItalic = selectedObject.fontStyle === 'italic';
+          const newIsUnderline = selectedObject.underline || false;
+          const newIsStrikethrough = selectedObject.linethrough || false;
+          const newTextAlign = selectedObject.textAlign || 'left';
+          const newTextColor = selectedObject.fill || '#000000';
+
+          setFontFamily(newFontFamily);
+          setFontSize(newFontSize);
+          setIsBold(newIsBold);
+          setIsItalic(newIsItalic);
+          setIsUnderline(newIsUnderline);
+          setIsStrikethrough(newIsStrikethrough);
+          setTextAlign(newTextAlign);
+          setTextColor(newTextColor);
         }
+
+        // Handle shape objects or any non-text objects
+        if (!isTextObject) {
+          const newFillColor = selectedObject.fill || '#000000';
+          const newStrokeColor = selectedObject.stroke || '#000000';
+          const newStrokeWidth = selectedObject.strokeWidth || 0;
+
+          setFillColor(newFillColor);
+          setStrokeColor(newStrokeColor);
+          setStrokeWidth(newStrokeWidth);
+        }
+
         // Handle all objects for opacity
-        setOpacity(Math.round((selectedObject.opacity || 1) * 100));
+        const newOpacity = Math.round((selectedObject.opacity || 1) * 100);
+        setOpacity(newOpacity);
       };
 
       updateState();
     } else {
-      setIsVisible(false);
+      // Reset to defaults when no object is selected
+      setOpacity(100);
     }
-  }, [selectedObject]);
+  }, [selectedObject, isTextObject]);
 
   const updateObjectProperty = useCallback((property: string, value: any) => {
     if (selectedObject && canvas) {
@@ -244,217 +273,258 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
     }
   }, [selectedObject, canvas]);
 
-  if (!isVisible || !selectedObject) {
-    return null;
-  }
+  // Render the text toolbar controls
+  const renderTextControls = () => (
+    <>
+      {/* Font Family */}
+      <div className="flex items-center space-x-2">
+        <Label className="text-sm font-medium text-gray-700">Font:</Label>
+        <Select
+          value={fontFamily}
+          onValueChange={handleFontFamilyChange}
+          disabled={!isTextObject}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_FAMILIES.map(font => (
+              <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                {font}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Font Size */}
+      <div className="flex items-center space-x-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={decreaseFontSize}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Minus className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Decrease font size</TooltipContent>
+        </Tooltip>
+
+        <Input
+          type="number"
+          value={fontSize}
+          onChange={e => handleFontSizeChange(e.target.value)}
+          className="w-16 text-center text-sm"
+          min="8"
+          max="200"
+          disabled={!isTextObject}
+        />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={increaseFontSize}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Increase font size</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Text Formatting */}
+      <div className="flex items-center space-x-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isBold ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={toggleBold}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Bold className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Bold</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isItalic ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={toggleItalic}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Italic className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Italic</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isUnderline ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={toggleUnderline}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Underline className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Underline</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isStrikethrough ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={toggleStrikethrough}
+              className="size-8 p-0"
+              disabled={!isTextObject}
+            >
+              <Strikethrough className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Strikethrough</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Text Alignment */}
+      <div className="flex items-center space-x-1">
+        {TEXT_ALIGNMENTS.map(({ value, icon: Icon, label }) => (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <Button
+                variant={textAlign === value ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleTextAlign(value)}
+                className="size-8 p-0"
+                title={label}
+                disabled={!isTextObject}
+              >
+                <Icon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Text Color */}
+      <div className="flex items-center space-x-2">
+        <Label className="text-sm font-medium text-gray-700">Text:</Label>
+        <div className="relative">
+          <input
+            type="color"
+            value={textColor}
+            onChange={e => handleTextColorChange(e.target.value)}
+            className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+            disabled={!isTextObject}
+          />
+        </div>
+      </div>
+    </>
+  );
+
+  // Render the shape toolbar controls
+  const renderShapeControls = () => (
+    <>
+      {/* Shape Type Indicator */}
+      <div className="flex items-center space-x-2">
+        <div className="rounded-md bg-blue-100 p-1.5">
+          {selectedObject?.type === 'rect' && <Square className="size-5 text-blue-600" />}
+          {selectedObject?.type === 'circle' && <Circle className="size-5 text-blue-600" />}
+          {(!selectedObject?.type || selectedObject?.type === 'path') && <Type className="size-5 text-blue-600" />}
+        </div>
+        <Label className="font-medium text-gray-700">
+          {selectedObject?.type === 'rect' && 'Rectangle'}
+          {selectedObject?.type === 'circle' && 'Circle'}
+          {selectedObject?.type === 'triangle' && 'Triangle'}
+          {selectedObject?.type === 'path' && 'Path'}
+          {!selectedObject?.type && 'Shape'}
+        </Label>
+      </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Fill Color */}
+      <div className="flex items-center space-x-2">
+        <Label className="text-sm font-medium text-gray-700">Fill:</Label>
+        <div className="relative">
+          <input
+            type="color"
+            value={fillColor}
+            onChange={e => handleFillColorChange(e.target.value)}
+            className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+            disabled={!isShapeObject}
+          />
+        </div>
+      </div>
+
+      {/* Stroke Color */}
+      <div className="flex items-center space-x-2">
+        <Label className="text-sm font-medium text-gray-700">Stroke:</Label>
+        <div className="relative">
+          <input
+            type="color"
+            value={strokeColor}
+            onChange={e => handleStrokeColorChange(e.target.value)}
+            className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
+            disabled={!isShapeObject}
+          />
+        </div>
+      </div>
+
+      {/* Stroke Width */}
+      <div className="flex items-center space-x-2">
+        <Label className="text-sm font-medium text-gray-700">Width:</Label>
+        <Input
+          type="number"
+          value={strokeWidth}
+          onChange={e => handleStrokeWidthChange(Number(e.target.value))}
+          className="w-16 text-sm"
+          min="0"
+          max="20"
+          disabled={!isShapeObject}
+        />
+      </div>
+    </>
+  );
 
   return (
     <div className="border-b border-white/20 bg-white/80 shadow-sm backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         <TooltipProvider>
           <div className="flex items-center space-x-4">
-            {/* Text-specific controls */}
-            {isTextObject && (
-              <>
-                {/* Font Family */}
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium text-gray-700">Font:</Label>
-                  <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
-                    <SelectTrigger className="w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FONT_FAMILIES.map(font => (
-                        <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                          {font}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Dynamically switch between text and shape controls */}
+            {isShapeObject ? renderShapeControls() : renderTextControls()}
 
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Font Size */}
-                <div className="flex items-center space-x-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={decreaseFontSize} className="size-8 p-0">
-                        <Minus className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Decrease font size</TooltipContent>
-                  </Tooltip>
-
-                  <Input
-                    type="number"
-                    value={fontSize}
-                    onChange={e => handleFontSizeChange(e.target.value)}
-                    className="w-16 text-center text-sm"
-                    min="8"
-                    max="200"
-                  />
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={increaseFontSize} className="size-8 p-0">
-                        <Plus className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Increase font size</TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Text Formatting */}
-                <div className="flex items-center space-x-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={isBold ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={toggleBold}
-                        className="size-8 p-0"
-                      >
-                        <Bold className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Bold</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={isItalic ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={toggleItalic}
-                        className="size-8 p-0"
-                      >
-                        <Italic className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Italic</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={isUnderline ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={toggleUnderline}
-                        className="size-8 p-0"
-                      >
-                        <Underline className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Underline</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={isStrikethrough ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={toggleStrikethrough}
-                        className="size-8 p-0"
-                      >
-                        <Strikethrough className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Strikethrough</TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Text Alignment */}
-                <div className="flex items-center space-x-1">
-                  {TEXT_ALIGNMENTS.map(({ value, icon: Icon, label }) => (
-                    <Tooltip key={value}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={textAlign === value ? 'primary' : 'ghost'}
-                          size="sm"
-                          onClick={() => handleTextAlign(value)}
-                          className="size-8 p-0"
-                          title={label}
-                        >
-                          <Icon className="size-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{label}</TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Text Color */}
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium text-gray-700">Text:</Label>
-                  <div className="relative">
-                    <input
-                      type="color"
-                      value={textColor}
-                      onChange={e => handleTextColorChange(e.target.value)}
-                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Universal controls for all objects */}
-            {!isTextObject && (
-              <>
-                {/* Fill Color */}
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium text-gray-700">Fill:</Label>
-                  <div className="relative">
-                    <input
-                      type="color"
-                      value={fillColor}
-                      onChange={e => handleFillColorChange(e.target.value)}
-                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Stroke Color */}
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium text-gray-700">Stroke:</Label>
-                  <div className="relative">
-                    <input
-                      type="color"
-                      value={strokeColor}
-                      onChange={e => handleStrokeColorChange(e.target.value)}
-                      className="size-8 cursor-pointer rounded border-2 border-gray-300 shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Stroke Width */}
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium text-gray-700">Width:</Label>
-                  <Input
-                    type="number"
-                    value={strokeWidth}
-                    onChange={e => handleStrokeWidthChange(Number(e.target.value))}
-                    className="w-16 text-sm"
-                    min="0"
-                    max="20"
-                  />
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-              </>
-            )}
+            <Separator orientation="vertical" className="h-6" />
 
             {/* Opacity Control - for all objects */}
-            <div className="flex items-center space-x-3">
+            <div className={`flex items-center space-x-3 ${!selectedObject ? 'opacity-50' : ''}`}>
               <Label className="text-sm font-medium text-gray-700">Opacity:</Label>
               <div className="flex items-center space-x-2">
                 <Slider
@@ -464,6 +534,7 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
                   min={0}
                   step={1}
                   className="w-24"
+                  disabled={!selectedObject}
                 />
                 <span className="w-8 text-xs text-gray-600">
                   {opacity}
@@ -473,13 +544,19 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
             </div>
           </div>
 
-          {/* Layer Controls */}
-          <div className="flex items-center space-x-1">
+          {/* Layer Controls - only enabled when an object is selected */}
+          <div className={`flex items-center space-x-1 ${!selectedObject ? 'opacity-50' : ''}`}>
             <Separator orientation="vertical" className="h-6" />
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={bringToFront} className="size-8 p-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={bringToFront}
+                  className="size-8 p-0"
+                  disabled={!selectedObject}
+                >
                   <ChevronUp className="size-4" />
                   <Send className="size-3" />
                 </Button>
@@ -489,7 +566,13 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={bringForward} className="size-8 p-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={bringForward}
+                  className="size-8 p-0"
+                  disabled={!selectedObject}
+                >
                   <ChevronUp className="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -498,7 +581,13 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={sendBackward} className="size-8 p-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={sendBackward}
+                  className="size-8 p-0"
+                  disabled={!selectedObject}
+                >
                   <ChevronDown className="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -507,7 +596,13 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={sendToBack} className="size-8 p-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={sendToBack}
+                  className="size-8 p-0"
+                  disabled={!selectedObject}
+                >
                   <ChevronDown className="size-4" />
                   <Send className="size-3 rotate-180" />
                 </Button>

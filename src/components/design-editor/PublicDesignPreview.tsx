@@ -246,14 +246,94 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
           return;
         }
 
-        // Handle link elements FIRST, before handling text
+        // Handle social icon elements first
+        if (obj.elementType === 'socialIcon' || (obj.type === 'image' && obj.url)) {
+          // Create a clickable social icon
+          const iconElement = document.createElement('a');
+          iconElement.href = obj.url || '#';
+          iconElement.target = '_blank';
+          iconElement.rel = 'noopener noreferrer';
+
+          // Basic positioning and styling
+          iconElement.style.cssText = `
+            position: absolute;
+            left: ${left}px;
+            top: ${top}px;
+            width: ${width}px;
+            height: ${height}px;
+            transform: rotate(${angle}deg);
+            opacity: ${opacity};
+            z-index: ${index + 1};
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            overflow: hidden;
+            ${obj.url ? 'border: 2px solid #10b981;' : ''}
+          `;
+
+          // Create an image element for the icon
+          const iconImage = document.createElement('img');
+          iconImage.src = obj.src || '';
+          iconImage.alt = obj.name || 'Social Icon';
+          iconImage.style.cssText = `
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          `;
+
+          // Add click handler as backup
+          iconElement.onclick = function (e) {
+            const url = obj.url;
+            if (!url || url === '#') {
+              e.preventDefault();
+
+              // Show a toast message instead of prompt
+              toast.error('This social icon has no URL configured. Please edit the design to add a URL.');
+
+              return false;
+            }
+
+            // Show success message
+            toast.success(`Opening ${obj.name || 'social media'} link: ${url}`);
+            return true; // Allow default navigation
+          };
+
+          // Add hover effects
+          iconElement.onmouseover = function () {
+            (this as HTMLElement).style.transform = `rotate(${angle}deg) scale(1.1)`;
+            (this as HTMLElement).style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          };
+
+          iconElement.onmouseout = function () {
+            (this as HTMLElement).style.transform = `rotate(${angle}deg) scale(1)`;
+            (this as HTMLElement).style.boxShadow = 'none';
+          };
+
+          // Add double-click handler to edit URL
+          iconElement.ondblclick = function (e: MouseEvent) {
+            e.preventDefault();
+
+            // Show a toast message instead of prompt
+            toast.info('Double-click editing is not available in preview mode. Please edit the design to modify URLs.');
+
+            return false;
+          };
+
+          // Append the image to the link
+          iconElement.appendChild(iconImage);
+          containerRef.current?.appendChild(iconElement);
+          return; // Skip the rest of the rendering for this object
+        }
+
+        // Handle link elements NEXT, before handling text
         if (obj.elementType === 'link') {
           // Create a real anchor element for links
           const linkElement = document.createElement('a');
           linkElement.textContent = obj.text || obj.linkData?.text || 'Link';
-
-          // Debug log
-          console.warn('Creating link element:', obj);
 
           // Use native anchor element for best compatibility
           linkElement.href = obj.linkData?.url || '#';
@@ -290,34 +370,20 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
             padding: 0;
           `;
 
-          // Add direct click handler as backup
-          linkElement.onclick = function (e) {
-            // Only handle click if href is a real URL
-            if ((this as HTMLAnchorElement).href === '#') {
-              e.preventDefault();
-              toast.error('This link has no URL configured.');
-              return false;
-            }
+          // Remove the existing onclick handler that's preventing default behavior
+          // and replace with a simpler approach that works with native links
 
-            // Show success message
-            toast.success(`Opening link: ${(this as HTMLAnchorElement).href}`);
-            // Let the native anchor behavior work
-            return true;
-          };
-
-          // Hover effects with native CSS
+          // Add hover effects with native CSS
           linkElement.onmouseover = function () {
-            const element = this as HTMLAnchorElement;
-            element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-            element.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-            element.style.color = obj.linkData?.hoverColor || '#1e40af';
+            (this as HTMLElement).style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            (this as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.3)';
+            (this as HTMLElement).style.color = obj.linkData?.hoverColor || '#1e40af';
           };
 
           linkElement.onmouseout = function () {
-            const element = this as HTMLAnchorElement;
-            element.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
-            element.style.borderColor = 'rgba(59, 130, 246, 0.2)';
-            element.style.color = obj.linkData?.color || obj.fill || '#3b82f6';
+            (this as HTMLElement).style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+            (this as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.2)';
+            (this as HTMLElement).style.color = obj.linkData?.color || obj.fill || '#3b82f6';
           };
 
           containerRef.current?.appendChild(linkElement);
@@ -506,22 +572,165 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
             button.onclick = () => {
               const action = obj.buttonData.action;
               if (action.type === 'url' && action.value) {
-                window.open(action.value, '_blank');
+                toast.success(`Opening URL: ${action.value}`);
+
+                // Use the same improved approach for opening links
+                const url = action.value;
+
+                // Create a temporary anchor element to use native browser navigation
+                const tempLink = document.createElement('a');
+                tempLink.href = url;
+                tempLink.target = '_blank';
+                tempLink.rel = 'noopener noreferrer';
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                document.body.removeChild(tempLink);
               } else if (action.type === 'email' && action.value) {
+                toast.success(`Opening email client for: ${action.value}`);
                 window.location.href = `mailto:${action.value}`;
               } else if (action.type === 'phone' && action.value) {
+                toast.success(`Opening phone app for: ${action.value}`);
                 window.location.href = `tel:${action.value}`;
+              } else {
+                toast.error('This button has no action configured.');
               }
+            };
+          } else {
+            // Add a default click handler for buttons without actions
+            button.onclick = () => {
+              toast.error('This button has no action configured.');
             };
           }
 
           containerRef.current?.appendChild(button);
         }
       });
-    } catch (renderError) {
-      console.error('Error rendering design:', renderError);
+    } catch {
       setError('Failed to render design');
     }
+  }, [designData]);
+
+  // Update the useEffect with the canvas initialization
+  useEffect(() => {
+    if (!containerRef.current || !designData) {
+      return;
+    }
+
+    let canvas: any = null;
+    const canvasRef = document.createElement('canvas');
+
+    // Append canvas to container
+    containerRef.current.innerHTML = '';
+    containerRef.current.appendChild(canvasRef);
+
+    const initCanvas = async () => {
+      try {
+        // Import fabric dynamically
+        const { fabric } = await import('fabric');
+
+        // Initialize canvas
+        canvas = new fabric.Canvas(canvasRef, {
+          width: designData.metadata?.width || 800,
+          height: designData.metadata?.height || 600,
+          backgroundColor: designData.metadata?.backgroundColor || '#ffffff',
+          selection: false, // Disable selection in preview mode
+          hoverCursor: 'pointer', // Show pointer cursor on interactive elements
+        });
+
+        // Add double-click handler for social icons
+        canvas.on('mouse:dblclick', (opt: any) => {
+          const target = opt.target;
+          if (!target) {
+            return;
+          }
+
+          if (target.elementType === 'socialIcon') {
+            // Show a toast message instead of prompt
+            toast.info('Double-click editing is not available in preview mode. Please edit the design to modify URLs.');
+          }
+        });
+
+        // Load objects from JSON
+        if (designData.canvasData && designData.canvasData.objects && Array.isArray(designData.canvasData.objects)) {
+          fabric.util.enlivenObjects(designData.canvasData.objects, (enlivenedObjects: any[]) => {
+            enlivenedObjects.forEach((obj) => {
+              // Make all objects non-selectable for preview
+              obj.set({
+                selectable: false,
+                evented: true, // But still allow events for interactivity
+              });
+
+              // Add click handlers for interactive elements
+              if (obj.elementType === 'socialIcon') {
+                // Make sure the cursor is a pointer to indicate clickability
+                obj.set('hoverCursor', 'pointer');
+
+                obj.on('mousedown', function (this: any, e: any) {
+                  if (e.e.button !== 0) {
+                    return;
+                  } // Only handle left-click
+                  e.e.preventDefault();
+                  e.e.stopPropagation();
+
+                  // Check if the icon has a URL set
+                  if (!this.url) {
+                    // Show a toast message instead of prompt
+                    toast.error('This social icon has no URL configured. Please edit the design to add a URL.');
+                    return;
+                  }
+
+                  // If URL exists, open it
+                  toast.success(`Opening social media link: ${this.url}`);
+
+                  // Create a temporary anchor element to use native browser navigation
+                  const tempLink = document.createElement('a');
+                  tempLink.href = this.url;
+                  tempLink.target = '_blank';
+                  tempLink.rel = 'noopener noreferrer';
+                  document.body.appendChild(tempLink);
+                  tempLink.click();
+                  document.body.removeChild(tempLink);
+                });
+              } else if (obj.type === 'image' && obj.url) {
+                obj.on('mousedown', function (this: any, e: any) {
+                  if (e.e.button !== 0) {
+                    return;
+                  } // Only handle left-click
+                  e.e.preventDefault();
+                  e.e.stopPropagation();
+
+                  // Open the image URL
+                  const tempLink = document.createElement('a');
+                  tempLink.href = this.url;
+                  tempLink.target = '_blank';
+                  tempLink.rel = 'noopener noreferrer';
+                  document.body.appendChild(tempLink);
+                  tempLink.click();
+                  document.body.removeChild(tempLink);
+                });
+              }
+
+              // Add the object to the canvas
+              canvas.add(obj);
+            });
+
+            // Render the canvas after all objects are added
+            canvas.renderAll();
+          });
+        }
+      } catch {
+        setError('Failed to initialize canvas');
+      }
+    };
+
+    initCanvas();
+
+    // Cleanup function
+    return () => {
+      if (canvas) {
+        canvas.dispose();
+      }
+    };
   }, [designData]);
 
   if (loading) {
@@ -546,6 +755,7 @@ export function PublicDesignPreview({ designId }: PublicDesignPreviewProps) {
           <h2 className="mb-3 text-2xl font-bold text-gray-900">Unable to load design</h2>
           <p className="mb-6 text-gray-600">{error}</p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
           >

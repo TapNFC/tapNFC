@@ -98,6 +98,7 @@ export function useCustomers() {
       await apiDeleteCustomer(customerId);
       setCustomers(prev => prev.filter(c => c.id !== customerId));
       toast.success(`Customer "${customerName}" has been deleted.`);
+      return true;
     } catch (e: any) {
       toast.error('Failed to delete customer', { description: e.message });
       throw e;

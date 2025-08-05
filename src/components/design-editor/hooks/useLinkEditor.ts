@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DESIGN_EDITOR_CONFIG } from '../constants';
 
 type LinkEditPopupState = {
   isVisible: boolean;
@@ -40,10 +39,10 @@ export function useLinkEditor({ canvas }: UseLinkEditorProps): UseLinkEditorRetu
     const rect = canvasElement.getBoundingClientRect();
     const zoom = canvas.getZoom?.() || 1;
 
-    // Calculate position relative to viewport
+    // Calculate position relative to viewport, positioning above the element
     const position = {
       x: rect.left + ((linkObject.left || 0) + (linkObject.width || 0) / 2) * zoom,
-      y: rect.top + ((linkObject.top || 0) + (linkObject.height || 0)) * zoom,
+      y: rect.top + (linkObject.top || 0) * zoom, // Position above the element
     };
 
     setLinkEditPopup({
@@ -93,17 +92,16 @@ export function useLinkEditor({ canvas }: UseLinkEditorProps): UseLinkEditorRetu
     }
 
     const handleDoubleClick = (e: any) => {
-      const target = e?.target;
-      if (target && target.elementType === DESIGN_EDITOR_CONFIG.ELEMENT_TYPES.LINK) {
-        handleLinkDoubleClick(target, e);
+      const target = e.target;
+      if (target && target.elementType === 'link') {
+        handleLinkDoubleClick(target, e.e);
       }
     };
 
-    canvas.on(DESIGN_EDITOR_CONFIG.CANVAS_EVENTS.MOUSE_DOUBLE_CLICK, handleDoubleClick);
+    canvas.on('mouse:dblclick', handleDoubleClick);
 
-    // Cleanup function
     return () => {
-      canvas.off?.(DESIGN_EDITOR_CONFIG.CANVAS_EVENTS.MOUSE_DOUBLE_CLICK, handleDoubleClick);
+      canvas.off('mouse:dblclick', handleDoubleClick);
     };
   }, [canvas, handleLinkDoubleClick]);
 

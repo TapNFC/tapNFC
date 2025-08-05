@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Circle,
   Diamond,
@@ -14,10 +16,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { SidebarSection } from './SidebarSection';
+import { SocialIconsPanel } from './SocialIconsPanel';
 
 type ElementsPanelProps = {
   onAddShape: (shapeType: string) => void;
   onAddLink: () => void;
+  onAddSocialIcon: (iconPath: string, iconName: string) => void;
 };
 
 const shapes = [
@@ -35,7 +39,7 @@ const links = [
   { id: 'default', icon: Link, color: 'bg-indigo-500' },
 ];
 
-export function ElementsPanel({ onAddShape, onAddLink }: ElementsPanelProps) {
+export function ElementsPanel({ onAddShape, onAddLink, onAddSocialIcon }: ElementsPanelProps) {
   return (
     <div className="space-y-8">
       {/* Interactive Elements */}
@@ -71,6 +75,9 @@ export function ElementsPanel({ onAddShape, onAddLink }: ElementsPanelProps) {
           </div>
         </div>
       </SidebarSection>
+
+      {/* Social Icons */}
+      <SocialIconsPanel onAddSocialIcon={onAddSocialIcon} />
 
       {/* Shapes */}
       <SidebarSection title="Shapes">

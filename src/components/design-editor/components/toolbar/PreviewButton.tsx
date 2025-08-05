@@ -25,7 +25,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
       const canvasBackground = canvas.backgroundColor || '#ffffff';
 
       // Get all objects from canvas with custom properties
-      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name']);
       const objects = canvasData?.objects || [];
 
       if (!Array.isArray(objects) || objects.length === 0) {
