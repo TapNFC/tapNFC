@@ -49,7 +49,7 @@ const navigationGroups: NavGroup[] = [
       },
       {
         id: 'qr-codes',
-        label: 'QR Codes',
+        label: 'My QR Codes',
         href: '/dashboard/qr-codes',
         icon: <QrCode className="size-5" />,
       },
