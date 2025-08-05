@@ -29,6 +29,7 @@ export type DesignData = {
     description?: string;
     imageUrl?: string;
     designType?: string;
+    previewUrl?: string;
   };
   createdAt: Date;
   updatedAt: Date;

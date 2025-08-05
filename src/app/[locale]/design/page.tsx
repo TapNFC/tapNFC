@@ -1,15 +1,14 @@
 import type { DesignPageWithSearchParams, UserProfile } from '@/types/design';
 import { Suspense } from 'react';
-import { DesignFilters } from '@/components/design-editor/components/DesignFilters';
 import { DesignGallerySkeleton } from '@/components/design-editor/components/DesignGallerySkeleton';
 import { DesignPageHeader } from '@/components/design-editor/components/DesignPageHeader';
 import { DesignGallery } from '@/components/design-editor/DesignGallery';
 import { ModernHeader } from '@/components/layout/modern-header';
-import { createClient } from '@/utils/supabase/server';
+import { createAppServerClient } from '@/utils/supabase/server-app';
 
 // Helper function to get user profile data
 async function getUserProfile(): Promise<UserProfile | undefined> {
-  const supabase = await createClient();
+  const supabase = createAppServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -25,7 +24,7 @@ async function getUserProfile(): Promise<UserProfile | undefined> {
 
 export default async function DesignPage({ params, searchParams }: DesignPageWithSearchParams) {
   const { locale } = await params;
-  const { view = 'grid', search, category } = await searchParams;
+  const { view = 'grid', search, category, tag } = await searchParams;
 
   // Get user profile for the header
   const userProfile = await getUserProfile();
@@ -42,13 +41,13 @@ export default async function DesignPage({ params, searchParams }: DesignPageWit
       <DesignPageHeader locale={locale} />
 
       {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 pt-2 sm:px-6 lg:px-8">
         {/* Filters and Search */}
-        <DesignFilters
+        {/* <DesignFilters
           view={view}
           search={search}
           category={category}
-        />
+        /> */}
 
         {/* Design Gallery */}
         <Suspense fallback={<DesignGallerySkeleton view={view} />}>
@@ -56,6 +55,7 @@ export default async function DesignPage({ params, searchParams }: DesignPageWit
             view={view}
             search={search}
             category={category}
+            tag={tag}
             locale={locale}
           />
         </Suspense>

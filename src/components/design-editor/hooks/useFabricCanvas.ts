@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DESIGN_EDITOR_CONFIG } from '../constants';
 
 // Increase Node.js event listener limit to prevent memory leak warnings
 if (typeof process !== 'undefined' && process.setMaxListeners) {
@@ -299,17 +300,20 @@ export function useFabricCanvas({
 
   const calculateCanvasDimensions = useCallback((): CanvasDimensions => {
     if (!containerRef.current) {
-      // Set mobile as default - iPhone 14 dimensions
-      return { width: 375, height: 667 };
+      // Set mobile as default from constants
+      return {
+        width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
+        height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
+      };
     }
 
     const container = containerRef.current;
     const containerWidth = container.clientWidth - 64; // Account for padding
     const containerHeight = container.clientHeight - 64;
 
-    // Mobile-first approach: Start with mobile dimensions and scale up if needed
-    const mobileWidth = 375;
-    const mobileHeight = 667;
+    // Mobile-first approach: Start with mobile dimensions from constants
+    const mobileWidth = DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH;
+    const mobileHeight = DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT;
 
     // Calculate scale factor to fit in container while maintaining mobile aspect ratio
     const scaleX = containerWidth / mobileWidth;
@@ -352,7 +356,7 @@ export function useFabricCanvas({
       const fabricCanvas = new fabricLib.Canvas(canvasRef.current, {
         width,
         height,
-        backgroundColor: '#ffffff',
+        backgroundColor: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR,
         ...canvasConfig,
       });
 

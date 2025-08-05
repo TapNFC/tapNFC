@@ -1,9 +1,12 @@
 import type { DesignData } from '@/lib/indexedDB';
-import { QrCode } from 'lucide-react';
+import { Loader2, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { designDB } from '@/lib/indexedDB';
+import { designService } from '@/services/designService';
+import { storageService } from '@/services/storageService';
 
 type QrCodeButtonProps = {
   designId: string;
@@ -14,19 +17,29 @@ type QrCodeButtonProps = {
 
 export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas }: QrCodeButtonProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleProceedToQrCode = async () => {
-    if (disabled) {
+    if (disabled || isLoading) {
       return;
     }
+
+    setIsLoading(true);
 
     // Save the current canvas data to IndexedDB before proceeding
     if (canvas) {
       try {
-        const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+        // 1. Get existing design to find old preview_url
+        const existingDesign = await designService.getDesignById(designId);
+        if (existingDesign?.preview_url) {
+          await storageService.deleteDesignPreview(existingDesign.preview_url);
+        }
+
+        const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name']);
 
         if (!canvasData) {
           toast.error('Failed to get canvas data. Cannot proceed.');
+          setIsLoading(false);
           return;
         }
 
@@ -34,6 +47,15 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
         canvasData.width = canvas.getWidth?.();
         canvasData.height = canvas.getHeight?.();
         canvasData.background = canvas.backgroundColor || '#ffffff';
+
+        // Generate preview image
+        const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+        const previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+
+        if (previewUrl) {
+          await designService.updateDesign(designId, { preview_url: previewUrl });
+          toast.success('Design preview updated.');
+        }
 
         const designData: DesignData = {
           id: designId,
@@ -44,6 +66,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
             backgroundColor: canvas.backgroundColor || '#ffffff',
             title: `Design ${designId}`,
             description: 'Design ready for QR code generation',
+            previewUrl: previewUrl || undefined,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -54,28 +77,41 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
 
         // Also keep localStorage for backward compatibility (temporary)
         localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
+
+        toast.success('Design saved locally.');
+
+        // Navigate to the QR code generation page
+        router.push(`/${locale}/design/${designId}/qr-code`);
       } catch (error) {
         console.error('Failed to save design data:', error);
         toast.error('Failed to save design data. Please try again.');
-        return;
+        setIsLoading(false);
       }
     } else {
       toast.error('Canvas not ready. Please wait a moment and try again.');
-      return;
+      setIsLoading(false);
     }
-
-    // Navigate to the QR code generation page
-    router.push(`/${locale}/design/${designId}/qr-code`);
   };
 
   return (
     <Button
       onClick={handleProceedToQrCode}
-      disabled={disabled || !canvas}
+      disabled={disabled || !canvas || isLoading}
       className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg transition-all duration-300 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
     >
-      <QrCode className="size-4" />
-      <span>Proceed to QR Code</span>
+      {isLoading
+        ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              <span>Processing...</span>
+            </>
+          )
+        : (
+            <>
+              <QrCode className="size-4" />
+              <span>Proceed to QR Code</span>
+            </>
+          )}
     </Button>
   );
 }

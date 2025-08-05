@@ -1,6 +1,5 @@
 'use client';
 
-import type { DesignData, TemplateData } from '@/lib/indexedDB';
 import {
   ChevronDown,
   Grid3x3,
@@ -24,11 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { designDB, formatDesignTitle, generateTemplateId } from '@/lib/indexedDB';
+import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
-import { FileMenu } from './components/toolbar/FileMenu';
+import { EditableDesignName } from './components/toolbar/EditableDesignName';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { StatusIndicator } from './components/toolbar/StatusIndicator';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
@@ -75,7 +74,7 @@ export function DesignToolbar({
   const [isSaving, setIsSaving] = useState(false);
   const [isGuidesEnabled, setIsGuidesEnabled] = useState(true);
   const [isExporting] = useState(false);
-  const [currentTemplateName, setCurrentTemplateName] = useState<string | null>(null);
+  const [designName, setDesignName] = useState<string>('Untitled Design');
   const [user, setUser] = useState<{
     name: string;
     email: string;
@@ -105,6 +104,23 @@ export function DesignToolbar({
 
     getUser();
   }, []);
+
+  useEffect(() => {
+    const fetchDesign = async () => {
+      if (designId) {
+        try {
+          const design = await designService.getDesignById(designId);
+          if (design && design.name) {
+            setDesignName(design.name);
+          }
+        } catch (error) {
+          console.error('Error fetching design name:', error);
+          toast.error('Could not load design name.');
+        }
+      }
+    };
+    fetchDesign();
+  }, [designId]);
 
   const getInitials = (name: string) => {
     return name
@@ -137,133 +153,150 @@ export function DesignToolbar({
     }
   };
 
-  const handleSaveTemplate = async (templateName: string, category = 'Custom', description?: string) => {
+  // Add this function to the DesignToolbar component to handle saving templates with Supabase
+
+  const handleSaveTemplate = async (name: string, category?: string, description?: string) => {
     if (!canvas) {
-      toast.error('Canvas not available');
+      toast.error('Canvas is not ready');
       return;
     }
 
     try {
-      setIsSaving(true);
-      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']) || {};
+      // Get the current user
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-      // Add canvas dimensions and background
-      canvasData.width = canvas.getWidth?.() || 0;
-      canvasData.height = canvas.getHeight?.() || 0;
-      canvasData.background = canvas.backgroundColor || '#ffffff';
+      if (!user) {
+        toast.error('You must be logged in to save templates');
+        return;
+      }
 
-      // Save directly to IndexedDB as a template
-      const templateData: TemplateData = {
-        id: generateTemplateId(),
-        name: templateName,
-        description: description || `Template created on ${new Date().toLocaleDateString()}`,
-        category,
-        canvasData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      // Get canvas JSON data
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
 
-      await designDB.saveTemplate(templateData);
-      setCurrentTemplateName(templateName);
-      toast.success('Template saved successfully!');
+      // Get canvas dimensions and background
+      const width = canvas.getWidth();
+      const height = canvas.getHeight();
+      const backgroundColor = canvas.backgroundColor?.toString() || '#ffffff';
+
+      // Create a preview image
+      let previewUrl = null;
+      try {
+        const dataURL = canvas.toDataURL({
+          format: 'png',
+          quality: 0.8,
+          multiplier: 0.5,
+        });
+
+        // Convert data URL to Blob
+        const res = await fetch(dataURL);
+        const blob = await res.blob();
+
+        if (blob) {
+          const templateId = crypto.randomUUID();
+          const file = new File([blob], `template_${templateId}_preview.png`, { type: 'image/png' });
+          previewUrl = await designService.uploadPreviewImage(templateId, file);
+        }
+      } catch (previewError) {
+        console.error('Failed to generate preview:', previewError);
+      }
+
+      // Create the template in Supabase
+      const newTemplate = await designService.createDesign({
+        user_id: user.id,
+        name,
+        canvas_data: {
+          canvasJSON,
+          width,
+          height,
+          backgroundColor,
+          category,
+          description,
+        },
+        preview_url: previewUrl,
+        is_template: true,
+        is_public: true, // Templates are public by default
+      });
+
+      if (newTemplate) {
+        toast.success('Template saved successfully');
+        if (setShowSaveDialog) {
+          setShowSaveDialog(false);
+        }
+      } else {
+        toast.error('Failed to save template');
+      }
     } catch (error) {
       console.error('Error saving template:', error);
-      toast.error('Failed to save template');
-    } finally {
-      setIsSaving(false);
+      toast.error('Error saving template');
     }
   };
 
   const handleManualSave = async () => {
-    if (!canvas || !onManualSave) {
-      return;
-    }
-
-    try {
-      await onManualSave();
-
-      // Also save to IndexedDB for the preview functionality
-      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']) || {};
-      canvasData.width = canvas.getWidth?.() || 0;
-      canvasData.height = canvas.getHeight?.() || 0;
-      canvasData.background = canvas.backgroundColor || '#ffffff';
-
-      const designData: DesignData = {
-        id: designId,
-        canvasData,
-        metadata: {
-          width: canvas.getWidth?.() || 0,
-          height: canvas.getHeight?.() || 0,
-          backgroundColor: canvas.backgroundColor || '#ffffff',
-          title: `Design ${designId}`,
-          description: 'Manual save from design editor',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await designDB.saveDesign(designData);
-      toast.success('Design saved successfully!');
-    } catch (error) {
-      console.error('Error in manual save:', error);
-      toast.error('Failed to save design');
+    if (onManualSave) {
+      setIsSaving(true);
+      try {
+        await onManualSave();
+        toast.success('Design saved successfully');
+      } catch (error) {
+        console.error('Error saving design:', error);
+        toast.error('Failed to save design');
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleLoadTemplate = async (templateId: string) => {
     if (!canvas) {
-      toast.error('Canvas not available');
+      toast.error('Canvas is not ready');
       return;
     }
 
     try {
-      // Try to load as template first, then as design
-      const templateData = await designDB.getTemplate(templateId);
-      let designData = null;
-      let dataToLoad = null;
-      let name = '';
+      // Fetch the template from Supabase
+      const template = await designService.getDesignById(templateId);
 
-      if (templateData) {
-        dataToLoad = templateData.canvasData;
-        name = templateData.name;
-      } else {
-        designData = await designDB.getDesign(templateId);
-        if (designData) {
-          dataToLoad = designData.canvasData;
-          name = formatDesignTitle(designData.id, designData.metadata.title);
-        }
-      }
-
-      if (!dataToLoad) {
-        toast.error('Template or design not found');
+      if (!template || !template.canvas_data?.canvasJSON) {
+        toast.error('Template not found or invalid');
         return;
       }
 
-      // Clear canvas first
-      canvas.clear?.();
+      if (template.name) {
+        setDesignName(template.name);
+      }
+
+      // Clear the canvas
+      canvas.clear();
 
       // Set canvas dimensions if available
-      if (dataToLoad?.width && dataToLoad?.height) {
-        canvas.setDimensions?.({
-          width: dataToLoad.width,
-          height: dataToLoad.height,
+      if (template.canvas_data.width && template.canvas_data.height) {
+        canvas.setDimensions({
+          width: template.canvas_data.width,
+          height: template.canvas_data.height,
         });
       }
 
       // Set background color
-      if (dataToLoad?.background) {
-        canvas.backgroundColor = dataToLoad.background;
+      if (template.canvas_data.backgroundColor) {
+        canvas.setBackgroundColor(template.canvas_data.backgroundColor, () => {
+          canvas.renderAll();
+        });
       }
 
-      // Load template/design data
-      canvas.loadFromJSON?.(dataToLoad, () => {
-        canvas.renderAll?.();
-        setCurrentTemplateName(name);
-        toast.success(`${templateData ? 'Template' : 'Design'} "${name}" loaded successfully!`);
+      // Load the canvas data
+      canvas.loadFromJSON(template.canvas_data.canvasJSON, () => {
+        canvas.renderAll();
+        toast.success(`Template "${template.name}" loaded successfully`);
+
+        // Close the dialog
+        if (setShowLoadDialog) {
+          setShowLoadDialog(false);
+        }
       });
     } catch (error) {
-      console.error('Error loading template/design:', error);
-      toast.error('Failed to load template or design');
+      console.error('Error loading template:', error);
+      toast.error('Error loading template');
     }
   };
 
@@ -297,19 +330,7 @@ export function DesignToolbar({
   //   }
   // };
 
-  const handleProceedToQrCode = () => {
-    if (!canvas) {
-      toast.error('Canvas not ready');
-      return;
-    }
-
-    // The QrCodeButton component will handle the saving
-    // This is just a backup validation
-    const objects = canvas.getObjects();
-    if (objects.length === 0) {
-      toast.error('Canvas is empty. Add some elements before generating QR code.');
-    }
-  };
+  // Remove handleProceedToQrCode function since it's no longer needed
 
   const handleUndo = () => {
     if (onUndo) {
@@ -381,11 +402,7 @@ export function DesignToolbar({
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
-          <FileMenu
-            onSaveTemplate={() => setShowSaveDialog?.(true)}
-            onLoadTemplate={() => setShowLoadDialog?.(true)}
-            onExport={handleProceedToQrCode}
-          />
+          <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
           {/* Action Tools */}
           <div className="flex items-center space-x-1">
@@ -417,9 +434,10 @@ export function DesignToolbar({
         </div>
 
         {/* Center Section - Status */}
-        <div className="relative z-10">
+        <div className="relative z-10 flex items-center gap-4">
+          <EditableDesignName designId={designId} initialName={designName} />
           <StatusIndicator
-            currentTemplateName={currentTemplateName ?? undefined}
+            currentTemplateName={undefined}
           />
         </div>
 
@@ -463,7 +481,7 @@ export function DesignToolbar({
                   <span className="font-medium">Save Now</span>
                 )}
           </Button>
-
+          {/* Add QrCodeButton here */}
           <QrCodeButton
             designId={designId}
             locale={locale}

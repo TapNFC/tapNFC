@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Circle,
   Diamond,
@@ -14,11 +16,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { SidebarSection } from './SidebarSection';
+import { SocialIconsPanel } from './SocialIconsPanel';
 
 type ElementsPanelProps = {
   onAddShape: (shapeType: string) => void;
-  onAddButton: () => void;
   onAddLink: () => void;
+  onAddSocialIcon: (iconPath: string, iconName: string) => void;
 };
 
 const shapes = [
@@ -36,29 +39,20 @@ const links = [
   { id: 'default', icon: Link, color: 'bg-indigo-500' },
 ];
 
-export function ElementsPanel({ onAddShape, onAddButton, onAddLink }: ElementsPanelProps) {
+export function ElementsPanel({ onAddShape, onAddLink, onAddSocialIcon }: ElementsPanelProps) {
   return (
     <div className="space-y-8">
       {/* Interactive Elements */}
       <SidebarSection title="Interactive">
         <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="h-10 w-full justify-start gap-3 rounded-lg border-2 border-gray-200 bg-white transition-all duration-300 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
-            onClick={onAddButton}
-          >
-            <div className="rounded-md bg-blue-500 bg-opacity-10 p-1">
-              <Square className="size-4 text-blue-500" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Button</span>
-          </Button>
+
           {links.map((link) => {
             const Icon = link.icon;
             return (
               <Button
                 key={link.id}
                 variant="outline"
-                className="h-10 w-full justify-start gap-3 rounded-lg border-2 border-gray-200 bg-white transition-all duration-300 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
+                className="h-10 w-full justify-start gap-3 rounded border-2 border-gray-200 bg-white transition-all duration-300 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
                 onClick={() => onAddLink()}
               >
                 <div className={`rounded-md p-1 ${link.color} bg-opacity-10`}>
@@ -81,6 +75,9 @@ export function ElementsPanel({ onAddShape, onAddButton, onAddLink }: ElementsPa
           </div>
         </div>
       </SidebarSection>
+
+      {/* Social Icons */}
+      <SocialIconsPanel onAddSocialIcon={onAddSocialIcon} />
 
       {/* Shapes */}
       <SidebarSection title="Shapes">

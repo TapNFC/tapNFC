@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter, Folder, Grid, List, Search, Star } from 'lucide-react';
+import { Folder, Grid, List, Search, Star } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -56,11 +56,12 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
     { id: 'All Designs', label: 'All Designs', icon: null },
     { id: 'My Designs', label: 'My Designs', icon: Folder },
     { id: 'Templates', label: 'Templates', icon: Star },
-    { id: 'Business Cards', label: 'Business Cards', icon: null },
-    { id: 'Social Media', label: 'Social Media', icon: null },
-    { id: 'Marketing', label: 'Marketing', icon: null },
-    { id: 'Presentations', label: 'Presentations', icon: null },
-    { id: 'Branding', label: 'Branding', icon: null },
+    { id: 'social', label: 'Social Media', icon: null },
+    { id: 'business', label: 'Business', icon: null },
+    { id: 'personal', label: 'Personal', icon: null },
+    { id: 'marketing', label: 'Marketing', icon: null },
+    { id: 'education', label: 'Education', icon: null },
+    { id: 'event', label: 'Event', icon: null },
   ];
 
   return (
@@ -80,47 +81,34 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
           />
         </form>
 
-        {/* Controls Section */}
-        <div className="flex items-center gap-3">
-          {/* Filter Button */}
+        {/* View Toggle */}
+        <div className="flex items-center rounded-xl border border-white/30 bg-white/80 p-1 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="border-white/30 bg-white/80 shadow-lg shadow-blue-100/20 backdrop-blur-sm transition-all duration-200 hover:bg-white/90 hover:shadow-xl hover:shadow-blue-100/30"
+            onClick={() => handleViewChange('grid')}
+            className={`size-8 p-0 transition-all duration-200 ${
+              view === 'grid'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
+                : 'text-gray-600 hover:bg-gray-100/60'
+            }`}
+            title="Grid View"
           >
-            <Filter className="mr-2 size-4" />
-            <span className="font-medium">Filters</span>
+            <Grid className="size-4" />
           </Button>
-
-          {/* View Toggle */}
-          <div className="flex items-center rounded-xl border border-white/30 bg-white/80 p-1 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('grid')}
-              className={`size-8 p-0 transition-all duration-200 ${
-                view === 'grid'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
-                  : 'text-gray-600 hover:bg-gray-100/60'
-              }`}
-              title="Grid View"
-            >
-              <Grid className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('list')}
-              className={`size-8 p-0 transition-all duration-200 ${
-                view === 'list'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
-                  : 'text-gray-600 hover:bg-gray-100/60'
-              }`}
-              title="List View"
-            >
-              <List className="size-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewChange('list')}
+            className={`size-8 p-0 transition-all duration-200 ${
+              view === 'list'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-700 hover:to-indigo-700'
+                : 'text-gray-600 hover:bg-gray-100/60'
+            }`}
+            title="List View"
+          >
+            <List className="size-4" />
+          </Button>
         </div>
       </div>
 
@@ -154,34 +142,6 @@ export function DesignFilters({ view, search, category }: DesignFiltersProps) {
           );
         })}
       </div>
-
-      {/* Active Filters Display */}
-      {(search || category) && (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="font-medium">Active filters:</span>
-          {search && (
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-              Search: "
-              {search}
-              "
-            </span>
-          )}
-          {category && category !== 'All Designs' && (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-              Category:
-              {
-                category || ''
-              }
-            </span>
-          )}
-          <button
-            onClick={() => router.push('/design')}
-            className="text-xs text-blue-600 underline hover:text-blue-800"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
     </div>
   );
 }

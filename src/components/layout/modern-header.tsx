@@ -5,7 +5,7 @@ import {
   LogOut,
   Settings,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ type ModernHeaderProps = {
 export function ModernHeader({ className, user }: ModernHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   const getInitials = (name: string) => {
@@ -79,6 +80,14 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
 
         {/* Right Section */}
         <div className="flex items-center space-x-3">
+          {/* Add dashboard link button here if it is already /dashboard then dont the button   */}
+          {
+            user && pathname !== '/dashboard' && (
+              <Button variant="primary" className="relative  w-auto " onClick={() => router.push('/dashboard')}>
+                Dashboard
+              </Button>
+            )
+          }
 
           {/* User Menu */}
           {user && (

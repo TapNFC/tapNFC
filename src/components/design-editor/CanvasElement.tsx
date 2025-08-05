@@ -179,7 +179,8 @@ export function CanvasElement({
             />
           );
         }
-        break;
+        // Return default for unknown shape types
+        return null;
       }
 
       case 'image': {
@@ -303,8 +304,7 @@ export function CanvasElement({
       default:
         return null;
     }
-    return null;
-  }, [element, isDragging]);
+  }, [element, isDragging, isSelected]);
 
   // Memoize selection handles
   const selectionHandles = useMemo(() => {

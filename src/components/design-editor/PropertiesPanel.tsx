@@ -66,7 +66,7 @@ export function PropertiesPanel({
         linkData: selectedObject.linkData || null,
       };
 
-      setObjectProperties(() => newProperties);
+      setObjectProperties(newProperties);
     }
   }, [selectedObject]);
 
@@ -530,6 +530,7 @@ export function PropertiesPanel({
                 </SelectContent>
               </Select>
               <Input
+                id="button-action-value"
                 placeholder={
                   objectProperties.buttonData.action?.type === 'url'
                     ? 'https://example.com'
@@ -543,6 +544,11 @@ export function PropertiesPanel({
                 onChange={e => handleButtonActionChange('value', e.target.value)}
                 className="h-8"
               />
+              {objectProperties.buttonData.action?.type === 'url' && (
+                <p className="mt-1 text-xs text-amber-600">
+                  ⚠️ Add a URL to make this button clickable in the preview
+                </p>
+              )}
             </div>
           </div>
         </div>

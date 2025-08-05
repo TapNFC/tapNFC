@@ -1,12 +1,14 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, ImageIcon, Plus, Wifi } from 'lucide-react';
+import { ImageIcon, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { DesignCreationStepsDialog } from '@/components/design-editor/components/dialogs/DesignCreationStepsDialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { generateDesignId } from '@/lib/indexedDB';
+import { createClient } from '@/utils/supabase/client';
 
 type DesignType = {
   id: string;
@@ -37,32 +39,33 @@ const DESIGN_TYPES: DesignType[] = [
     description: 'Transform your images into interactive QR codes',
     icon: <ImageIcon className="size-10" />,
     color: 'text-purple-500',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-purple-600',
-    path: (locale, designId) => `/${locale}/design/image-to-qr/${designId}`,
-  },
-  {
-    id: 'pdf-to-qr',
-    title: 'PDF to QR',
-    description: 'Convert your PDF documents into scannable QR codes',
-    icon: <FileText className="size-10" />,
-    color: 'text-red-500',
     gradientFrom: 'from-red-500',
     gradientTo: 'to-red-600',
     comingSoon: true,
-    path: locale => `/${locale}/design`,
+    path: (locale, designId) => `/${locale}/design/image-to-qr/${designId}`,
   },
-  {
-    id: 'wifi-to-qr',
-    title: 'WiFi to QR',
-    description: 'Generate QR codes for instant WiFi access',
-    icon: <Wifi className="size-10" />,
-    color: 'text-green-500',
-    gradientFrom: 'from-green-500',
-    gradientTo: 'to-green-600',
-    comingSoon: true,
-    path: locale => `/${locale}/design`,
-  },
+  // {
+  //   id: 'pdf-to-qr',
+  //   title: 'PDF to QR',
+  //   description: 'Convert your PDF documents into scannable QR codes',
+  //   icon: <FileText className="size-10" />,
+  //   color: 'text-red-500',
+  //   gradientFrom: 'from-red-500',
+  //   gradientTo: 'to-red-600',
+  //   comingSoon: true,
+  //   path: locale => `/${locale}/design`,
+  // },
+  // {
+  //   id: 'wifi-to-qr',
+  //   title: 'WiFi to QR',
+  //   description: 'Generate QR codes for instant WiFi access',
+  //   icon: <Wifi className="size-10" />,
+  //   color: 'text-green-500',
+  //   gradientFrom: 'from-green-500',
+  //   gradientTo: 'to-green-600',
+  //   comingSoon: true,
+  //   path: locale => `/${locale}/design`,
+  // },
 ];
 
 type DesignTypeCardProps = {
@@ -142,23 +145,41 @@ type DesignTypeDialogProps = {
 
 export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialogProps) {
   const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedDesignType, setSelectedDesignType] = useState<DesignType | null>(null);
+  const [creationDialogOpen, setCreationDialogOpen] = useState(false);
+
   const handleTypeSelect = (type: DesignType) => {
     if (type.comingSoon) {
       return;
     }
 
-    setIsProcessing(true);
+    setSelectedDesignType(type);
+    setCreationDialogOpen(true);
+  };
 
-    // Add slight delay for animation effect
-    setTimeout(() => {
-      const designId = generateDesignId();
-      router.push(type.path(locale, designId));
-    }, 600);
+  const handleCreationComplete = (designId: string) => {
+    if (selectedDesignType) {
+      // Navigate to the appropriate design page
+      router.push(selectedDesignType.path(locale, designId));
+    }
+  };
+
+  // Check if user is logged in
+  const checkUserAuth = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error('You must be logged in to create designs');
+      router.push(`/${locale}/sign-in`);
+      return false;
+    }
+
+    return true;
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {open && (
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="max-w-4xl overflow-hidden border-none bg-gradient-to-br from-white via-slate-50 to-blue-50 p-0 shadow-2xl">
@@ -180,7 +201,7 @@ export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialo
               </DialogHeader>
 
               <motion.div
-                className="grid grid-cols-1 gap-6 py-6 sm:grid-cols-2 lg:grid-cols-4"
+                className="grid grid-cols-1 gap-6 py-6 sm:grid-cols-2 lg:grid-cols-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
@@ -190,7 +211,12 @@ export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialo
                     key={type.id}
                     type={type}
                     index={index}
-                    onClick={() => handleTypeSelect(type)}
+                    onClick={async () => {
+                      const isAuthenticated = await checkUserAuth();
+                      if (isAuthenticated) {
+                        handleTypeSelect(type);
+                      }
+                    }}
                   />
                 ))}
               </motion.div>
@@ -200,7 +226,6 @@ export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialo
                   variant="outline"
                   size="lg"
                   onClick={() => onOpenChange(false)}
-                  disabled={isProcessing}
                   className="text-gray-700"
                 >
                   Cancel
@@ -209,6 +234,18 @@ export function DesignTypeDialog({ open, onOpenChange, locale }: DesignTypeDialo
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Design Creation Steps Dialog */}
+      {selectedDesignType && (
+        <DesignCreationStepsDialog
+          key={selectedDesignType.id}
+          open={creationDialogOpen}
+          onOpenChange={setCreationDialogOpen}
+          locale={locale}
+          designTypeName={selectedDesignType.title}
+          onComplete={handleCreationComplete}
+        />
       )}
     </AnimatePresence>
   );

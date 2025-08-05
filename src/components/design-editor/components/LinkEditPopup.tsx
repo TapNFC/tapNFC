@@ -71,13 +71,33 @@ export function LinkEditPopup({
     return null;
   }
 
+  // Calculate popup position with proper boundary checking
+  const popupWidth = 288;
+  const popupHeight = 180;
+  const padding = 16;
+
+  // Position above the element with proper boundary checking
+  const calculatedLeft = Math.max(
+    padding,
+    Math.min(
+      position.x - popupWidth / 2,
+      window.innerWidth - popupWidth - padding,
+    ),
+  );
+
+  const calculatedTop = Math.max(
+    padding,
+    position.y - popupHeight - 20, // Position above with 20px gap
+  );
+
   return (
     <div
       ref={popupRef}
       className="fixed z-50 w-72 rounded-xl border border-white/30 bg-white/95 p-4 shadow-2xl shadow-blue-500/20 backdrop-blur-xl"
       style={{
-        left: Math.max(16, Math.min(position.x, window.innerWidth - 288 - 16)),
-        top: position.y + 10,
+        left: calculatedLeft,
+        top: calculatedTop,
+        width: `${popupWidth}px`,
       }}
     >
       {/* Header */}
@@ -149,8 +169,13 @@ export function LinkEditPopup({
         </div>
       </div>
 
-      {/* Arrow pointing up */}
-      <div className="absolute -top-2 left-8 size-4 rotate-45 border-l border-t border-white/30 bg-white/95"></div>
+      {/* Arrow pointing down to element */}
+      <div
+        className="absolute -bottom-2 size-4 rotate-45 border-b border-r border-white/30 bg-white/95"
+        style={{
+          left: `${Math.max(20, Math.min(popupWidth / 2 - 8, popupWidth - 28))}px`,
+        }}
+      />
     </div>
   );
 }

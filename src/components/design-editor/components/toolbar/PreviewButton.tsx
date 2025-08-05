@@ -25,7 +25,7 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
       const canvasBackground = canvas.backgroundColor || '#ffffff';
 
       // Get all objects from canvas with custom properties
-      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData']);
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name']);
       const objects = canvasData?.objects || [];
 
       if (!Array.isArray(objects) || objects.length === 0) {
@@ -153,6 +153,14 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
                     align-items: flex-start;
                     justify-content: ${obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start'};
                     min-height: ${fontSize * (obj.lineHeight || 1.2)}px;
+                    box-sizing: border-box;
+                    padding: 0;
+                    margin: 0;
+                    transform-origin: left top;
+                    overflow: visible;
+                    font-style: ${obj.fontStyle === 'italic' ? 'italic' : 'normal'};
+                    text-decoration: ${obj.underline ? 'underline' : obj.linethrough ? 'line-through' : 'none'};
+                    width: ${obj.type === 'textbox' ? `${width}px` : 'auto'};
                   "
                 >
                   ${obj.text || ''}

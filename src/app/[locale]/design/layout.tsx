@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { DESIGN_EDITOR_CONFIG } from '@/components/design-editor/constants';
-import { createClient } from '@/utils/supabase/server';
+import { createAppServerClient } from '@/utils/supabase/server-app';
 
 type DesignLayoutProps = {
   children: ReactNode;
 };
 
 export default async function DesignLayout({ children }: DesignLayoutProps) {
-  const supabase = await createClient();
+  const supabase = createAppServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');

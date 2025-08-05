@@ -39,6 +39,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fill: '#333',
             width: 300,
             textAlign: 'center',
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
         case 'add-subheading':
@@ -51,6 +53,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fill: '#555',
             width: 250,
             textAlign: 'center',
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
         case 'add-body':
@@ -63,12 +67,16 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             fontFamily: 'Inter',
             fill: '#666',
             width: 200,
+            lineHeight: 1.2,
+            charSpacing: 0,
           });
           break;
       }
       if (textObject) {
         // Add custom property to identify text type later if needed
         (textObject as any).elementType = 'text';
+        // Ensure text renders at correct size by explicitly setting height
+        textObject.set('height', textObject.fontSize * (textObject.lineHeight || 1.2));
         canvas.add(textObject);
         canvas.setActiveObject?.(textObject);
         canvas.renderAll?.();
@@ -221,16 +229,34 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           padding,
           hoverBackgroundColor: '#2563eb', // Example hover color
           hoverTextColor: '#ffffff',
-          action: { type: 'url', value: '' }, // Default action
+          action: { type: 'url', value: '' }, // Default action with URL type
         },
         elementType: 'button', // Custom property to identify this as a button
+      });
+
+      // Add click handler for URL functionality
+      buttonGroup.on('mousedown', function (this: any, e: any) {
+        // Only handle left-click
+        if (e.e.button !== 0) {
+          return;
+        }
+
+        // If the button has a URL and it's not being edited (not selected)
+        if (this.buttonData?.action?.value && !canvas.getActiveObject()) {
+          // Prevent default to avoid selecting the object
+          e.e.preventDefault();
+          e.e.stopPropagation();
+
+          // Open the URL in a new tab
+          window.open(this.buttonData.action.value, '_blank');
+        }
       });
 
       canvas.add(buttonGroup);
       canvas.setActiveObject?.(buttonGroup);
       canvas.renderAll?.();
 
-      toast.success('Button added to canvas!');
+      toast.success('Button added to canvas! Double-click to edit URL.');
     } catch (error) {
       console.error('Error adding button:', error);
       toast.error('Failed to add button.');
@@ -264,8 +290,9 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...commonProps,
             width: 100,
             height: 60,
-            rx: 8, // Rounded corners
-            ry: 8,
+            rx: 0, // Set to 0 for sharp corners
+            ry: 0, // Set to 0 for sharp corners
+            strokeWidth: 1, // Set to 1px border
           });
           break;
         case 'outlined-rectangle':
@@ -273,8 +300,9 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...outlinedCommonProps,
             width: 100,
             height: 60,
-            rx: 8,
-            ry: 8,
+            rx: 0, // Set to 0 for sharp corners
+            ry: 0, // Set to 0 for sharp corners
+            strokeWidth: 1, // Set to 1px border
           });
           break;
         case 'circle':
@@ -439,6 +467,48 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         textObj.set('fontWeight', updates.fontWeight);
       }
 
+      // Handle URL functionality for buttons
+      if (updates.action?.type === 'url' && updates.action?.value) {
+        // First remove any existing click handlers to avoid duplicates
+        if (buttonObject.__eventListeners && buttonObject.__eventListeners.mousedown) {
+          buttonObject.off('mousedown');
+        }
+
+        // Set the URL property directly on the object
+        buttonObject.set({
+          url: updates.action.value,
+          hoverCursor: 'pointer',
+        });
+
+        // Add a visual indicator for linked buttons
+        if (bgRect) {
+          bgRect.set({
+            stroke: '#10b981', // Green color to indicate it has a link
+            strokeWidth: buttonData.borderWidth || 2,
+          });
+        }
+
+        // Add a custom handler for mouse down events
+        buttonObject.on('mousedown', function (this: any, e: any) {
+          // Only handle left-click
+          if (e.e.button !== 0) {
+            return;
+          }
+
+          // If the button has a URL and it's not being edited (not selected)
+          if (this.buttonData?.action?.value && !canvas.getActiveObject()) {
+            // Prevent default to avoid selecting the object
+            e.e.preventDefault();
+            e.e.stopPropagation();
+
+            // Open the URL in a new tab
+            window.open(this.buttonData.action.value, '_blank');
+          }
+        });
+
+        // Log to confirm URL was set
+      }
+
       // Adjust group size if text or padding changes (simplified)
       if ((updates.text || updates.padding || updates.fontSize) && textObj && bgRect) {
         const padding = buttonData.padding || { top: 0, right: 0, bottom: 0, left: 0 };
@@ -503,6 +573,106 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     }
   }, [canvas]);
 
+  // Add social icon to canvas
+  const handleAddSocialIcon = useCallback((iconPath: string, iconName: string) => {
+    if (!canvas || !fabric || !fabricReady) {
+      console.warn('Canvas or Fabric not ready');
+      return;
+    }
+
+    fabric.Image.fromURL(iconPath, (img: any) => {
+      // Set a default size for social icons
+      const iconSize = 50;
+
+      // Scale the image to fit the desired size while maintaining aspect ratio
+      const scale = iconSize / Math.max(img.width || 1, img.height || 1);
+
+      img.set({
+        left: 100,
+        top: 100,
+        scaleX: scale,
+        scaleY: scale,
+        cornerSize: 12,
+        cornerStyle: 'circle',
+        cornerColor: '#2563eb',
+        cornerStrokeColor: '#ffffff',
+        transparentCorners: false,
+        borderColor: '#2563eb',
+        borderScaleFactor: 2,
+        name: iconName,
+        elementType: 'socialIcon', // Custom property for identification
+        // Make sure we set a default URL property - can be updated later
+        url: '',
+        hoverCursor: 'pointer', // Show pointer cursor on hover
+      });
+
+      // Add a visual indicator that this is a social icon
+      img.set({
+        strokeWidth: 0, // No stroke initially since there's no URL
+        stroke: 'transparent',
+      });
+
+      // Add click handler for the social icon
+      img.on('mousedown', function (this: any, e: any) {
+        // Only handle left-click
+        if (e.e.button !== 0) {
+          return;
+        }
+
+        // If the icon has a URL and it's not being edited (not selected)
+        if (this.url && !canvas.getActiveObject()) {
+          // Prevent default to avoid selecting the object
+          e.e.preventDefault();
+          e.e.stopPropagation();
+
+          // Open the URL in a new tab using the improved approach
+          toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
+
+          // Create a temporary anchor element to use native browser navigation
+          const tempLink = document.createElement('a');
+          tempLink.href = this.url;
+          tempLink.target = '_blank';
+          tempLink.rel = 'noopener noreferrer';
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+        }
+      });
+
+      // Add double-click handler to edit URL
+      img.on('dblclick', (e: any) => {
+        // Prevent default to avoid selecting the object
+        e.e.preventDefault();
+        e.e.stopPropagation();
+
+        // Show a toast message instead of prompt
+        toast.info('Double-click editing is available in the design editor. Please use the properties panel to edit URLs.');
+      });
+
+      // Add the image to the canvas
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+
+      // Center the icon on the canvas
+      const canvasCenter = canvas.getCenter();
+      img.set({
+        left: canvasCenter.left,
+        top: canvasCenter.top,
+        originX: 'center',
+        originY: 'center',
+      });
+
+      canvas.renderAll();
+
+      // Notify that a new element was added
+      canvas.fire('object:modified', { target: img });
+
+      // Show a hint about double-clicking
+      toast.info('Double-click the icon to add a URL link');
+    });
+  }, [canvas, fabric, fabricReady]);
+
   return {
     handleAddText,
     handleBackgroundChange,
@@ -511,5 +681,6 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
     handleAddLink,
     updateButtonProperties,
     updateLinkProperties,
+    handleAddSocialIcon, // Export the new function
   };
 }
