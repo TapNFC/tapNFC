@@ -24,6 +24,8 @@ type QrStylingCardProps = Pick<
   | 'removeLogo'
   | 'logoSize'
   | 'setLogoSize'
+  | 'qrCodeUrl'
+  | 'isEditMode'
 >;
 
 export function QrStylingCard({
@@ -40,11 +42,20 @@ export function QrStylingCard({
   removeLogo,
   logoSize,
   setLogoSize,
+  qrCodeUrl,
+  isEditMode,
 }: QrStylingCardProps) {
+  // Hide styling options only if we have a saved QR code AND we're not in edit mode
+  if (qrCodeUrl && !isEditMode) {
+    return null;
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>QR Code Styling</CardTitle>
+        <CardTitle>
+          {isEditMode ? 'Edit QR Code Styling' : 'QR Code Styling'}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {/* QR Code Size */}

@@ -41,6 +41,7 @@ export type Design = {
   tags?: string[];
   canvas_data: any; // JSONB data representing the Fabric.js canvas
   preview_url: string | null;
+  qr_code_url?: string | null;
   is_template: boolean;
   is_public: boolean;
   created_at: string;

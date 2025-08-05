@@ -38,6 +38,10 @@ export default withSentryConfig(
             hostname: 'localhost',
             port: '3000',
           },
+          {
+            protocol: 'https',
+            hostname: 'images.unsplash.com',
+          },
         ],
       },
     }),

@@ -116,6 +116,97 @@ export const storageService = {
   },
 
   /**
+   * Uploads a QR code image to Supabase Storage.
+   * @param designId - The ID of the design associated with the QR code.
+   * @param qrCodeSvg - The SVG element or canvas containing the QR code.
+   * @param styleId - Optional style ID of the QR code.
+   * @returns The public URL of the uploaded QR code image.
+   */
+  async uploadQrCode(designId: string, qrCodeSvg: SVGElement | HTMLCanvasElement, styleId?: string): Promise<string | null> {
+    try {
+      const supabase = createClient();
+      let blob: Blob;
+
+      // Convert SVG to PNG blob
+      if (qrCodeSvg instanceof SVGElement) {
+        const svgData = new XMLSerializer().serializeToString(qrCodeSvg);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Create an image from the SVG
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('Failed to load SVG as image'));
+          image.src = svgUrl;
+        });
+
+        // Draw the image on a canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        // Get blob from canvas
+        blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => {
+            if (b) {
+              resolve(b);
+            } else {
+              reject(new Error('Failed to convert canvas to blob'));
+            }
+          }, 'image/png');
+        });
+
+        // Clean up
+        URL.revokeObjectURL(svgUrl);
+      } else {
+        // If it's already a canvas, just get the blob
+        blob = await new Promise<Blob>((resolve, reject) => {
+          qrCodeSvg.toBlob((b) => {
+            if (b) {
+              resolve(b);
+            } else {
+              reject(new Error('Failed to convert canvas to blob'));
+            }
+          }, 'image/png');
+        });
+      }
+
+      // Create a unique file path
+      const timestamp = Date.now();
+      const styleSuffix = styleId ? `-${styleId}` : '';
+      const filePath = `qr-codes/${designId}/${timestamp}${styleSuffix}.png`;
+
+      // Upload to Supabase
+      const { error: uploadError } = await supabase.storage
+        .from('designs')
+        .upload(filePath, blob, {
+          contentType: 'image/png',
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL
+      const { data } = supabase.storage
+        .from('designs')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading QR code:', error);
+      return null;
+    }
+  },
+
+  /**
    * Deletes a design preview from Supabase Storage.
    * @param fileUrl - The public URL of the file to delete.
    */
