@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import QRCodesClient from '@/components/qr/qr-codes-client';
+import ElegantQRCodes from '@/components/qr/qr-codes-client';
 
 export const metadata: Metadata = {
   title: 'QR Codes',
@@ -90,7 +90,7 @@ function QRCodesSkeleton() {
 export default function QRCodesPage() {
   return (
     <Suspense fallback={<QRCodesSkeleton />}>
-      <QRCodesClient />
+      <ElegantQRCodes />
     </Suspense>
   );
 }
