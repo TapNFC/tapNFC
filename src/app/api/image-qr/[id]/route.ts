@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { Buffer } from 'node:buffer';
 import { NextResponse } from 'next/server';
-import { designDB } from '@/lib/indexedDB';
+import { createAppServerClient } from '@/utils/supabase/server-app';
 
 export async function GET(
   _request: NextRequest,
@@ -10,23 +10,47 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // Get the design data
-    const design = await designDB.getDesign(id);
+    const supabase = createAppServerClient();
 
-    // Check if design exists and is an image-to-qr type
-    if (!design || design.metadata.designType !== 'image-to-qr' || !design.metadata.imageUrl) {
-      return new NextResponse('Image not found', { status: 404 });
+    // Get the design data from the database
+    const { data: design, error } = await supabase
+      .from('designs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !design) {
+      console.error(`Error fetching design ${id}:`, error);
+      return new NextResponse('Design not found', { status: 404 });
     }
 
-    // Get the image data from the metadata
-    const imageUrl = design.metadata.imageUrl;
+    // Check if design is an image-to-qr type and has image data in canvas_data
+    const canvasData = design.canvas_data;
+    let imageUrl = null;
+
+    // Try to find image data in various possible locations
+    if (canvasData?.metadata?.imageUrl) {
+      imageUrl = canvasData.metadata.imageUrl;
+    } else if (canvasData?.imageUrl) {
+      imageUrl = canvasData.imageUrl;
+    } else if (canvasData?.objects) {
+      // Look for image objects in the canvas
+      const imageObject = canvasData.objects.find((obj: any) => obj.type === 'image' && obj.src);
+      if (imageObject) {
+        imageUrl = imageObject.src;
+      }
+    }
+
+    if (!imageUrl) {
+      return new NextResponse('Image data not found in design', { status: 404 });
+    }
 
     // The imageUrl should be a data URL (base64 encoded)
     // Extract the content type and base64 data
     const matches = imageUrl.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
 
     if (!matches || matches.length !== 3) {
-      return new NextResponse('Invalid image data', { status: 500 });
+      return new NextResponse('Invalid image data format', { status: 500 });
     }
 
     const contentType = matches[1];
@@ -43,6 +67,7 @@ export async function GET(
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="image-${id}.${getExtensionFromMimeType(contentType)}"`,
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
       },
     });
   } catch (error) {

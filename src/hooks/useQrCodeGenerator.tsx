@@ -17,7 +17,6 @@ import {
   useState,
 } from 'react';
 import { toast } from 'sonner';
-import { designDB } from '@/lib/indexedDB';
 import { designService } from '@/services/designService';
 import { storageService } from '@/services/storageService';
 
@@ -136,12 +135,9 @@ export const useQrCodeGenerator = (
               const designResponse = await fetch(`/api/designs/${designId}`);
               if (designResponse.ok) {
                 design = await designResponse.json();
-              } else {
-                design = await designDB.getDesign(designId);
               }
             } catch (error) {
               console.error('Error fetching full design data:', error);
-              design = await designDB.getDesign(designId);
             }
           }
         } else {
@@ -160,32 +156,8 @@ export const useQrCodeGenerator = (
         console.error('Error fetching from API:', error);
       }
 
-      // If API fetch failed, try IndexedDB
-      if (!design) {
-        design = await designDB.getDesign(designId);
-      }
-
-      // If we have design data, update IndexedDB and local state
+      // If we have design data, update local state
       if (design) {
-        // Update IndexedDB with the latest data
-        await designDB.saveDesign({
-          id: design.id,
-          canvasData: design.canvas_data,
-          metadata: {
-            width: design.canvas_data?.width || 375,
-            height: design.canvas_data?.height || 667,
-            backgroundColor: design.canvas_data?.backgroundColor || '#ffffff',
-            title: design.name,
-            description: design.description,
-            designType: design.metadata?.designType,
-            imageUrl: design.metadata?.imageUrl,
-          },
-          qr_code_url: design.qr_code_url || (qrData?.qrCodeUrl || null),
-          qr_code_data: design.qr_code_data || (qrData?.qrCodeData || null), // Save SVG data
-          createdAt: new Date(design.created_at),
-          updatedAt: new Date(design.updated_at),
-        });
-
         setDesignData(design);
       } else {
         console.error('Could not load design data from any source');
@@ -579,21 +551,6 @@ export const useQrCodeGenerator = (
       }
 
       console.log('Database updated successfully');
-
-      // Also update the local IndexedDB with the QR code URL and SVG data
-      console.log('Updating local IndexedDB');
-      const localDesign = await designDB.getDesign(designId);
-      if (localDesign) {
-        await designDB.saveDesign({
-          ...localDesign,
-          qr_code_url: qrCodeStorageUrl,
-          qr_code_data: svgData || undefined,
-          updatedAt: new Date(),
-        });
-        console.log('Local IndexedDB updated');
-      } else {
-        console.warn('Could not find local design to update');
-      }
 
       setQrCodeUrl(qrCodeStorageUrl);
       setQrCodeSvgData(svgData);
