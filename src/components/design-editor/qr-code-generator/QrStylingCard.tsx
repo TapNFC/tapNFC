@@ -26,6 +26,8 @@ type QrStylingCardProps = Pick<
   | 'setLogoSize'
   | 'qrCodeUrl'
   | 'isEditMode'
+  | 'isSaving'
+  | 'isGenerating'
 >;
 
 export function QrStylingCard({
@@ -44,6 +46,8 @@ export function QrStylingCard({
   setLogoSize,
   qrCodeUrl,
   isEditMode,
+  isSaving,
+  isGenerating,
 }: QrStylingCardProps) {
   // Hide styling options only if we have a saved QR code AND we're not in edit mode
   if (qrCodeUrl && !isEditMode) {
@@ -67,6 +71,7 @@ export function QrStylingCard({
             min={64}
             max={1024}
             step={8}
+            disabled={isSaving || isGenerating}
           />
           <p className="text-sm text-gray-500">
             Current size:
@@ -88,6 +93,7 @@ export function QrStylingCard({
               type="color"
               value={qrColor}
               onChange={e => setQrColor(e.target.value)}
+              disabled={isSaving || isGenerating}
             />
           </div>
           <div className="space-y-2">
@@ -96,6 +102,7 @@ export function QrStylingCard({
               type="color"
               value={bgColor}
               onChange={e => setBgColor(e.target.value)}
+              disabled={isSaving || isGenerating}
             />
           </div>
         </div>
@@ -113,6 +120,7 @@ export function QrStylingCard({
               id="include-margin"
               checked={includeMargin}
               onCheckedChange={setIncludeMargin}
+              disabled={isSaving || isGenerating}
             />
             <Label htmlFor="include-margin">Include Margin</Label>
           </div>
@@ -133,10 +141,10 @@ export function QrStylingCard({
               accept="image/*"
               onChange={handleLogoUpload}
               className="flex-1"
-              disabled={!!logoImage}
+              disabled={!!logoImage || isSaving || isGenerating}
             />
             {logoImage && (
-              <Button variant="outline" onClick={removeLogo}>
+              <Button variant="outline" onClick={removeLogo} disabled={isSaving || isGenerating}>
                 Remove
               </Button>
             )}
@@ -154,6 +162,7 @@ export function QrStylingCard({
                 max={qrSize / 2}
                 step={1}
                 className="mt-2"
+                disabled={isSaving || isGenerating}
               />
             </div>
           )}

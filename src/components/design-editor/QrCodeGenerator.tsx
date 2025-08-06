@@ -14,7 +14,7 @@ type QrCodeGeneratorProps = {
 
 export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
   const hookResult = useQrCodeGenerator(designId, locale);
-  const { isImageQr, sourceImage, title, description } = hookResult;
+  const { isImageQr, sourceImage, title, description, isSaving } = hookResult;
 
   return (
     <div className="container mx-auto max-w-6xl py-8">
@@ -35,7 +35,7 @@ export function QrCodeGenerator({ designId, locale }: QrCodeGeneratorProps) {
             isImageQr={isImageQr}
             designId={designId}
           />
-          <QrStylingCard {...hookResult} />
+          <QrStylingCard {...hookResult} isSaving={isSaving} />
         </div>
       </div>
     </div>

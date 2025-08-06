@@ -21,7 +21,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { QrCodeSamplesSkeleton } from './QrCodeSamplesSkeleton';
 
 type QrCodePreviewCardProps = Pick<
   UseQrCodeGeneratorReturn,
@@ -82,42 +81,42 @@ export function QrCodePreviewCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {qrUrl && (
-          <div className="space-y-6">
-            <div className="flex justify-center">
-              <div
-                id="qr-code-preview-container"
-                className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-lg"
-                style={{ width: qrSize, height: qrSize }}
-              >
-                {isGenerating
-                  ? (
-                      <div className="flex size-full flex-col items-center justify-center">
-                        <div className="relative mb-4 size-48 rounded-lg">
-                          <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200"></div>
-                          <div className="absolute inset-4 grid grid-cols-8 gap-1">
-                            {Array.from({ length: 64 }).map((_, index) => (
-                              <div
-                                key={`qr-skeleton-pixel-${index}`}
-                                className={`rounded-sm ${
-                                  Math.random() > 0.5
-                                    ? 'bg-gray-400'
-                                    : 'bg-transparent'
-                                } opacity-40`}
-                              >
-                              </div>
-                            ))}
-                          </div>
-                          <div className="absolute left-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
-                          <div className="absolute right-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
-                          <div className="absolute bottom-3 left-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
-                        </div>
-                        <p className="text-center text-sm font-medium text-blue-600">
-                          {qrCodeUrl ? 'Loading saved QR code...' : 'Generating your QR code...'}
-                        </p>
+        {isGenerating
+          ? (
+              <div className="flex size-full flex-col items-center justify-center">
+                <div className="relative mb-4 size-48 rounded-lg">
+                  <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200"></div>
+                  <div className="absolute inset-4 grid grid-cols-8 gap-1">
+                    {Array.from({ length: 64 }).map((_, index) => (
+                      <div
+                        key={`qr-skeleton-pixel-${index}`}
+                        className={`rounded-sm ${
+                          Math.random() > 0.5
+                            ? 'bg-gray-400'
+                            : 'bg-transparent'
+                        } opacity-40`}
+                      >
                       </div>
-                    )
-                  : qrCodeUrl && !isEditMode
+                    ))}
+                  </div>
+                  <div className="absolute left-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                  <div className="absolute right-3 top-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                  <div className="absolute bottom-3 left-3 size-8 rounded-lg bg-gray-400 opacity-60"></div>
+                </div>
+                <p className="text-center text-sm font-medium text-blue-600">
+                  {qrCodeUrl ? 'Loading saved QR code...' : 'Generating your QR code...'}
+                </p>
+              </div>
+            )
+          : qrUrl && (
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div
+                  id="qr-code-preview-container"
+                  className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-lg"
+                  style={{ width: qrSize, height: qrSize }}
+                >
+                  {qrCodeUrl && !isEditMode
                     ? (
                         <div
                           style={{
@@ -170,147 +169,141 @@ export function QrCodePreviewCard({
                           </div>
                         )
                       )}
+                </div>
               </div>
-            </div>
 
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold">Choose a Style</h3>
-              <p className="mb-4 text-sm text-gray-500">
-                {qrCodeUrl && !isEditMode
-                  ? 'This QR code has been saved. Style selection is disabled.'
-                  : 'Select a style to make your QR code stand out.'}
-              </p>
-              {isGenerating
-                ? (
-                    <QrCodeSamplesSkeleton />
-                  )
-                : (
-                    <QrCodeSamples
-                      onSampleSelect={handleSampleSelect}
-                      currentSelectedId={selectedQrSample?.id}
-                      disabled={!!qrCodeUrl && !isEditMode}
-                    />
-                  )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Preview URL</Label>
-              <div className="flex space-x-2">
-                <Input
-                  value={qrUrl}
-                  readOnly
-                  className="flex-1 font-mono text-sm"
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold">Choose a Style</h3>
+                <p className="mb-4 text-sm text-gray-500">
+                  {qrCodeUrl && !isEditMode
+                    ? 'This QR code has been saved. Style selection is disabled.'
+                    : 'Select a style to make your QR code stand out.'}
+                </p>
+                <QrCodeSamples
+                  onSampleSelect={handleSampleSelect}
+                  currentSelectedId={selectedQrSample?.id}
+                  disabled={!!qrCodeUrl && !isEditMode}
                 />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>Preview URL</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    value={qrUrl}
+                    readOnly
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={copyToClipboard}
+                    className="flex items-center space-x-2"
+                    disabled={isGenerating}
+                  >
+                    {copied
+                      ? (
+                          <>
+                            <Check className="size-4 text-green-600" />
+                            <span>Copied!</span>
+                          </>
+                        )
+                      : (
+                          <>
+                            <Copy className="size-4" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                <Button
+                  onClick={saveQrCodeToStorage}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                  disabled={isSaving || (!!qrCodeUrl && !isEditMode)}
+                >
+                  {isSaving
+                    ? (
+                        <>
+                          <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Saving...</span>
+                        </>
+                      )
+                    : qrCodeUrl && !isEditMode
+                      ? (
+                          <>
+                            <Check className="size-4" />
+                            <span>Saved</span>
+                          </>
+                        )
+                      : (
+                          <>
+                            <Save className="size-4" />
+                            <span>{qrCodeUrl && isEditMode ? 'Update QR' : 'Save QR'}</span>
+                          </>
+                        )}
+                </Button>
+
+                {/* Download dropdown with resolution options */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                      disabled={isGenerating}
+                    >
+                      <Download className="size-4" />
+                      <span>Download</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center">
+                    <DropdownMenuItem onClick={() => downloadQrCode()}>
+                      Default Size (
+                      {qrSize}
+                      px)
+                    </DropdownMenuItem>
+                    {(qrCodeSvgData || isEditMode) && (
+                      <>
+                        <Separator className="my-1" />
+                        {resolutions.map(resolution => (
+                          <DropdownMenuItem
+                            key={`resolution-${resolution}`}
+                            onClick={() => downloadQrCode(resolution)}
+                          >
+                            {resolution}
+                            x
+                            {resolution}
+                            px
+                          </DropdownMenuItem>
+                        ))}
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button
                   variant="outline"
-                  onClick={copyToClipboard}
+                  onClick={previewDesign}
                   className="flex items-center space-x-2"
                   disabled={isGenerating}
                 >
-                  {copied
-                    ? (
-                        <>
-                          <Check className="size-4 text-green-600" />
-                          <span>Copied!</span>
-                        </>
-                      )
-                    : (
-                        <>
-                          <Copy className="size-4" />
-                          <span>Copy</span>
-                        </>
-                      )}
+                  <Eye className="size-4" />
+                  <span>{isImageQr ? 'Open Image' : 'Preview'}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={shareDesign}
+                  className="flex items-center space-x-2"
+                  disabled={isGenerating}
+                >
+                  <Share2 className="size-4" />
+                  <span>Share</span>
                 </Button>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-              <Button
-                onClick={saveQrCodeToStorage}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
-                disabled={isGenerating || isSaving || (!!qrCodeUrl && !isEditMode)}
-              >
-                {isSaving
-                  ? (
-                      <>
-                        <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        <span>Saving...</span>
-                      </>
-                    )
-                  : qrCodeUrl && !isEditMode
-                    ? (
-                        <>
-                          <Check className="size-4" />
-                          <span>Saved</span>
-                        </>
-                      )
-                    : (
-                        <>
-                          <Save className="size-4" />
-                          <span>{qrCodeUrl && isEditMode ? 'Update QR' : 'Save QR'}</span>
-                        </>
-                      )}
-              </Button>
-
-              {/* Download dropdown with resolution options */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
-                    disabled={isGenerating}
-                  >
-                    <Download className="size-4" />
-                    <span>Download</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center">
-                  <DropdownMenuItem onClick={() => downloadQrCode()}>
-                    Default Size (
-                    {qrSize}
-                    px)
-                  </DropdownMenuItem>
-                  {(qrCodeSvgData || isEditMode) && (
-                    <>
-                      <Separator className="my-1" />
-                      {resolutions.map(resolution => (
-                        <DropdownMenuItem
-                          key={`resolution-${resolution}`}
-                          onClick={() => downloadQrCode(resolution)}
-                        >
-                          {resolution}
-                          x
-                          {resolution}
-                          px
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button
-                variant="outline"
-                onClick={previewDesign}
-                className="flex items-center space-x-2"
-                disabled={isGenerating}
-              >
-                <Eye className="size-4" />
-                <span>{isImageQr ? 'Open Image' : 'Preview'}</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={shareDesign}
-                className="flex items-center space-x-2"
-                disabled={isGenerating}
-              >
-                <Share2 className="size-4" />
-                <span>Share</span>
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
       </CardContent>
     </Card>
   );
