@@ -1,0 +1,131 @@
+'use client';
+
+import type { QRCode } from '@/types/qr-code';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { EditableName } from './editable-name';
+import { QRPattern } from './qr-pattern';
+
+export const QRCodeListItem = ({
+  qrCode,
+  isSelected,
+  onToggleSelection,
+  onUpdateName,
+  onDownload,
+  onEditQRCode,
+  onEditDesign,
+  onCustomUrl,
+  onDelete,
+}: {
+  qrCode: QRCode;
+  isSelected: boolean;
+  onToggleSelection: (id: string) => void;
+  onUpdateName: (id: string, newName: string) => void;
+  onDownload: (qrCode: QRCode) => void;
+  onEditQRCode: (qrCode: QRCode) => void;
+  onEditDesign: (qrCode: QRCode) => void;
+  onCustomUrl: (qrCode: QRCode) => void;
+  onDelete: (qrCode: QRCode) => void;
+}) => {
+  return (
+    <Card className="overflow-hidden border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex items-center p-4">
+        <div className="mr-4">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelection(qrCode.id)}
+            className="size-4"
+          />
+        </div>
+
+        <div className="mr-4 size-20 shrink-0 rounded-lg border-2 border-gray-200 bg-white p-2 dark:border-gray-600">
+          {qrCode.qrCodeUrl
+            ? (
+                <Image
+                  src={qrCode.qrCodeUrl}
+                  alt={`${qrCode.name} QR code`}
+                  width={80}
+                  height={80}
+                  className="size-full object-contain"
+                />
+              )
+            : (
+                <QRPattern seed={Number.parseInt(qrCode.id)} />
+              )}
+        </div>
+
+        <div className="mr-4 size-20 shrink-0 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-600">
+          <Image
+            src={qrCode.previewImage || '/assets/images/nextjs-starter-banner.png'}
+            alt={`${qrCode.name} preview`}
+            width={80}
+            height={80}
+            className="size-full object-contain"
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <EditableName
+                name={qrCode.name}
+                onSave={newName => onUpdateName(qrCode.id, newName)}
+              />
+              <p className="cursor-pointer text-sm text-blue-600 hover:underline dark:text-blue-400">
+                {qrCode.url}
+              </p>
+              <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                <span>
+                  <strong className="text-gray-900 dark:text-white">{qrCode.scans}</strong>
+                  {' '}
+                  Scans
+                </span>
+                <span>
+                  Type:
+                  {' '}
+                  <span className="text-gray-700 dark:text-gray-300">{qrCode.type}</span>
+                </span>
+                <span>
+                  Created:
+                  {' '}
+                  <span className="text-gray-700 dark:text-gray-300">{qrCode.created}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-green-500 text-white shadow-sm transition-all hover:bg-green-600 hover:shadow"
+                onClick={() => onDownload(qrCode)}
+              >
+                Download
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="shadow-sm transition-all hover:shadow">
+                    Options
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onCustomUrl(qrCode)}>Custom URL</DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => onDelete(qrCode)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};

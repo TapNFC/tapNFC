@@ -170,4 +170,21 @@ export const designService = {
 
     return data || [];
   },
+
+  // Get QR codes for the current user
+  async getUserQrCodes(): Promise<Design[]> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('designs')
+      .select('*')
+      .not('qr_code_url', 'is', null)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching QR codes:', error);
+      return [];
+    }
+
+    return data || [];
+  },
 };

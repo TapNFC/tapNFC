@@ -31,6 +31,7 @@ export type DesignData = {
     designType?: string;
     previewUrl?: string;
   };
+  qr_code_url?: string;
   createdAt: Date;
   updatedAt: Date;
 };

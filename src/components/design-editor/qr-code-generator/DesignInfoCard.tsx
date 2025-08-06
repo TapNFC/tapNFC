@@ -14,22 +14,14 @@ import { Label } from '@/components/ui/label';
 
 type DesignInfoCardProps = Pick<
   UseQrCodeGeneratorReturn,
-  | 'title'
-  | 'setTitle'
-  | 'description'
-  | 'setDescription'
-  | 'isGenerating'
-  | 'isImageQr'
+  'title' | 'description' | 'isImageQr'
 > & {
   designId: string;
 };
 
 export function DesignInfoCard({
   title,
-  setTitle,
   description,
-  setDescription,
-  isGenerating,
   isImageQr,
   designId,
 }: DesignInfoCardProps) {
@@ -46,8 +38,7 @@ export function DesignInfoCard({
             id="title"
             placeholder="Give your design a title"
             value={title}
-            onChange={e => setTitle(e.target.value)}
-            disabled={isGenerating}
+            readOnly
           />
         </div>
 
@@ -57,8 +48,7 @@ export function DesignInfoCard({
             id="description"
             placeholder="Describe your design"
             value={description}
-            onChange={e => setDescription(e.target.value)}
-            disabled={isGenerating}
+            readOnly
           />
         </div>
 

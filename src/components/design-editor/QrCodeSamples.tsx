@@ -498,10 +498,15 @@ export const sampleQrDesigns: QrSampleProps[] = [
 type QrCodeSamplesProps = {
   onSampleSelect: (selectedSample: QrSampleProps | null) => void;
   currentSelectedId?: string | null;
+  disabled?: boolean;
 };
 
-export function QrCodeSamples({ onSampleSelect, currentSelectedId }: QrCodeSamplesProps) {
+export function QrCodeSamples({ onSampleSelect, currentSelectedId, disabled = false }: QrCodeSamplesProps) {
   const handleSelect = (sample: QrSampleProps) => {
+    if (disabled) {
+      return;
+    }
+
     if (currentSelectedId === sample.id) {
       onSampleSelect(null);
     } else {
@@ -533,8 +538,9 @@ export function QrCodeSamples({ onSampleSelect, currentSelectedId }: QrCodeSampl
               sample.id === currentSelectedId
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-            }`}
+            } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
             onClick={() => handleSelect(sample)}
+            disabled={disabled}
           >
             <div className="mb-2 size-16 overflow-hidden rounded">
               {renderSampleContent(sample)}
