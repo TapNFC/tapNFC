@@ -12,6 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +40,7 @@ type QrCodePreviewCardProps = Pick<
   | 'saveQrCodeToStorage'
   | 'isSaving'
   | 'qrCodeUrl'
+  | 'qrCodeSvgData'
   | 'editQrCode'
   | 'isEditMode'
 >;
@@ -54,9 +61,13 @@ export function QrCodePreviewCard({
   saveQrCodeToStorage,
   isSaving,
   qrCodeUrl,
+  qrCodeSvgData,
   editQrCode,
   isEditMode,
 }: QrCodePreviewCardProps) {
+  // Available resolutions for download
+  const resolutions = [256, 512, 1024, 2048];
+
   return (
     <Card>
       <CardHeader>
@@ -242,14 +253,43 @@ export function QrCodePreviewCard({
                         </>
                       )}
               </Button>
-              <Button
-                onClick={downloadQrCode}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
-                disabled={isGenerating}
-              >
-                <Download className="size-4" />
-                <span>Download PNG</span>
-              </Button>
+
+              {/* Download dropdown with resolution options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                    disabled={isGenerating}
+                  >
+                    <Download className="size-4" />
+                    <span>Download</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  <DropdownMenuItem onClick={() => downloadQrCode()}>
+                    Default Size (
+                    {qrSize}
+                    px)
+                  </DropdownMenuItem>
+                  {(qrCodeSvgData || isEditMode) && (
+                    <>
+                      <Separator className="my-1" />
+                      {resolutions.map(resolution => (
+                        <DropdownMenuItem
+                          key={`resolution-${resolution}`}
+                          onClick={() => downloadQrCode(resolution)}
+                        >
+                          {resolution}
+                          x
+                          {resolution}
+                          px
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="outline"
                 onClick={previewDesign}

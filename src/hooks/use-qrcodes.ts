@@ -37,6 +37,7 @@ export const useQRCodes = () => {
           created: new Date(design.created_at).toLocaleDateString(),
           previewImage: design.preview_url || '/assets/images/nextjs-starter-banner.png',
           qrCodeUrl: design.qr_code_url || null,
+          qrCodeData: design.qr_code_data || null,
         };
       });
 
@@ -193,7 +194,10 @@ export const useQRCodes = () => {
 
   const deleteQRCode = async (qrCode: QRCode) => {
     try {
-      await designService.updateDesign(qrCode.id, { qr_code_url: null });
+      await designService.updateDesign(qrCode.id, {
+        qr_code_url: null,
+        qr_code_data: null,
+      });
 
       // Remove the deleted QR code from the state
       const updatedQRCodes = qrCodes.filter(qr => qr.id !== qrCode.id);

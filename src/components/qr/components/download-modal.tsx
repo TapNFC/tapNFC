@@ -38,22 +38,87 @@ export const DownloadModal = ({
     setIsDownloading(true);
     try {
       if (format === 'PNG') {
-        const link = document.createElement('a');
-        link.href = qrCode.qrCodeUrl;
-        link.download = `${qrCode.name}-qr-code.${format.toLowerCase()}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success('QR code downloaded successfully!');
+        const resolution = Number.parseInt(size.split('x')[0] ?? '0', 10);
+
+        // If we have SVG data, use it to generate a high-resolution image
+        if (qrCode.qrCodeData && resolution) {
+          // Parse the SVG data
+          const parser = new DOMParser();
+          const svgDoc = parser.parseFromString(qrCode.qrCodeData, 'image/svg+xml');
+          const svgElement = svgDoc.documentElement;
+
+          // Set the new dimensions
+          svgElement.setAttribute('width', resolution.toString());
+          svgElement.setAttribute('height', resolution.toString());
+
+          // Serialize back to string
+          const serializer = new XMLSerializer();
+          const svgString = serializer.serializeToString(svgElement);
+
+          // Create a blob from the SVG string
+          const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          const svgUrl = URL.createObjectURL(svgBlob);
+
+          // Create an image from the SVG
+          const img = new window.Image();
+          img.onload = () => {
+            // Create a canvas with the requested resolution
+            const canvas = document.createElement('canvas');
+            canvas.width = resolution;
+            canvas.height = resolution;
+            const ctx = canvas.getContext('2d')!;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, resolution, resolution);
+            URL.revokeObjectURL(svgUrl);
+
+            // Convert canvas to blob and download
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                toast.error('Failed to generate download blob.');
+                setIsDownloading(false);
+                return;
+              }
+              const blobUrl = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = `${qrCode.name}-qr-code-${resolution}px.${format.toLowerCase()}`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+              toast.success(`QR code downloaded at ${resolution}x${resolution}px!`);
+              setIsDownloading(false);
+              onClose();
+            }, 'image/png');
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            toast.error('Failed to process SVG data for download.');
+            setIsDownloading(false);
+          };
+          img.src = svgUrl;
+        } else {
+          // Fall back to the original image if SVG data is not available
+          const link = document.createElement('a');
+          link.href = qrCode.qrCodeUrl;
+          link.download = `${qrCode.name}-qr-code.${format.toLowerCase()}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('QR code downloaded successfully!');
+          setIsDownloading(false);
+          onClose();
+        }
       } else if (format === 'PDF') {
         toast.info('PDF download feature coming soon!');
+        setIsDownloading(false);
+        onClose();
       }
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download QR code');
-    } finally {
       setIsDownloading(false);
-      onClose();
     }
   };
 
@@ -96,6 +161,11 @@ export const DownloadModal = ({
                 ))}
               </SelectContent>
             </Select>
+            {!qrCode.qrCodeData && format === 'PNG' && (
+              <p className="text-xs text-amber-500">
+                Note: High-resolution downloads may be limited as SVG data is not available for this QR code.
+              </p>
+            )}
           </div>
           <Button
             onClick={handleDownload}

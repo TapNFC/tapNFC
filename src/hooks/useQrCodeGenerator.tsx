@@ -49,7 +49,7 @@ export type UseQrCodeGeneratorReturn = {
   handleLogoUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   removeLogo: () => void;
   copyToClipboard: () => Promise<void>;
-  downloadQrCode: () => void;
+  downloadQrCode: (resolution?: number) => void; // Added optional resolution parameter
   previewDesign: () => void;
   shareDesign: () => Promise<void>;
   qrPreviewDisplay: React.ReactNode | null;
@@ -57,6 +57,7 @@ export type UseQrCodeGeneratorReturn = {
   saveQrCodeToStorage: () => Promise<void>;
   isSaving: boolean;
   qrCodeUrl: string | null;
+  qrCodeSvgData: string | null; // Added SVG data
   editQrCode: () => void;
   isEditMode: boolean;
 };
@@ -76,6 +77,7 @@ export const useQrCodeGenerator = (
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [qrCodeSvgData, setQrCodeSvgData] = useState<string | null>(null); // Added state for SVG data
   const [isEditMode, setIsEditMode] = useState(false);
 
   // QR Code styling options
@@ -126,6 +128,8 @@ export const useQrCodeGenerator = (
           // If we have QR data, set the QR code URL directly
           if (qrData && qrData.qrCodeUrl) {
             setQrCodeUrl(qrData.qrCodeUrl);
+            setQrCodeSvgData(qrData.qrCodeData || null); // Load SVG data if available
+            setIsEditMode(false);
 
             // We still need to get the full design data
             try {
@@ -177,6 +181,7 @@ export const useQrCodeGenerator = (
             imageUrl: design.metadata?.imageUrl,
           },
           qr_code_url: design.qr_code_url || (qrData?.qrCodeUrl || null),
+          qr_code_data: design.qr_code_data || (qrData?.qrCodeData || null), // Save SVG data
           createdAt: new Date(design.created_at),
           updatedAt: new Date(design.updated_at),
         });
@@ -193,6 +198,7 @@ export const useQrCodeGenerator = (
       if (design?.qr_code_url || qrData?.qrCodeUrl) {
         const qrCodeUrl = design?.qr_code_url || qrData?.qrCodeUrl;
         setQrCodeUrl(qrCodeUrl);
+        setQrCodeSvgData(design.qr_code_data || null); // Load SVG data if available
         setIsGenerating(false);
 
         // Set title and description based on actual design data
@@ -298,11 +304,12 @@ export const useQrCodeGenerator = (
           const qrData = await qrResponse.json();
           if (qrData?.qrCodeUrl) {
             setQrCodeUrl(qrData.qrCodeUrl);
+            setQrCodeSvgData(qrData.qrCodeData || null); // Load SVG data if available
           }
         }
       } catch (error) {
         // Ignore errors here, the main loadDesignData will handle them
-        console.log('Quick QR check failed, continuing with full load', error);
+        console.warn('Quick QR check failed, continuing with full load', error);
       }
 
       cleanup = await loadDesignData();
@@ -366,9 +373,72 @@ export const useQrCodeGenerator = (
     }
   }, [qrUrl]);
 
-  const downloadQrCode = useCallback(() => {
+  const downloadQrCode = useCallback((resolution?: number) => {
     if (!qrUrl) {
       return;
+    }
+
+    // If we have SVG data and a specific resolution is requested, generate a custom resolution
+    if (qrCodeSvgData && resolution) {
+      try {
+        // Parse the SVG data
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(qrCodeSvgData, 'image/svg+xml');
+        const svgElement = svgDoc.documentElement;
+
+        // Set the new dimensions
+        svgElement.setAttribute('width', resolution.toString());
+        svgElement.setAttribute('height', resolution.toString());
+
+        // Serialize back to string
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgElement);
+
+        // Create a blob from the SVG string
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Create an image from the SVG
+        const img = new window.Image();
+        img.onload = () => {
+          // Create a canvas with the requested resolution
+          const canvas = document.createElement('canvas');
+          canvas.width = resolution;
+          canvas.height = resolution;
+          const ctx = canvas.getContext('2d')!;
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, resolution, resolution);
+          URL.revokeObjectURL(svgUrl);
+
+          // Convert canvas to blob and download
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              toast.error('Failed to generate download blob.');
+              return;
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `qr-code-${designId}-${resolution}px${selectedQrSample?.id !== 'style-none' ? `-${selectedQrSample?.id}` : ''}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+            toast.success(`QR code downloaded at ${resolution}x${resolution}px!`);
+          }, 'image/png');
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(svgUrl);
+          toast.error('Failed to process SVG data for download.');
+        };
+        img.src = svgUrl;
+        return;
+      } catch (error) {
+        console.error('Error generating custom resolution QR code:', error);
+        toast.error('Failed to generate custom resolution QR code');
+        // Fall back to default download method
+      }
     }
 
     // If we have a saved QR code URL and we're not in edit mode, download it directly
@@ -393,8 +463,9 @@ export const useQrCodeGenerator = (
     }
 
     const svgClone = svgElement.cloneNode(true) as SVGElement;
-    svgClone.setAttribute('width', qrSize.toString());
-    svgClone.setAttribute('height', qrSize.toString());
+    const downloadSize = resolution || qrSize;
+    svgClone.setAttribute('width', downloadSize.toString());
+    svgClone.setAttribute('height', downloadSize.toString());
 
     const svgData = new XMLSerializer().serializeToString(svgClone);
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
@@ -403,12 +474,12 @@ export const useQrCodeGenerator = (
     const img = new window.Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = qrSize;
-      canvas.height = qrSize;
+      canvas.width = downloadSize;
+      canvas.height = downloadSize;
       const ctx = canvas.getContext('2d')!;
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, qrSize, qrSize);
+      ctx.drawImage(img, 0, 0, downloadSize, downloadSize);
       URL.revokeObjectURL(svgUrl);
 
       canvas.toBlob((blob) => {
@@ -419,12 +490,13 @@ export const useQrCodeGenerator = (
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = `qr-code-${designId}${selectedQrSample?.id !== 'style-none' ? `-${selectedQrSample?.id}` : ''}.png`;
+        const resolutionText = resolution ? `-${resolution}px` : '';
+        link.download = `qr-code-${designId}${resolutionText}${selectedQrSample?.id !== 'style-none' ? `-${selectedQrSample?.id}` : ''}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
-        toast.success('QR code downloaded!');
+        toast.success(`QR code downloaded${resolution ? ` at ${resolution}x${resolution}px` : ''}!`);
       });
     };
     img.onerror = () => {
@@ -432,7 +504,7 @@ export const useQrCodeGenerator = (
       toast.error('Failed to process QR code image for download.');
     };
     img.src = svgUrl;
-  }, [qrUrl, qrSize, designId, selectedQrSample, qrCodeUrl, isEditMode]);
+  }, [qrUrl, qrSize, designId, selectedQrSample, qrCodeUrl, isEditMode, qrCodeSvgData]);
 
   const previewDesign = useCallback(() => {
     if (qrUrl) {
@@ -483,7 +555,7 @@ export const useQrCodeGenerator = (
       const styleId = selectedQrSample?.id || 'style-none';
       console.log(`Uploading QR code with style: ${styleId}`);
 
-      const qrCodeStorageUrl = await storageService.uploadQrCode(
+      const { publicUrl: qrCodeStorageUrl, svgData } = await storageService.uploadQrCode(
         designId,
         svgElement as SVGElement,
         styleId,
@@ -495,25 +567,27 @@ export const useQrCodeGenerator = (
 
       console.log(`QR code uploaded successfully: ${qrCodeStorageUrl}`);
 
-      // Update the design in the database with the QR code URL
-      console.log('Updating design in database with QR code URL');
+      // Update the design in the database with the QR code URL and SVG data
+      console.log('Updating design in database with QR code URL and SVG data');
       const updatedDesign = await designService.updateDesign(designId, {
         qr_code_url: qrCodeStorageUrl,
+        qr_code_data: svgData,
       });
 
       if (!updatedDesign) {
-        throw new Error('Failed to update design with QR code URL');
+        throw new Error('Failed to update design with QR code URL and SVG data');
       }
 
       console.log('Database updated successfully');
 
-      // Also update the local IndexedDB with the QR code URL
+      // Also update the local IndexedDB with the QR code URL and SVG data
       console.log('Updating local IndexedDB');
       const localDesign = await designDB.getDesign(designId);
       if (localDesign) {
         await designDB.saveDesign({
           ...localDesign,
           qr_code_url: qrCodeStorageUrl,
+          qr_code_data: svgData || undefined,
           updatedAt: new Date(),
         });
         console.log('Local IndexedDB updated');
@@ -522,6 +596,7 @@ export const useQrCodeGenerator = (
       }
 
       setQrCodeUrl(qrCodeStorageUrl);
+      setQrCodeSvgData(svgData);
       setIsEditMode(false); // Exit edit mode after saving
       toast.success(isEditMode ? 'QR code updated successfully!' : 'QR code saved successfully!');
     } catch (error) {
@@ -642,6 +717,7 @@ export const useQrCodeGenerator = (
     saveQrCodeToStorage,
     isSaving,
     qrCodeUrl,
+    qrCodeSvgData,
     editQrCode,
     isEditMode,
   };
