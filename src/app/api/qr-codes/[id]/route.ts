@@ -37,14 +37,49 @@ export async function GET(
       return NextResponse.json({ error: 'QR code has not been generated for this design' }, { status: 404 });
     }
 
-    // Get scan statistics if available (placeholder for future implementation)
-    const scanStats = {
-      scans: 0,
-      lastScan: null,
-      scansByDate: {},
-      scansByCountry: {},
-      scansByDevice: {},
-    };
+    // Get actual scan statistics from the qr_code_scans table
+    const { data: scanStats, error: scanError } = await supabase
+      .from('qr_code_scans')
+      .select('created_at, country_code, city, device_type, browser, os')
+      .eq('design_id', id)
+      .order('created_at', { ascending: false });
+
+    if (scanError) {
+      console.error('Error fetching scan statistics:', scanError);
+    }
+
+    // Process scan statistics
+    const totalScans = scanStats?.length || 0;
+    const lastScan = scanStats?.[0]?.created_at || null;
+
+    // Group scans by date
+    const scansByDate: Record<string, number> = {};
+    if (scanStats) {
+      scanStats.forEach((scan) => {
+        const date = new Date(scan.created_at).toISOString().split('T')[0];
+        if (date) {
+          scansByDate[date] = (scansByDate[date] ?? 0) + 1;
+        }
+      });
+    }
+
+    // Group scans by country
+    const scansByCountry: Record<string, number> = {};
+    if (scanStats) {
+      scanStats.forEach((scan) => {
+        const country = scan.country_code || 'Unknown';
+        scansByCountry[country] = (scansByCountry[country] || 0) + 1;
+      });
+    }
+
+    // Group scans by device type
+    const scansByDevice: Record<string, number> = {};
+    if (scanStats) {
+      scanStats.forEach((scan) => {
+        const device = scan.device_type || 'Unknown';
+        scansByDevice[device] = (scansByDevice[device] || 0) + 1;
+      });
+    }
 
     // Return combined data
     const responseData = {
@@ -53,7 +88,11 @@ export async function GET(
       qrCodeUrl: data.qr_code_url,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      ...scanStats,
+      scans: totalScans,
+      lastScan,
+      scansByDate,
+      scansByCountry,
+      scansByDevice,
     };
 
     return NextResponse.json(responseData);
