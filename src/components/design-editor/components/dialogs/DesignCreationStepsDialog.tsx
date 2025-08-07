@@ -110,7 +110,7 @@ export function DesignCreationStepsDialog({
         },
         preview_url: null,
         is_template: false,
-        is_public: false,
+        is_public: true,
       });
 
       if (newDesign) {

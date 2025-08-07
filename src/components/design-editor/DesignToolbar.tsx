@@ -44,7 +44,6 @@ type DesignToolbarProps = {
   sidebarCollapsed?: boolean;
   hasUnsavedChanges?: boolean;
   lastSaved?: Date | null;
-  onManualSave?: () => Promise<void>;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -64,14 +63,12 @@ export function DesignToolbar({
   sidebarCollapsed = false,
   hasUnsavedChanges = false,
   lastSaved = null,
-  onManualSave,
   onUndo,
   onRedo,
   canUndo = false,
   canRedo = false,
   guideControls,
 }: DesignToolbarProps) {
-  const [isSaving, setIsSaving] = useState(false);
   const [isGuidesEnabled, setIsGuidesEnabled] = useState(true);
   const [isExporting] = useState(false);
   const [designName, setDesignName] = useState<string>('Untitled Design');
@@ -229,21 +226,6 @@ export function DesignToolbar({
     } catch (error) {
       console.error('Error saving template:', error);
       toast.error('Error saving template');
-    }
-  };
-
-  const handleManualSave = async () => {
-    if (onManualSave) {
-      setIsSaving(true);
-      try {
-        await onManualSave();
-        toast.success('Design saved successfully');
-      } catch (error) {
-        console.error('Error saving design:', error);
-        toast.error('Failed to save design');
-      } finally {
-        setIsSaving(false);
-      }
     }
   };
 
@@ -462,25 +444,6 @@ export function DesignToolbar({
                 )}
           </div>
 
-          {/* Manual Save Button */}
-          <Button
-            onClick={handleManualSave}
-            variant="outline"
-            size="sm"
-            disabled={isSaving || !hasUnsavedChanges}
-            className="border-white/40 bg-white/60 backdrop-blur-sm transition-all duration-200 hover:border-blue-200 hover:bg-white/80 disabled:opacity-50"
-          >
-            {isSaving
-              ? (
-                  <div className="flex items-center gap-2">
-                    <div className="size-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
-                    <span className="font-medium">Saving...</span>
-                  </div>
-                )
-              : (
-                  <span className="font-medium">Save Now</span>
-                )}
-          </Button>
           {/* Add QrCodeButton here */}
           <QrCodeButton
             designId={designId}

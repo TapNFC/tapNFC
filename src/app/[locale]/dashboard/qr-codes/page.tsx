@@ -87,10 +87,16 @@ function QRCodesSkeleton() {
   );
 }
 
-export default function QRCodesPage() {
+type QRCodesPageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function QRCodesPage({ params }: QRCodesPageProps) {
+  const { locale } = await params;
+
   return (
     <Suspense fallback={<QRCodesSkeleton />}>
-      <ElegantQRCodes />
+      <ElegantQRCodes locale={locale} />
     </Suspense>
   );
 }

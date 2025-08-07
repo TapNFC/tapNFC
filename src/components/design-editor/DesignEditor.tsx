@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
-import { designDB } from '@/lib/indexedDB';
 import { CanvasContainer } from './components/CanvasContainer';
 import {
   MemoizedLinkEditPopup,
@@ -147,44 +145,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     return undefined;
   }, [canvas, isCanvasReady, getPreviewData]);
 
-  const handleManualSave = async () => {
-    if (!canvas || !designId) {
-      toast.error('Cannot save: Canvas or design ID not available');
-      return;
-    }
-
-    try {
-      // Get canvas data
-      const canvasData = canvas.toJSON();
-      const canvasImage = canvas.toDataURL('image/png');
-
-      // Create design data
-      const designData = {
-        id: designId,
-        canvasData,
-        metadata: {
-          width: canvas.getWidth(),
-          height: canvas.getHeight(),
-          backgroundColor: canvas.backgroundColor || '#ffffff',
-          title: `Design ${designId}`,
-          description: 'Saved design',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Save to IndexedDB
-      await designDB.saveDesign(designData);
-
-      // Save canvas image to localStorage for preview
-      localStorage.setItem(`design_preview_${designId}`, canvasImage);
-
-      toast.success('Design saved successfully!');
-    } catch {
-      toast.error('Failed to save design');
-    }
-  };
-
   // Track canvas readiness
   useEffect(() => {
     if (isCanvasReady) {
@@ -257,7 +217,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         sidebarCollapsed={sidebarCollapsed}
         hasUnsavedChanges={hasUnsavedChanges}
         lastSaved={lastSaved}
-        onManualSave={handleManualSave}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}

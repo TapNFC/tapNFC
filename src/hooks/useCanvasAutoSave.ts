@@ -91,7 +91,7 @@ export function useCanvasAutoSave({
           name: `Design ${designId.slice(-8)}`,
           canvas_data: canvasJSON, // Save the entire canvas JSON
           is_template: false,
-          is_public: false,
+          is_public: true,
         });
 
         if (!newDesign) {

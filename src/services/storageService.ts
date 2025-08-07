@@ -116,20 +116,22 @@ export const storageService = {
   },
 
   /**
-   * Uploads a QR code image to Supabase Storage.
+   * Uploads a QR code to Supabase Storage.
    * @param designId - The ID of the design associated with the QR code.
    * @param qrCodeSvg - The SVG element or canvas containing the QR code.
    * @param styleId - Optional style ID of the QR code.
-   * @returns The public URL of the uploaded QR code image.
+   * @returns An object with the public URL of the uploaded QR code image and the SVG data.
    */
-  async uploadQrCode(designId: string, qrCodeSvg: SVGElement | HTMLCanvasElement, styleId?: string): Promise<string | null> {
+  async uploadQrCode(designId: string, qrCodeSvg: SVGElement | HTMLCanvasElement, styleId?: string): Promise<{ publicUrl: string | null; svgData: string | null }> {
     try {
       const supabase = createClient();
       let blob: Blob;
+      let svgData: string | null = null;
 
       // Convert SVG to PNG blob
       if (qrCodeSvg instanceof SVGElement) {
-        const svgData = new XMLSerializer().serializeToString(qrCodeSvg);
+        // Store the SVG data for future use
+        svgData = new XMLSerializer().serializeToString(qrCodeSvg);
         const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const svgUrl = URL.createObjectURL(svgBlob);
 
@@ -174,6 +176,8 @@ export const storageService = {
             }
           }, 'image/png');
         });
+        // For canvas elements, we don't have SVG data
+        svgData = null;
       }
 
       // Create a unique file path
@@ -199,10 +203,10 @@ export const storageService = {
         .from('designs')
         .getPublicUrl(filePath);
 
-      return data.publicUrl;
+      return { publicUrl: data.publicUrl, svgData };
     } catch (error) {
       console.error('Error uploading QR code:', error);
-      return null;
+      return { publicUrl: null, svgData: null };
     }
   },
 

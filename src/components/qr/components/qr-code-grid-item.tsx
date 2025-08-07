@@ -1,12 +1,15 @@
+/* eslint-disable unused-imports/no-unused-vars */
 'use client';
 
 import type { QRCode } from '@/types/qr-code';
-import { Download } from 'lucide-react';
+import { Copy, Download, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import { EditableName } from './editable-name';
 import { QRPattern } from './qr-pattern';
 
@@ -31,6 +34,47 @@ export const QRCodeGridItem = ({
   onCustomUrl: (qrCode: QRCode) => void;
   onDelete: (qrCode: QRCode) => void;
 }) => {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(qrCode.url);
+      setCopied(true);
+      toast({
+        title: 'URL copied!',
+        description: 'The URL has been copied to your clipboard.',
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = qrCode.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        toast({
+          title: 'URL copied!',
+          description: 'The URL has been copied to your clipboard.',
+        });
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        toast({
+          title: 'Failed to copy',
+          description: 'Could not copy URL to clipboard.',
+          variant: 'error',
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const handleUrlClick = () => {
+    window.open(qrCode.url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <Card className="overflow-hidden border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
       <div className="p-4">
@@ -77,9 +121,29 @@ export const QRCodeGridItem = ({
               onSave={newName => onUpdateName(qrCode.id, newName)}
             />
           </div>
-          <p className="mt-1 cursor-pointer text-xs text-blue-600 hover:underline dark:text-blue-400">
-            {qrCode.url}
-          </p>
+          <div className="mt-1 flex items-center justify-center gap-2">
+            <button
+              onClick={handleUrlClick}
+              className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+            >
+              <ExternalLink className="size-3" />
+              {qrCode.url.length > 30 ? `${qrCode.url.substring(0, 30)}...` : qrCode.url}
+            </button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={copyToClipboard}
+              className="h-6 px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              {copied
+                ? (
+                    <span className="text-xs font-medium text-green-600">Copied!</span>
+                  )
+                : (
+                    <Copy className="size-3" />
+                  )}
+            </Button>
+          </div>
           <div className="mt-2 text-sm text-gray-500">
             <div>
               <strong className="text-gray-900 dark:text-white">{qrCode.scans}</strong>

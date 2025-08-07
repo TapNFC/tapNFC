@@ -5,11 +5,10 @@ import { ImageIcon, Undo, Wand2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { designDB } from '@/lib/indexedDB';
 
 type ImageToQrGeneratorProps = {
   designId: string;
@@ -22,20 +21,6 @@ export function ImageToQrGenerator({ designId, locale }: ImageToQrGeneratorProps
   const [image, setImage] = useState<string | null>(null);
 
   // Check if we already have an existing design with this ID
-  useEffect(() => {
-    const checkExistingDesign = async () => {
-      try {
-        const existingDesign = await designDB.getDesign(designId);
-        if (existingDesign && existingDesign.metadata.imageUrl) {
-          setImage(existingDesign.metadata.imageUrl);
-        }
-      } catch (error) {
-        console.error('Error checking existing design:', error);
-      }
-    };
-
-    checkExistingDesign();
-  }, [designId]);
 
   const handleImageUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,22 +59,6 @@ export function ImageToQrGenerator({ designId, locale }: ImageToQrGeneratorProps
 
     try {
       // Save the design data with the image URL
-      await designDB.saveDesign({
-        id: designId,
-        canvasData: {}, // For now, we'll store the image as metadata
-        metadata: {
-          width: 400,
-          height: 400,
-          backgroundColor: '#ffffff',
-          title: `Image QR - ${new Date().toLocaleDateString()}`,
-          description: 'QR code generated from image',
-          imageUrl: image,
-          designType: 'image-to-qr',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
       // Navigate to the QR code page - we'll directly generate a QR code for the image URL
       router.push(`/${locale}/design/${designId}/qr-code`);
     } catch (error) {

@@ -1,10 +1,8 @@
-import type { DesignData } from '@/lib/indexedDB';
 import { Loader2, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { designDB } from '@/lib/indexedDB';
 import { designService } from '@/services/designService';
 import { storageService } from '@/services/storageService';
 
@@ -57,28 +55,16 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
           toast.success('Design preview updated.');
         }
 
-        const designData: DesignData = {
-          id: designId,
-          canvasData,
-          metadata: {
-            width: canvas.getWidth?.() || 0,
-            height: canvas.getHeight?.() || 0,
-            backgroundColor: canvas.backgroundColor || '#ffffff',
-            title: `Design ${designId}`,
-            description: 'Design ready for QR code generation',
-            previewUrl: previewUrl || undefined,
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        // Save to IndexedDB
-        await designDB.saveDesign(designData);
+        // Save full canvas data to the backend, preserving existing name and description
+        await designService.updateDesign(designId, {
+          name: existingDesign?.name || `Design ${designId}`,
+          description: existingDesign?.description || 'Design ready for QR code generation',
+          canvas_data: canvasData,
+        });
+        toast.success('Design saved successfully.');
 
         // Also keep localStorage for backward compatibility (temporary)
-        localStorage.setItem(`design_${designId}`, JSON.stringify(canvasData));
-
-        toast.success('Design saved locally.');
+        // toast.success('Design saved locally.');
 
         // Navigate to the QR code generation page
         router.push(`/${locale}/design/${designId}/qr-code`);

@@ -32,6 +32,7 @@ export type DesignData = {
     previewUrl?: string;
   };
   qr_code_url?: string;
+  qr_code_data?: string; // SVG data for the QR code
   createdAt: Date;
   updatedAt: Date;
 };
