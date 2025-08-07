@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { getSimpleUrl } from '@/utils/urlUtils';
 import { EditableName } from './editable-name';
 import { QRPattern } from './qr-pattern';
 
@@ -75,6 +76,9 @@ export const QRCodeListItem = ({
     window.open(qrCode.url, '_blank', 'noopener,noreferrer');
   };
 
+  // Get the simple URL for display
+  const simpleUrl = getSimpleUrl(qrCode.url);
+
   return (
     <Card className="overflow-hidden border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center p-4">
@@ -123,15 +127,17 @@ export const QRCodeListItem = ({
                 <button
                   onClick={handleUrlClick}
                   className="flex items-center gap-1 text-sm text-blue-600 hover:underline dark:text-blue-400"
+                  title={qrCode.url} // Show full URL on hover
                 >
                   <ExternalLink className="size-3" />
-                  {qrCode.url.length > 40 ? `${qrCode.url.substring(0, 40)}...` : qrCode.url}
+                  {simpleUrl}
                 </button>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={copyToClipboard}
                   className="h-6 px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title="Copy full URL"
                 >
                   {copied
                     ? (
