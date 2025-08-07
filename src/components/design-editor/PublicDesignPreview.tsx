@@ -203,6 +203,25 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
         const design = await response.json();
         console.log('Design loaded from backend API:', identifier); // eslint-disable-line no-console
         setDesignData(design);
+
+        // Record the scan if we have a valid design ID (not a demo)
+        if (design.id && design.id !== 'demo') {
+          try {
+            // Record the scan asynchronously (don't wait for it to complete)
+            fetch(`/api/scan/${design.id}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }).catch((error) => {
+              // Silently fail if scan recording fails - don't affect user experience
+              console.error('Failed to record scan:', error);
+            });
+          } catch (scanError) {
+            // Silently fail if scan recording fails
+            console.error('Error recording scan:', scanError);
+          }
+        }
       } catch (err) {
         console.error('Error loading design data:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to load design';
@@ -224,6 +243,22 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
       loadDesignData();
     }
   }, [designId, designSlug, initialData]);
+
+  // Record scan when design is provided via initialData
+  useEffect(() => {
+    if (initialData && initialData.id && initialData.id !== 'demo') {
+      // Record the scan asynchronously (don't wait for it to complete)
+      fetch(`/api/scan/${initialData.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch((error) => {
+        // Silently fail if scan recording fails - don't affect user experience
+        console.error('Failed to record scan:', error);
+      });
+    }
+  }, [initialData]);
 
   // Handle interactive element clicks
   const handleElementClick = (elementData: any) => {
