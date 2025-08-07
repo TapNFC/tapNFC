@@ -1,6 +1,7 @@
 'use client';
 
 import { Grid3X3, List, QrCode, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +16,13 @@ import {
   QRCodeListItem,
 } from './components';
 
-export default function ElegantQRCodes() {
+type ElegantQRCodesProps = {
+  locale?: string;
+};
+
+export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const router = useRouter();
   const {
     searchQuery,
     filteredQRCodes,
@@ -43,6 +49,10 @@ export default function ElegantQRCodes() {
     deleteQRCode,
   } = useQRCodes();
 
+  const handleCreateQRCode = () => {
+    router.push(`/${locale}/design`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="mx-auto max-w-7xl p-6">
@@ -56,7 +66,10 @@ export default function ElegantQRCodes() {
                 Manage and track your QR code collection
               </p>
             </div>
-            <Button className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-sm transition-all hover:from-blue-600 hover:to-cyan-700 hover:shadow">
+            <Button
+              onClick={handleCreateQRCode}
+              className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-sm transition-all hover:from-blue-600 hover:to-cyan-700 hover:shadow"
+            >
               <QrCode className="mr-2 size-4" />
               Create QR Code
             </Button>

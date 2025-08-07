@@ -129,6 +129,6 @@ export function designDataToDesign(designData: DesignData, userId: string): Omit
     qr_code_url: designData.qr_code_url || null,
     qr_code_data: designData.qr_code_data || null,
     is_template: false,
-    is_public: false,
+    is_public: true,
   };
 }

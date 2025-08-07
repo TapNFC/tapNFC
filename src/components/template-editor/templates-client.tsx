@@ -147,7 +147,7 @@ export function TemplatesClient() {
           canvas_data: design.canvas_data,
           preview_url: design.preview_url,
           is_template: false, // Always create as a regular design, not a template
-          is_public: false, // Always create as private
+          is_public: true, // Always create as public
         };
 
         const newDesign = await createDesign(duplicateData);
