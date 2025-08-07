@@ -75,6 +75,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       if (textObject) {
         // Add custom property to identify text type later if needed
         (textObject as any).elementType = 'text';
+        // Add URL property for text linking functionality
+        (textObject as any).url = '';
         // Ensure text renders at correct size by explicitly setting height
         textObject.set('height', textObject.fontSize * (textObject.lineHeight || 1.2));
         canvas.add(textObject);
