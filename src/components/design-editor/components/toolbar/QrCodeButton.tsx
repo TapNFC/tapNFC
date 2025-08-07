@@ -24,7 +24,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
 
     setIsLoading(true);
 
-    // Save the current canvas data to IndexedDB before proceeding
+    // Save the current canvas data to backend before proceeding
     if (canvas) {
       try {
         // 1. Get existing design to find old preview_url

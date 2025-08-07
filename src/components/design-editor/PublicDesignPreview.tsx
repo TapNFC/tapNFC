@@ -347,6 +347,157 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
     return null;
   };
 
+  // Render canvas objects using HTML elements (similar to RealTimePreview)
+  const renderCanvasObjects = useMemo(() => {
+    if (!designData?.canvas_data?.objects || !Array.isArray(designData.canvas_data.objects)) {
+      return [];
+    }
+
+    return designData.canvas_data.objects.map((obj: any, index: number) => {
+      if (!obj) {
+        return null;
+      }
+
+      // Common properties that apply to most objects
+      const left = obj.left || 0;
+      const top = obj.top || 0;
+      const width = (obj.width || 0) * (obj.scaleX || 1);
+      const height = (obj.height || 0) * (obj.scaleY || 1);
+      const angle = obj.angle || 0;
+
+      const baseStyle: React.CSSProperties = {
+        position: 'absolute',
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: `rotate(${angle}deg)`,
+        transformOrigin: 'center center',
+        opacity: obj.opacity !== undefined ? obj.opacity : 1,
+        zIndex: index + 1,
+      };
+
+      // Handle Text elements
+      if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
+        const fontSize = obj.fontSize || 16;
+
+        // Handle text positioning - Fabric.js text positioning is complex
+        let adjustedLeft = left;
+        let adjustedTop = top;
+
+        // Adjust for text origin and alignment
+        if (obj.originX === 'center') {
+          adjustedLeft = left - (width / 2);
+        } else if (obj.originX === 'right') {
+          adjustedLeft = left - width;
+        }
+
+        if (obj.originY === 'center') {
+          adjustedTop = top - (height / 2);
+        } else if (obj.originY === 'bottom') {
+          adjustedTop = top - height;
+        }
+
+        // Additional adjustment for text baseline
+        if (obj.textBaseline === 'alphabetic' || obj.textBaseline === 'baseline') {
+          adjustedTop = adjustedTop - fontSize * 0.2;
+        } else if (obj.textBaseline === 'middle') {
+          adjustedTop = adjustedTop - fontSize * 0.1;
+        }
+
+        const textStyle: React.CSSProperties = {
+          position: 'absolute',
+          left: `${adjustedLeft}px`,
+          top: `${adjustedTop}px`,
+          width: obj.type === 'textbox' ? `${width}px` : 'auto',
+          height: obj.type === 'textbox' ? `${height}px` : 'auto',
+          transform: `rotate(${angle}deg)`,
+          transformOrigin: 'left top',
+          opacity: obj.opacity !== undefined ? obj.opacity : 1,
+          zIndex: index + 1,
+          color: obj.fill || '#000000',
+          fontFamily: obj.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          fontSize: `${fontSize}px`,
+          fontWeight: obj.fontWeight || 'normal',
+          textAlign: obj.textAlign || 'left',
+          whiteSpace: 'pre-wrap',
+          lineHeight: obj.lineHeight || 1.2,
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'flex-start',
+          fontStyle: obj.fontStyle === 'italic' ? 'italic' : 'normal',
+          textDecoration: `${obj.underline ? 'underline' : ''} ${obj.linethrough ? 'line-through' : ''}`.trim(),
+          minHeight: `${fontSize * (obj.lineHeight || 1.2)}px`,
+          justifyContent: obj.textAlign === 'center' ? 'center' : obj.textAlign === 'right' ? 'flex-end' : 'flex-start',
+          padding: '0',
+          margin: '0',
+          backgroundColor: 'transparent',
+          border: 'none',
+          outline: 'none',
+          textShadow: obj.fill === '#ffffff' || obj.fill === '#FFFFFF' ? '0 0 2px rgba(0,0,0,0.5)' : 'none',
+        };
+
+        const textContent = obj.text || obj.content || '';
+
+        return (
+          <div key={`canvas-text-${obj.id || index}`} style={textStyle}>
+            {textContent}
+          </div>
+        );
+      }
+
+      // Handle Rect elements
+      if (obj.type === 'rect') {
+        return (
+          <div
+            key={`canvas-rect-${obj.id || index}`}
+            style={{
+              ...baseStyle,
+              backgroundColor: obj.fill || '#cccccc',
+              borderRadius: `${obj.rx || 0}px`,
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+              boxSizing: 'border-box',
+            }}
+          />
+        );
+      }
+
+      // Handle Circle elements
+      if (obj.type === 'circle') {
+        return (
+          <div
+            key={`canvas-circle-${obj.id || index}`}
+            style={{
+              ...baseStyle,
+              backgroundColor: obj.fill || '#cccccc',
+              borderRadius: '50%',
+              border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+              boxSizing: 'border-box',
+            }}
+          />
+        );
+      }
+
+      // Handle Image elements
+      if (obj.type === 'image') {
+        return (
+          <img
+            key={`canvas-image-${obj.id || index}`}
+            src={obj.src || ''}
+            alt="Design element"
+            style={{
+              ...baseStyle,
+              objectFit: 'fill',
+              boxSizing: 'border-box',
+            }}
+          />
+        );
+      }
+
+      return null;
+    });
+  }, [designData]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -434,61 +585,8 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
               ...effectiveBackgroundStyle,
             }}
           >
-            {/* Static SVG-like rendering of canvas objects */}
-            <svg
-              width={canvasWidth}
-              height={canvasHeight}
-              viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-              className="absolute inset-0"
-            >
-              {canvasData.objects?.map((obj: any, index: number) => {
-                if (obj.type === 'rect') {
-                  return (
-                    <rect
-                      key={`rect-${index}`}
-                      x={obj.left}
-                      y={obj.top}
-                      width={obj.width}
-                      height={obj.height}
-                      fill={obj.fill || '#000000'}
-                      stroke={obj.stroke}
-                      strokeWidth={obj.strokeWidth || 0}
-                      rx={obj.rx || 0}
-                    />
-                  );
-                } else if (obj.type === 'circle') {
-                  const radius = Math.min(obj.width, obj.height) / 2;
-                  return (
-                    <circle
-                      key={`circle-${index}`}
-                      cx={obj.left + obj.width / 2}
-                      cy={obj.top + obj.height / 2}
-                      r={radius}
-                      fill={obj.fill || '#000000'}
-                      stroke={obj.stroke}
-                      strokeWidth={obj.strokeWidth || 0}
-                    />
-                  );
-                } else if (obj.type === 'text') {
-                  return (
-                    <text
-                      key={`text-${index}`}
-                      x={obj.left + (obj.width || 0) / 2}
-                      y={obj.top + (obj.height || 0) / 2}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill={obj.fill || '#000000'}
-                      fontSize={obj.fontSize || 16}
-                      fontFamily={obj.fontFamily || 'Arial'}
-                      fontWeight={obj.fontWeight || 'normal'}
-                    >
-                      {obj.text || ''}
-                    </text>
-                  );
-                }
-                return null;
-              })}
-            </svg>
+            {/* Render canvas objects using HTML elements */}
+            {renderCanvasObjects}
 
             {/* Interactive overlay elements */}
             {canvasData.objects?.map((obj: any, index: number) => {
