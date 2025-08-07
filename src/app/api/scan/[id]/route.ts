@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createAppServerClient } from '@/utils/supabase/server-app';
@@ -7,6 +8,7 @@ import { createAppServerClient } from '@/utils/supabase/server-app';
  * This endpoint is public and doesn't require authentication
  */
 export async function POST(
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
