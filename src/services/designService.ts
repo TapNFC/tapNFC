@@ -1,4 +1,5 @@
 import type { Design } from '@/types/design';
+import { generateSlug } from '@/utils/slugUtils';
 import { createClient } from '@/utils/supabase/client';
 
 // Client-side Supabase functions
@@ -54,12 +55,62 @@ export const designService = {
     return data;
   },
 
-  // Create a new design
-  async createDesign(design: Partial<Design>): Promise<Design | null> {
+  // Get a specific design by slug
+  async getDesignBySlug(slug: string): Promise<Design | null> {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('designs')
-      .insert([design])
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      console.error(`Error fetching design with slug ${slug}:`, error);
+      return null;
+    }
+
+    return data;
+  },
+
+  // Create a new design
+  async createDesign(design: Partial<Design>): Promise<Design | null> {
+    const supabase = createClient();
+
+    // Generate slug if not provided
+    let slug = design.slug;
+    if (!slug && design.name) {
+      slug = generateSlug(design.name);
+
+      // Check if slug already exists and make it unique
+      let counter = 1;
+      let uniqueSlug = slug;
+
+      while (true) {
+        const { data: existingDesign } = await supabase
+          .from('designs')
+          .select('id')
+          .eq('slug', uniqueSlug)
+          .single();
+
+        if (!existingDesign) {
+          break; // Found a unique slug
+        }
+
+        counter++;
+        uniqueSlug = `${slug}-${counter}`;
+      }
+
+      slug = uniqueSlug;
+    }
+
+    const designWithSlug = {
+      ...design,
+      slug,
+    };
+
+    const { data, error } = await supabase
+      .from('designs')
+      .insert([designWithSlug])
       .select()
       .single();
 
@@ -74,9 +125,43 @@ export const designService = {
   // Update an existing design
   async updateDesign(id: string, updates: Partial<Design>): Promise<Design | null> {
     const supabase = createClient();
+
+    // Generate slug if name is being updated and slug is not provided
+    let slug = updates.slug;
+    if (!slug && updates.name) {
+      slug = generateSlug(updates.name);
+
+      // Check if slug already exists (excluding current design) and make it unique
+      let counter = 1;
+      let uniqueSlug = slug;
+
+      while (true) {
+        const { data: existingDesign } = await supabase
+          .from('designs')
+          .select('id')
+          .eq('slug', uniqueSlug)
+          .neq('id', id)
+          .single();
+
+        if (!existingDesign) {
+          break; // Found a unique slug
+        }
+
+        counter++;
+        uniqueSlug = `${slug}-${counter}`;
+      }
+
+      slug = uniqueSlug;
+    }
+
+    const updatesWithSlug = {
+      ...updates,
+      ...(slug && { slug }),
+    };
+
     const { data, error } = await supabase
       .from('designs')
-      .update(updates)
+      .update(updatesWithSlug)
       .eq('id', id)
       .select()
       .single();

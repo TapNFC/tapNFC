@@ -27,11 +27,12 @@ export const useQRCodes = () => {
       const transformedQRCodes: QRCode[] = designs.map((design) => {
         const baseUrl = window.location.origin;
         const locale = document.documentElement.lang || 'en';
+        const previewIdentifier = design.slug || design.id;
 
         return {
           id: design.id,
           name: design.name,
-          url: `${baseUrl}/${locale}/preview/${design.id}`,
+          url: `${baseUrl}/${locale}/preview/${previewIdentifier}`,
           scans: 0,
           type: design.is_template ? 'Template' : 'Design',
           created: new Date(design.created_at).toLocaleDateString(),

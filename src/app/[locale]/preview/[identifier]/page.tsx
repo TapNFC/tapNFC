@@ -3,12 +3,19 @@ import { PublicDesignPreview } from '@/components/design-editor/PublicDesignPrev
 
 type PreviewPageProps = {
   params: Promise<{
-    id: string;
+    identifier: string;
   }>;
 };
 
+// Function to check if a string is a UUID
+function isUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 export default async function PreviewPage({ params }: PreviewPageProps) {
-  const { id } = await params;
+  const { identifier } = await params;
+  const isUuid = isUUID(identifier);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,17 +29,20 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
           </div>
         )}
       >
-        <PublicDesignPreview designId={id} />
+        <PublicDesignPreview
+          designId={isUuid ? identifier : undefined}
+          designSlug={!isUuid ? identifier : undefined}
+        />
       </Suspense>
     </div>
   );
 }
 
 export async function generateMetadata({ params }: PreviewPageProps) {
-  const { id } = await params;
+  const { identifier } = await params;
 
   return {
-    title: `Design Preview - ${id}`,
+    title: `Design Preview - ${identifier}`,
     description: 'View a shared design template',
     robots: 'noindex, nofollow', // Prevent indexing of shared designs
   };

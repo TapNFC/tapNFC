@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 type PublicDesignPreviewProps = {
-  designId: string;
+  designId?: string;
+  designSlug?: string;
   initialData?: Design | null;
 };
 
@@ -139,7 +140,7 @@ const createDemoDesign = (designId: string): Design => {
   };
 };
 
-export function PublicDesignPreview({ designId, initialData }: PublicDesignPreviewProps) {
+export function PublicDesignPreview({ designId, designSlug, initialData }: PublicDesignPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [designData, setDesignData] = useState<Design | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
@@ -174,15 +175,23 @@ export function PublicDesignPreview({ designId, initialData }: PublicDesignPrevi
         setLoading(true);
         setError(null);
 
-        // If we get here, try the backend API
-        console.log('Attempting to load design from backend API:', designId); // eslint-disable-line no-console
-        const response = await fetch(`/api/preview/${designId}`);
+        // Determine the identifier to use (slug takes precedence)
+        const identifier = designSlug || designId;
+        if (!identifier) {
+          throw new Error('No design identifier provided');
+        }
+
+        // Use the unified API endpoint
+        const apiEndpoint = `/api/preview/${identifier}`;
+
+        console.log('Attempting to load design from backend API:', identifier); // eslint-disable-line no-console
+        const response = await fetch(apiEndpoint);
 
         if (!response.ok) {
           if (response.status === 404) {
             console.log('Design not found in backend, showing demo design'); // eslint-disable-line no-console
             // Design not found, show demo design
-            const demoDesign = createDemoDesign(designId);
+            const demoDesign = createDemoDesign(identifier);
             setDesignData(demoDesign);
             return;
           }
@@ -192,7 +201,7 @@ export function PublicDesignPreview({ designId, initialData }: PublicDesignPrevi
         }
 
         const design = await response.json();
-        console.log('Design loaded from backend API:', designId); // eslint-disable-line no-console
+        console.log('Design loaded from backend API:', identifier); // eslint-disable-line no-console
         setDesignData(design);
       } catch (err) {
         console.error('Error loading design data:', err);
@@ -200,7 +209,8 @@ export function PublicDesignPreview({ designId, initialData }: PublicDesignPrevi
         setError(errorMessage);
 
         // Show demo design as fallback
-        const demoDesign = createDemoDesign(designId);
+        const fallbackIdentifier = designSlug || designId || 'demo';
+        const demoDesign = createDemoDesign(fallbackIdentifier);
         setDesignData(demoDesign);
 
         toast.error(`Error: ${errorMessage}`);
@@ -209,11 +219,11 @@ export function PublicDesignPreview({ designId, initialData }: PublicDesignPrevi
       }
     };
 
-    // Only load data if not provided as initialData
-    if (designId && !initialData) {
+    // Only load data if not provided as initialData and we have an identifier
+    if ((designId || designSlug) && !initialData) {
       loadDesignData();
     }
-  }, [designId, initialData]);
+  }, [designId, designSlug, initialData]);
 
   // Handle interactive element clicks
   const handleElementClick = (elementData: any) => {

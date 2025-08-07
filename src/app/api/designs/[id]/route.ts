@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { generateSlug } from '@/utils/slugUtils';
 import { createAppServerClient } from '@/utils/supabase/server-app';
 
 export async function GET(
@@ -86,9 +87,42 @@ export async function PUT(
       return NextResponse.json({ error: 'You do not have permission to update this design' }, { status: 403 });
     }
 
+    // Generate slug if name is being updated and slug is not provided
+    let slug = json.slug;
+    if (!slug && json.name) {
+      slug = generateSlug(json.name);
+
+      // Check if slug already exists (excluding current design) and make it unique
+      let counter = 1;
+      let uniqueSlug = slug;
+
+      while (true) {
+        const { data: existingDesign } = await supabase
+          .from('designs')
+          .select('id')
+          .eq('slug', uniqueSlug)
+          .neq('id', id)
+          .single();
+
+        if (!existingDesign) {
+          break; // Found a unique slug
+        }
+
+        counter++;
+        uniqueSlug = `${slug}-${counter}`;
+      }
+
+      slug = uniqueSlug;
+    }
+
+    const updates = {
+      ...json,
+      ...(slug && { slug }),
+    };
+
     const { data, error } = await supabase
       .from('designs')
-      .update(json)
+      .update(updates)
       .eq('id', id)
       .select()
       .single();

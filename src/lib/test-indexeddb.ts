@@ -204,7 +204,8 @@ export function isIndexedDBSupported(): boolean {
 }
 
 // Add a utility function to get design preview URL
-export function getDesignPreviewUrl(designId: string, baseUrl?: string): string {
+export function getDesignPreviewUrl(designId: string, baseUrl?: string, slug?: string): string {
   const base = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
-  return `${base}/en/preview/${designId}`;
+  const previewIdentifier = slug || designId;
+  return `${base}/en/preview/${previewIdentifier}`;
 }
