@@ -131,6 +131,47 @@ export function RealTimePreview({
           transformOrigin: 'left top',
         };
 
+        // If text has a URL, make it interactive
+        if (obj.url) {
+          return (
+            <button
+              key={`canvas-text-${obj.id || index}`}
+              style={{
+                ...textStyle,
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+              }}
+              onClick={() => {
+                if (obj.url) {
+                  // Format URL to ensure it has proper protocol
+                  const formatUrl = (url: string) => {
+                    if (!url) {
+                      return '';
+                    }
+                    // If URL doesn't start with http:// or https://, add https://
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                      return `https://${url}`;
+                    }
+                    return url;
+                  };
+                  window.open(formatUrl(obj.url), '_blank');
+                }
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
+              {obj.text || ''}
+            </button>
+          );
+        }
+
         return (
           <div key={`canvas-text-${obj.id || index}`} style={textStyle}>
             {obj.text || ''}
