@@ -257,13 +257,19 @@ export const designService = {
   },
 
   // Get QR codes for the current user
-  async getUserQrCodes(): Promise<Design[]> {
+  async getUserQrCodes(includeArchived = false): Promise<Design[]> {
     const supabase = createClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from('designs')
       .select('*')
       .not('qr_code_url', 'is', null)
       .order('updated_at', { ascending: false });
+
+    if (!includeArchived) {
+      query = query.eq('is_archived', false);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching QR codes:', error);
@@ -271,5 +277,13 @@ export const designService = {
     }
 
     return data || [];
+  },
+
+  async archiveDesign(id: string): Promise<Design | null> {
+    return this.updateDesign(id, { is_archived: true });
+  },
+
+  async restoreDesign(id: string): Promise<Design | null> {
+    return this.updateDesign(id, { is_archived: false });
   },
 };

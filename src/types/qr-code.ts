@@ -8,6 +8,7 @@ export type QRCode = {
   previewImage: string;
   qrCodeUrl: string | null;
   qrCodeData: string | null; // SVG data for the QR code for multi-resolution downloads
+  isArchived: boolean;
 };
 
 export type QRCodeStats = {

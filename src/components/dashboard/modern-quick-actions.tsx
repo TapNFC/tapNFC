@@ -3,15 +3,12 @@
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  BarChart3,
-  Download,
   Palette,
   QrCode,
+  Settings,
   Users,
-  Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type QuickAction = {
@@ -45,36 +42,36 @@ const quickActions: QuickAction[] = [
     isNew: true,
   },
   {
-    id: 'bulk-generate',
-    title: 'Bulk Generate',
-    description: 'Create multiple QR codes at once',
-    icon: <Zap className="size-6" />,
-    gradient: 'from-orange-500 to-red-500',
-    href: '/dashboard/qr-codes/bulk',
-  },
-  {
-    id: 'view-analytics',
-    title: 'View Analytics',
-    description: 'Detailed insights and performance metrics',
-    icon: <BarChart3 className="size-6" />,
+    id: 'view-qr-codes',
+    title: 'View QR Codes',
+    description: 'Manage and organize your QR code collection',
+    icon: <QrCode className="size-6" />,
     gradient: 'from-emerald-500 to-teal-500',
-    href: '/dashboard/analytics',
+    href: '/dashboard/qr-codes',
   },
   {
     id: 'manage-customers',
     title: 'Manage Customers',
     description: 'Organize and track customer interactions',
     icon: <Users className="size-6" />,
-    gradient: 'from-indigo-500 to-blue-500',
+    gradient: 'from-orange-500 to-red-500',
     href: '/dashboard/customers',
   },
   {
-    id: 'export-data',
-    title: 'Export Data',
-    description: 'Download reports and QR code data',
-    icon: <Download className="size-6" />,
-    gradient: 'from-slate-500 to-slate-600',
-    href: '/dashboard/export',
+    id: 'manage-templates',
+    title: 'Manage Templates',
+    description: 'Create and manage QR code templates',
+    icon: <Palette className="size-6" />,
+    gradient: 'from-pink-500 to-rose-500',
+    href: '/dashboard/templates',
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    description: 'Account preferences and configuration',
+    icon: <Settings className="size-6" />,
+    gradient: 'from-gray-500 to-gray-600',
+    href: '/dashboard/settings',
   },
 ];
 
@@ -103,7 +100,7 @@ export function ModernQuickActions({ className }: ModernQuickActionsProps) {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark p-2">
-              <Zap className="size-5 text-white" />
+              <QrCode className="size-5 text-white" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -115,14 +112,10 @@ export function ModernQuickActions({ className }: ModernQuickActionsProps) {
             </div>
           </div>
 
-          <Button variant="ghost" size="sm" className="text-primary hover:text-primary-blue-dark">
-            View all
-            <ArrowRight className="ml-1 size-4" />
-          </Button>
         </div>
 
         {/* Actions Grid */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {quickActions.map((action, index) => (
             <motion.a
               key={action.id}
@@ -195,22 +188,6 @@ export function ModernQuickActions({ className }: ModernQuickActionsProps) {
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-700">
-          <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-primary-blue-dark/10 p-4">
-            <div>
-              <h4 className="mb-1 text-sm font-semibold text-slate-900 dark:text-white">
-                Need help getting started?
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Check out our tutorials and documentation
-              </p>
-            </div>
-            <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary hover:text-white">
-              Learn More
-            </Button>
-          </div>
-        </div>
       </div>
     </motion.div>
   );

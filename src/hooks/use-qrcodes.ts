@@ -22,7 +22,7 @@ export const useQRCodes = () => {
   const fetchQRCodes = async () => {
     try {
       setIsLoading(true);
-      const designs = await designService.getUserQrCodes();
+      const designs = await designService.getUserQrCodes(/* includeArchived */ true);
 
       const transformedQRCodes: QRCode[] = designs.map((design) => {
         const baseUrl = window.location.origin;
@@ -39,6 +39,7 @@ export const useQRCodes = () => {
           previewImage: design.preview_url || '/assets/images/nextjs-starter-banner.png',
           qrCodeUrl: design.qr_code_url || null,
           qrCodeData: design.qr_code_data || null,
+          isArchived: Boolean(design.is_archived),
         };
       });
 
@@ -193,15 +194,14 @@ export const useQRCodes = () => {
     setSelectedQRCodeForDelete(null);
   };
 
-  const deleteQRCode = async (qrCode: QRCode) => {
+  const archiveQRCode = async (qrCode: QRCode) => {
     try {
-      await designService.updateDesign(qrCode.id, {
-        qr_code_url: null,
-        qr_code_data: null,
-      });
+      const updated = await designService.archiveDesign(qrCode.id);
+      if (!updated) {
+        throw new Error('Failed to archive');
+      }
 
-      // Remove the deleted QR code from the state
-      const updatedQRCodes = qrCodes.filter(qr => qr.id !== qrCode.id);
+      const updatedQRCodes = qrCodes.map(qr => (qr.id === qrCode.id ? { ...qr, isArchived: true } : qr));
       setQrCodes(updatedQRCodes);
       setFilteredQRCodes(
         searchQuery
@@ -212,12 +212,65 @@ export const useQRCodes = () => {
           : updatedQRCodes,
       );
 
-      // Remove from selected QR codes if it was selected
+      // Clean selection
       if (selectedQRCodes.includes(qrCode.id)) {
         setSelectedQRCodes(prev => prev.filter(id => id !== qrCode.id));
       }
 
-      toast.success(`QR code for "${qrCode.name}" deleted successfully`);
+      toast.success(`"${qrCode.name}" archived`);
+    } catch (error) {
+      console.error('Error archiving QR code:', error);
+      toast.error('Failed to archive QR code');
+      throw error;
+    }
+  };
+
+  const restoreQRCode = async (qrCode: QRCode) => {
+    try {
+      const updated = await designService.restoreDesign(qrCode.id);
+      if (!updated) {
+        throw new Error('Failed to restore');
+      }
+
+      const updatedQRCodes = qrCodes.map(qr => (qr.id === qrCode.id ? { ...qr, isArchived: false } : qr));
+      setQrCodes(updatedQRCodes);
+      setFilteredQRCodes(
+        searchQuery
+          ? updatedQRCodes.filter(qr =>
+              qr.name.toLowerCase().includes(searchQuery.toLowerCase())
+              || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
+            )
+          : updatedQRCodes,
+      );
+
+      toast.success(`"${qrCode.name}" restored`);
+    } catch (error) {
+      console.error('Error restoring QR code:', error);
+      toast.error('Failed to restore QR code');
+      throw error;
+    }
+  };
+
+  const deleteQRCodePermanently = async (qrCode: QRCode) => {
+    try {
+      const ok = await designService.deleteDesign(qrCode.id);
+      if (!ok) {
+        throw new Error('Failed to delete');
+      }
+      const updatedQRCodes = qrCodes.filter(qr => qr.id !== qrCode.id);
+      setQrCodes(updatedQRCodes);
+      setFilteredQRCodes(
+        searchQuery
+          ? updatedQRCodes.filter(qr =>
+              qr.name.toLowerCase().includes(searchQuery.toLowerCase())
+              || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
+            )
+          : updatedQRCodes,
+      );
+      if (selectedQRCodes.includes(qrCode.id)) {
+        setSelectedQRCodes(prev => prev.filter(id => id !== qrCode.id));
+      }
+      toast.success(`"${qrCode.name}" deleted`);
     } catch (error) {
       console.error('Error deleting QR code:', error);
       toast.error('Failed to delete QR code');
@@ -251,7 +304,10 @@ export const useQRCodes = () => {
     handleEditDesign,
     handleDeleteQRCode,
     closeDeleteModal,
-    deleteQRCode,
+    // Rewired actions for archive lifecycle
+    archiveQRCode,
+    restoreQRCode,
+    deleteQRCodePermanently,
     refreshQRCodes: fetchQRCodes,
   };
 };

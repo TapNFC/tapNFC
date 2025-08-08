@@ -23,7 +23,9 @@ export const QRCodeListItem = ({
   onEditQRCode,
   onEditDesign,
   onCustomUrl,
-  onDelete,
+  onArchive,
+  onRestore,
+  onDeleteForever,
 }: {
   qrCode: QRCode;
   isSelected: boolean;
@@ -33,7 +35,9 @@ export const QRCodeListItem = ({
   onEditQRCode: (qrCode: QRCode) => void;
   onEditDesign: (qrCode: QRCode) => void;
   onCustomUrl: (qrCode: QRCode) => void;
-  onDelete: (qrCode: QRCode) => void;
+  onArchive: (qrCode: QRCode) => void;
+  onRestore: (qrCode: QRCode) => void;
+  onDeleteForever: (qrCode: QRCode) => void;
 }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -119,10 +123,15 @@ export const QRCodeListItem = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <EditableName
-                name={qrCode.name}
-                onSave={newName => onUpdateName(qrCode.id, newName)}
-              />
+              <div className="flex items-center gap-2">
+                <EditableName
+                  name={qrCode.name}
+                  onSave={newName => onUpdateName(qrCode.id, newName)}
+                />
+                {qrCode.isArchived && (
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Archived</span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleUrlClick}
@@ -181,16 +190,32 @@ export const QRCodeListItem = ({
                     Options
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onCustomUrl(qrCode)}>Custom URL</DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => onDelete(qrCode)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
+                  {
+                    !qrCode.isArchived
+                      ? (
+                          <DropdownMenuItem
+                            onClick={() => onArchive(qrCode)}
+                            className="text-amber-600 hover:text-amber-700"
+                          >
+                            Archive
+                          </DropdownMenuItem>
+                        )
+                      : (
+                          <>
+                            <DropdownMenuItem onClick={() => onRestore(qrCode)}>Restore</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onDeleteForever(qrCode)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              Delete Forever
+                            </DropdownMenuItem>
+                          </>
+                        )
+                  }
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
