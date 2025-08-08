@@ -262,14 +262,39 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
 
   // Handle interactive element clicks
   const handleElementClick = (elementData: any) => {
-    const formatUrl = (url: string) => {
+    const formatUrl = (url: string, urlType?: string) => {
       if (!url) {
         return '';
       }
-      // If URL doesn't start with http:// or https://, add https://
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+
+      // If urlType is specified, handle accordingly
+      if (urlType) {
+        switch (urlType) {
+          case 'email':
+            // If it already has mailto:, use as is, otherwise add it
+            return url.startsWith('mailto:') ? url : `mailto:${url}`;
+          case 'phone':
+            // If it already has tel:, use as is, otherwise add it
+            return url.startsWith('tel:') ? url : `tel:${url}`;
+          case 'url':
+          default:
+            // For URLs, add https:// if not present
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              return `https://${url}`;
+            }
+            return url;
+        }
+      }
+
+      // Fallback: detect type from URL format
+      if (url.startsWith('mailto:')) {
+        return url;
+      } else if (url.startsWith('tel:')) {
+        return url;
+      } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
         return `https://${url}`;
       }
+
       return url;
     };
 
@@ -284,7 +309,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
       window.open(formatUrl(elementData.socialData.url), '_blank');
     } else if (elementData.url) {
       // Handle text elements with URLs
-      window.open(formatUrl(elementData.url), '_blank');
+      window.open(formatUrl(elementData.url, elementData.urlType), '_blank');
     }
   };
 
@@ -503,18 +528,43 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
               }}
               onClick={() => {
                 if (obj.url) {
-                  // Format URL to ensure it has proper protocol
-                  const formatUrl = (url: string) => {
+                  // Handle different URL types
+                  const formatUrl = (url: string, urlType?: string) => {
                     if (!url) {
                       return '';
                     }
-                    // If URL doesn't start with http:// or https://, add https://
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+
+                    // If urlType is specified, handle accordingly
+                    if (urlType) {
+                      switch (urlType) {
+                        case 'email':
+                          // If it already has mailto:, use as is, otherwise add it
+                          return url.startsWith('mailto:') ? url : `mailto:${url}`;
+                        case 'phone':
+                          // If it already has tel:, use as is, otherwise add it
+                          return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'url':
+                        default:
+                          // For URLs, add https:// if not present
+                          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            return `https://${url}`;
+                          }
+                          return url;
+                      }
+                    }
+
+                    // Fallback: detect type from URL format
+                    if (url.startsWith('mailto:')) {
+                      return url;
+                    } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
                     }
+
                     return url;
                   };
-                  window.open(formatUrl(obj.url), '_blank');
+                  window.open(formatUrl(obj.url, obj.urlType), '_blank');
                 }
               }}
               onMouseEnter={(e) => {
@@ -579,18 +629,43 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
               onClick={() => {
                 const url = obj.url || obj.URL;
                 if (url) {
-                  // Format URL to ensure it has proper protocol
-                  const formatUrl = (url: string) => {
+                  // Handle different URL types
+                  const formatUrl = (url: string, urlType?: string) => {
                     if (!url) {
                       return '';
                     }
-                    // If URL doesn't start with http:// or https://, add https://
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+
+                    // If urlType is specified, handle accordingly
+                    if (urlType) {
+                      switch (urlType) {
+                        case 'email':
+                          // If it already has mailto:, use as is, otherwise add it
+                          return url.startsWith('mailto:') ? url : `mailto:${url}`;
+                        case 'phone':
+                          // If it already has tel:, use as is, otherwise add it
+                          return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'url':
+                        default:
+                          // For URLs, add https:// if not present
+                          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            return `https://${url}`;
+                          }
+                          return url;
+                      }
+                    }
+
+                    // Fallback: detect type from URL format
+                    if (url.startsWith('mailto:')) {
+                      return url;
+                    } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
                     }
+
                     return url;
                   };
-                  window.open(formatUrl(url), '_blank');
+                  window.open(formatUrl(url, obj.urlType), '_blank');
                 }
               }}
               style={{

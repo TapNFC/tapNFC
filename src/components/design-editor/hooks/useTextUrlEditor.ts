@@ -23,7 +23,7 @@ type UseTextUrlEditorReturn = {
   textUrlEditPopup: TextUrlEditPopupState;
   handleTextSingleClick: (textObject: any, event: any) => void;
   handleLinkIconClick: () => void;
-  handleUpdateTextUrl: (updates: { url?: string }) => void;
+  handleUpdateTextUrl: (updates: { url?: string; urlType?: string }) => void;
   handleCloseTextUrlEdit: () => void;
   handleCloseContextualToolbar: () => void;
 };
@@ -93,16 +93,19 @@ export function useTextUrlEditor({ canvas }: UseTextUrlEditorProps): UseTextUrlE
     });
   }, [contextualToolbar]);
 
-  const handleUpdateTextUrl = useCallback((updates: { url?: string }) => {
+  const handleUpdateTextUrl = useCallback((updates: { url?: string; urlType?: string }) => {
     if (!textUrlEditPopup.textObject || !canvas || !updates) {
       return;
     }
 
     const textObject = textUrlEditPopup.textObject;
 
-    // Update the text's URL property
+    // Update the text's URL and URL type properties
     if (updates.url !== undefined) {
       textObject.set?.({ url: updates.url });
+    }
+    if (updates.urlType !== undefined) {
+      textObject.set?.({ urlType: updates.urlType });
     }
 
     canvas.renderAll?.();
