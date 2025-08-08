@@ -9,6 +9,8 @@ import {
   MemoizedTextToolbar,
 } from './components/OptimizedComponents';
 import { SocialIconEditPopup } from './components/SocialIconEditPopup';
+import { TextContextualToolbar } from './components/TextContextualToolbar';
+import { TextUrlEditPopup } from './components/TextUrlEditPopup';
 import { DESIGN_EDITOR_CONFIG } from './constants';
 import { DesignSidebar } from './DesignSidebar';
 import { DesignToolbar } from './DesignToolbar';
@@ -19,6 +21,7 @@ import { useFabricCanvas } from './hooks/useFabricCanvas';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLinkEditor } from './hooks/useLinkEditor';
 import { useSocialIconEditor } from './hooks/useSocialIconEditor';
+import { useTextUrlEditor } from './hooks/useTextUrlEditor';
 
 type DesignEditorProps = {
   designId: string;
@@ -63,6 +66,16 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     handleUpdateSocialIcon,
     handleCloseSocialIconEdit,
   } = useSocialIconEditor({ canvas });
+
+  // Add the text URL editor hook
+  const {
+    contextualToolbar,
+    textUrlEditPopup,
+    handleLinkIconClick,
+    handleUpdateTextUrl,
+    handleCloseTextUrlEdit,
+    handleCloseContextualToolbar,
+  } = useTextUrlEditor({ canvas });
 
   // Extract design loading logic to custom hook
   useDesignLoader({
@@ -279,6 +292,25 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           position={socialIconEditPopup.position}
           onUpdateIcon={handleUpdateSocialIcon}
           onClose={handleCloseSocialIconEdit}
+        />
+      )}
+
+      {/* Add the text contextual toolbar */}
+      <TextContextualToolbar
+        isVisible={contextualToolbar.isVisible}
+        position={contextualToolbar.position}
+        onLinkClick={handleLinkIconClick}
+        onClose={handleCloseContextualToolbar}
+      />
+
+      {/* Add the text URL edit popup */}
+      {textUrlEditPopup.isVisible && (
+        <TextUrlEditPopup
+          isVisible={textUrlEditPopup.isVisible}
+          textObject={textUrlEditPopup.textObject}
+          position={textUrlEditPopup.position}
+          onUpdateTextUrl={handleUpdateTextUrl}
+          onClose={handleCloseTextUrlEdit}
         />
       )}
     </div>

@@ -262,15 +262,29 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
 
   // Handle interactive element clicks
   const handleElementClick = (elementData: any) => {
+    const formatUrl = (url: string) => {
+      if (!url) {
+        return '';
+      }
+      // If URL doesn't start with http:// or https://, add https://
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return `https://${url}`;
+      }
+      return url;
+    };
+
     if (elementData.buttonData?.action) {
       const { type, value } = elementData.buttonData.action;
       if (type === 'url' && value) {
-        window.open(value, '_blank');
+        window.open(formatUrl(value), '_blank');
       }
     } else if (elementData.linkData?.url) {
-      window.open(elementData.linkData.url, '_blank');
+      window.open(formatUrl(elementData.linkData.url), '_blank');
     } else if (elementData.socialData?.url) {
-      window.open(elementData.socialData.url, '_blank');
+      window.open(formatUrl(elementData.socialData.url), '_blank');
+    } else if (elementData.url) {
+      // Handle text elements with URLs
+      window.open(formatUrl(elementData.url), '_blank');
     }
   };
 
@@ -474,6 +488,47 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
 
         const textContent = obj.text || obj.content || '';
 
+        // If text has a URL, make it interactive
+        if (obj.url) {
+          return (
+            <button
+              key={`canvas-text-${obj.id || index}`}
+              style={{
+                ...textStyle,
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+              }}
+              onClick={() => {
+                if (obj.url) {
+                  // Format URL to ensure it has proper protocol
+                  const formatUrl = (url: string) => {
+                    if (!url) {
+                      return '';
+                    }
+                    // If URL doesn't start with http:// or https://, add https://
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                      return `https://${url}`;
+                    }
+                    return url;
+                  };
+                  window.open(formatUrl(obj.url), '_blank');
+                }
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
+              {textContent}
+            </button>
+          );
+        }
+
         return (
           <div key={`canvas-text-${obj.id || index}`} style={textStyle}>
             {textContent}
@@ -515,6 +570,59 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
 
       // Handle Image elements
       if (obj.type === 'image') {
+        // If image has a URL (social icon), make it interactive
+        if (obj.url || obj.URL) {
+          return (
+            <button
+              key={`canvas-image-${obj.id || index}`}
+              type="button"
+              onClick={() => {
+                const url = obj.url || obj.URL;
+                if (url) {
+                  // Format URL to ensure it has proper protocol
+                  const formatUrl = (url: string) => {
+                    if (!url) {
+                      return '';
+                    }
+                    // If URL doesn't start with http:// or https://, add https://
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                      return `https://${url}`;
+                    }
+                    return url;
+                  };
+                  window.open(formatUrl(url), '_blank');
+                }
+              }}
+              style={{
+                ...baseStyle,
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
+              <img
+                src={obj.src || ''}
+                alt="Design element"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'fill',
+                  boxSizing: 'border-box',
+                  pointerEvents: 'none',
+                }}
+              />
+            </button>
+          );
+        }
+
         return (
           <img
             key={`canvas-image-${obj.id || index}`}
