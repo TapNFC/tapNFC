@@ -118,9 +118,11 @@ export function TextContextualToolbar({
 
       {/* Arrow pointing down to element */}
       <div
-        className="absolute -bottom-2 size-4 rotate-45 border-b border-r border-white/30 bg-white/95"
+        className="absolute -bottom-2 h-2 w-4 bg-white/95"
         style={{
-          left: `${toolbarWidth / 2 - 8}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)',
         }}
       />
     </div>
