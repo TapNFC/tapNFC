@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Eye, Plus, QrCode, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Eye, Palette, Plus, QrCode, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -11,8 +11,31 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getCustomers } from '@/services/customerService';
 import { designService } from '@/services/designService';
+import { createClient } from '@/utils/supabase/client';
 
 function DashboardHeader() {
+  const [userName, setUserName] = useState<string>('User');
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const name = user.user_metadata?.full_name
+            || user.user_metadata?.name
+            || user.email?.split('@')[0]
+            || 'User';
+          setUserName(name);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    getUser();
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -31,7 +54,10 @@ function DashboardHeader() {
             </h1>
             <div className="mt-1 flex items-center space-x-2">
               <p className="text-slate-600 dark:text-slate-400">
-                Welcome back, Alex! Manage your QR codes and templates.
+                Welcome back,
+                {' '}
+                {userName}
+                ! Manage your QR codes and templates.
               </p>
               <Badge variant="secondary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                 <TrendingUp className="mr-1 size-3" />
@@ -70,6 +96,7 @@ function ModernOverviewCards() {
     activeTemplates: 0,
     totalCustomers: 0,
     totalScans: 0,
+    totalDesigns: 0,
   });
 
   useEffect(() => {
@@ -80,9 +107,10 @@ function ModernOverviewCards() {
         setIsLoading(true);
         setError(null);
 
-        // Load user QR codes and all user designs concurrently
-        const [qrDesignsAll, publicTemplates, customers] = await Promise.all([
+        // Load user QR codes, all user designs, public templates, and customers concurrently
+        const [qrDesignsAll, allUserDesigns, publicTemplates, customers] = await Promise.all([
           designService.getUserQrCodes(true),
+          designService.getUserDesigns(),
           designService.getPublicDesigns(),
           getCustomers().catch(() => []),
         ]);
@@ -90,6 +118,9 @@ function ModernOverviewCards() {
         // Exclude archived (treat null as not archived)
         const qrDesigns = qrDesignsAll.filter(d => !(d.is_archived ?? false));
         const totalQrCodes = qrDesigns.length;
+
+        // Total designs (all user designs, exclude archived)
+        const totalDesigns = allUserDesigns.filter(d => !(d.is_archived ?? false)).length;
 
         // Total templates from Templates page logic (public templates), exclude archived
         const activeTemplates = publicTemplates.filter(d => d.is_template && !(d.is_archived ?? false)).length;
@@ -101,6 +132,7 @@ function ModernOverviewCards() {
             totalQrCodes,
             activeTemplates,
             totalCustomers: customers.length,
+            totalDesigns,
           }));
         }
 
@@ -143,16 +175,16 @@ function ModernOverviewCards() {
 
   const items = [
     {
+      title: 'Total Designs',
+      value: isLoading ? '—' : stats.totalDesigns.toLocaleString(),
+      icon: <Palette className="size-6" />,
+      gradient: 'from-indigo-500 to-indigo-600',
+    },
+    {
       title: 'Total QR Codes',
       value: isLoading ? '—' : stats.totalQrCodes.toLocaleString(),
       icon: <QrCode className="size-6" />,
       gradient: 'from-blue-500 to-blue-600',
-    },
-    {
-      title: 'Total Templates',
-      value: isLoading ? '—' : stats.activeTemplates.toLocaleString(),
-      icon: <Sparkles className="size-6" />,
-      gradient: 'from-purple-500 to-purple-600',
     },
     {
       title: 'Total Customers',

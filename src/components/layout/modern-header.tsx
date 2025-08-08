@@ -161,7 +161,7 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                     </Avatar>
                     <div className="hidden text-left sm:block">
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {user.email}
+                        {user.name}
                       </p>
                     </div>
                     <ChevronDown className="size-3 text-slate-500" />
