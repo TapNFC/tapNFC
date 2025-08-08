@@ -2,8 +2,11 @@
 
 import {
   ChevronDown,
+  LayoutDashboard,
   LogOut,
+  QrCode,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -67,6 +70,27 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
     }
   };
 
+  const navigationItems = [
+    {
+      label: 'Dashboard',
+      href: '/dashboard',
+      icon: <LayoutDashboard className="size-4" />,
+    },
+    {
+      label: 'My QR Codes',
+      href: '/dashboard/qr-codes',
+      icon: <QrCode className="size-4" />,
+    },
+    {
+      label: 'Settings',
+      href: '/dashboard/settings',
+      icon: <Settings className="size-4" />,
+    },
+  ];
+
+  // Check if current path is a design page
+  const isDesignPage = pathname.includes('/design');
+
   return (
     <header
       className={cn(
@@ -76,20 +100,53 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
         className,
       )}
     >
-      <div className="flex h-16 items-center justify-end px-6">
+      <div className="relative flex h-16 items-center px-6">
+        {/* Left Section - Logo (only on design pages) */}
+        {isDesignPage && (
+          <div className="flex items-center space-x-3">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
+              <Sparkles className="size-5 text-white" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                QR Studio
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Professional
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* Right Section */}
-        <div className="flex items-center space-x-3">
-          {/* Add dashboard link button here if it is already /dashboard then dont the button   */}
-          {
-            user && pathname !== '/dashboard' && (
-              <Button variant="primary" className="relative  w-auto " onClick={() => router.push('/dashboard')}>
-                Dashboard
-              </Button>
-            )
-          }
+        {/* Center Section - Navigation (only on design pages) */}
+        {isDesignPage && (
+          <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center space-x-1 md:flex">
+            {navigationItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Button
+                  key={item.href}
+                  variant={isActive ? 'primary' : 'ghost'}
+                  className={cn(
+                    'relative h-9 px-4 transition-all duration-200',
+                    isActive
+                      ? 'bg-gradient-to-r from-primary to-primary-blue-dark text-white shadow-lg shadow-primary/25'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800',
+                  )}
+                  onClick={() => router.push(item.href)}
+                >
+                  <div className="flex items-center space-x-2">
+                    {item.icon}
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </div>
+                </Button>
+              );
+            })}
+          </div>
+        )}
 
-          {/* User Menu */}
+        {/* Right Section - User Menu (always on the right) */}
+        <div className="ml-auto flex items-center space-x-3">
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -104,7 +161,7 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
                     </Avatar>
                     <div className="hidden text-left sm:block">
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {user.name.split(' ')[0]}
+                        {user.email}
                       </p>
                     </div>
                     <ChevronDown className="size-3 text-slate-500" />
