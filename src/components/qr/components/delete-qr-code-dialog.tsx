@@ -1,7 +1,7 @@
 'use client';
 
 import type { QRCode } from '@/types/qr-code';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,12 +50,17 @@ export function DeleteQRCodeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="size-5" />
-            Delete QR Code
+            Delete Forever
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the QR code for &quot;
-            {qrCode?.name}
-            &quot;? The associated design will not be deleted. This action cannot be undone.
+            Are you sure you want to permanently delete the QR code for
+            {' '}
+            <strong className="text-slate-900 dark:text-slate-50">
+              "
+              {qrCode?.name}
+              "
+            </strong>
+            ? This action cannot be undone and will permanently remove the QR code and its associated design.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
@@ -67,13 +72,13 @@ export function DeleteQRCodeDialog({
               <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Warning</h3>
               <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                 <p>
-                  This will remove the QR code, and it will no longer be scannable. The design will remain available in your designs section.
+                  This will permanently delete the QR code and its associated design. This action cannot be undone.
                 </p>
               </div>
             </div>
           </div>
         </div>
-        <DialogFooter className="gap-2 sm:justify-end">
+        <DialogFooter className="gap-2 pt-4 sm:justify-end">
           <Button
             type="button"
             variant="outline"
@@ -88,7 +93,19 @@ export function DeleteQRCodeDialog({
             onClick={handleDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete QR Code'}
+            {isDeleting
+              ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Deleting...
+                  </>
+                )
+              : (
+                  <>
+                    <Trash2 className="mr-2 size-4" />
+                    Delete Forever
+                  </>
+                )}
           </Button>
         </DialogFooter>
       </DialogContent>

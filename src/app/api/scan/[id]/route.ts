@@ -20,7 +20,7 @@ export async function POST(
     // First, verify the design exists and is public
     const { data: design, error: designError } = await supabase
       .from('designs')
-      .select('id, name, is_public')
+      .select('id, name, is_public, is_archived')
       .eq('id', id)
       .single();
 
@@ -31,6 +31,10 @@ export async function POST(
 
     if (!design.is_public) {
       return NextResponse.json({ error: 'Design is not publicly accessible' }, { status: 403 });
+    }
+
+    if (design.is_archived) {
+      return NextResponse.json({ error: 'QR code is archived' }, { status: 410 });
     }
 
     // Extract user information from headers

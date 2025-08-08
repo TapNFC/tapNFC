@@ -1,13 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Plus, QrCode, Sparkles, TrendingUp, Users, Zap } from 'lucide-react';
+import { Eye, Plus, QrCode, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { ModernQuickActions } from '@/components/dashboard/modern-quick-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { getCustomers } from '@/services/customerService';
+import { designService } from '@/services/designService';
 
 function DashboardHeader() {
   return (
@@ -60,33 +63,107 @@ function DashboardHeader() {
 }
 
 function ModernOverviewCards() {
-  const overviewData = [
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalQrCodes: 0,
+    activeTemplates: 0,
+    totalCustomers: 0,
+    totalScans: 0,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Load user QR codes and all user designs concurrently
+        const [qrDesignsAll, publicTemplates, customers] = await Promise.all([
+          designService.getUserQrCodes(true),
+          designService.getPublicDesigns(),
+          getCustomers().catch(() => []),
+        ]);
+
+        // Exclude archived (treat null as not archived)
+        const qrDesigns = qrDesignsAll.filter(d => !(d.is_archived ?? false));
+        const totalQrCodes = qrDesigns.length;
+
+        // Total templates from Templates page logic (public templates), exclude archived
+        const activeTemplates = publicTemplates.filter(d => d.is_template && !(d.is_archived ?? false)).length;
+
+        if (isMounted) {
+          // Set initial counts immediately
+          setStats(prev => ({
+            ...prev,
+            totalQrCodes,
+            activeTemplates,
+            totalCustomers: customers.length,
+          }));
+        }
+
+        // Compute total scans in parallel, update separately
+        const scanResults = await Promise.all(
+          qrDesigns.map(async (d) => {
+            try {
+              const res = await fetch(`/api/qr-codes/${d.id}`);
+              if (!res.ok) {
+                return 0;
+              }
+              const data = await res.json();
+              return typeof data?.scans === 'number' ? data.scans : 0;
+            } catch {
+              return 0;
+            }
+          }),
+        );
+        const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
+
+        if (isMounted) {
+          setStats(prev => ({ ...prev, totalScans }));
+        }
+      } catch (e: any) {
+        if (isMounted) {
+          setError(e?.message ?? 'Failed to load stats');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const items = [
     {
       title: 'Total QR Codes',
-      value: '2,847',
-      change: '+12%',
+      value: isLoading ? '—' : stats.totalQrCodes.toLocaleString(),
       icon: <QrCode className="size-6" />,
       gradient: 'from-blue-500 to-blue-600',
     },
     {
-      title: 'Active Templates',
-      value: '24',
-      change: '+3',
+      title: 'Total Templates',
+      value: isLoading ? '—' : stats.activeTemplates.toLocaleString(),
       icon: <Sparkles className="size-6" />,
       gradient: 'from-purple-500 to-purple-600',
     },
     {
       title: 'Total Customers',
-      value: '1,429',
-      change: '+8%',
+      value: isLoading ? '—' : stats.totalCustomers.toLocaleString(),
       icon: <Users className="size-6" />,
       gradient: 'from-emerald-500 to-emerald-600',
     },
     {
-      title: 'Performance',
-      value: '98.5%',
-      change: '+0.5%',
-      icon: <Zap className="size-6" />,
+      title: 'Total Scans',
+      value: isLoading ? '—' : stats.totalScans.toLocaleString(),
+      icon: <Eye className="size-6" />,
       gradient: 'from-orange-500 to-orange-600',
     },
   ];
@@ -98,7 +175,7 @@ function ModernOverviewCards() {
       transition={{ duration: 0.5, delay: 0.2 }}
       className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4"
     >
-      {overviewData.map(item => (
+      {items.map(item => (
         <motion.div
           key={nanoid()}
           initial={{ opacity: 0, y: 20 }}
@@ -112,9 +189,6 @@ function ModernOverviewCards() {
                 {item.icon}
               </div>
             </div>
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-              {item.change}
-            </Badge>
           </div>
           <div>
             <h3 className="mb-1 text-2xl font-bold text-slate-900 dark:text-white">
@@ -123,6 +197,9 @@ function ModernOverviewCards() {
             <p className="text-sm text-slate-600 dark:text-slate-400">
               {item.title}
             </p>
+            {!isLoading && error && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{error}</p>
+            )}
           </div>
         </motion.div>
       ))}

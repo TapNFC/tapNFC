@@ -45,6 +45,7 @@ export type Design = {
   qr_code_data?: string | null; // SVG data for the QR code (base64 or serialized SVG)
   is_template: boolean;
   is_public: boolean;
+  is_archived?: boolean;
   slug?: string; // URL-friendly slug for preview URLs
   created_at: string;
   updated_at: string;

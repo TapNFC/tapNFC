@@ -17,19 +17,23 @@ export async function GET(
     // Query for the design, focusing only on QR code related fields
     const { data, error } = await supabase
       .from('designs')
-      .select('id, name, qr_code_url, created_at, updated_at')
+      .select('id, name, qr_code_url, is_archived, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) {
       console.error(`Error fetching QR code data for design ${id}:`, error);
 
-      if (error.code === 'PGRST116') {
+      if ((error as any).code === 'PGRST116') {
         // No rows returned - design not found
         return NextResponse.json({ error: 'QR code not found' }, { status: 404 });
       }
 
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: (error as any).message }, { status: 500 });
+    }
+
+    if (data.is_archived) {
+      return NextResponse.json({ error: 'QR code is archived' }, { status: 410 });
     }
 
     // If the design doesn't have a QR code URL, return an appropriate message

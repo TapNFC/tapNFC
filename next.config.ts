@@ -42,6 +42,10 @@ export default withSentryConfig(
             protocol: 'https',
             hostname: 'images.unsplash.com',
           },
+          {
+            protocol: 'https',
+            hostname: 'www.tapnfc.co',
+          },
         ],
       },
     }),
