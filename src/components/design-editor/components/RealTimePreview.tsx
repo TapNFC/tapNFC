@@ -238,29 +238,245 @@ export function RealTimePreview({
         );
       }
 
+      // Handle Triangle elements
+      if (obj.type === 'triangle') {
+        return (
+          <svg
+            key={`canvas-triangle-${obj.id || index}`}
+            style={{
+              position: 'absolute',
+              left: `${left}px`,
+              top: `${top}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              transform: `rotate(${angle}deg)`,
+              transformOrigin: 'center center',
+              opacity: obj.opacity !== undefined ? obj.opacity : 1,
+              zIndex: index + 1,
+            }}
+            viewBox={`0 0 ${width} ${height}`}
+          >
+            <polygon
+              points={`${width / 2},0 0,${height} ${width},${height}`}
+              fill={obj.fill || '#cccccc'}
+              stroke={obj.stroke || 'none'}
+              strokeWidth={obj.strokeWidth || 0}
+            />
+          </svg>
+        );
+      }
+
+      // Handle custom shape elements (from our shape system)
+      if (obj.elementType === 'shape' && obj.shapeData) {
+        const shapeData = obj.shapeData;
+
+        if (shapeData.type === 'rectangle') {
+          return (
+            <div
+              key={`canvas-shape-rectangle-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                borderRadius: obj.rx || 8,
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        }
+
+        if (shapeData.type === 'circle') {
+          return (
+            <div
+              key={`canvas-shape-circle-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                borderRadius: '50%',
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        }
+
+        if (shapeData.type === 'triangle') {
+          return (
+            <div
+              key={`canvas-shape-triangle-${obj.id || index}`}
+              style={{
+                position: 'absolute',
+                left: `${left}px`,
+                top: `${top}px`,
+                transform: `rotate(${angle}deg)`,
+                transformOrigin: 'center center',
+                opacity: obj.opacity !== undefined ? obj.opacity : 1,
+                zIndex: index + 1,
+                width: 0,
+                height: 0,
+                borderLeft: `${width / 2}px solid transparent`,
+                borderRight: `${width / 2}px solid transparent`,
+                borderBottom: `${height}px solid ${shapeData.fill || obj.fill || '#cccccc'}`,
+                // Add stroke support
+                ...(shapeData.stroke || obj.stroke
+                  ? {
+                      filter: `drop-shadow(0 0 0 ${shapeData.strokeWidth || obj.strokeWidth || 1}px ${shapeData.stroke || obj.stroke})`,
+                    }
+                  : {}),
+              }}
+            />
+          );
+        }
+
+        if (shapeData.type === 'diamond') {
+          return (
+            <div
+              key={`canvas-shape-diamond-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                backgroundColor: shapeData.fill || obj.fill || '#cccccc',
+                border: `${shapeData.strokeWidth || obj.strokeWidth || 0}px solid ${shapeData.stroke || obj.stroke || 'transparent'}`,
+                transform: `rotate(${angle}deg) rotate(45deg)`,
+                borderRadius: 4,
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        }
+
+        if (shapeData.type === 'line') {
+          return (
+            <div
+              key={`canvas-shape-line-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                backgroundColor: shapeData.stroke || obj.stroke || '#000000',
+                border: 'none',
+                height: shapeData.strokeWidth || obj.strokeWidth || 2,
+                borderRadius: 1,
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        }
+      }
+
+      // Handle Polygon elements (including diamonds)
+      if (obj.type === 'polygon') {
+        const isStandardDiamond = obj.shapeType === 'diamond' || (obj.points && obj.points.length === 4);
+
+        if (isStandardDiamond) {
+          return (
+            <div
+              key={`canvas-polygon-diamond-${obj.id || index}`}
+              style={{
+                ...baseStyle,
+                backgroundColor: obj.fill || '#cccccc',
+                border: `${obj.strokeWidth || 0}px solid ${obj.stroke || 'transparent'}`,
+                transform: `rotate(${angle}deg) rotate(45deg)`,
+                borderRadius: 4,
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        }
+      }
+
+      // Handle Line elements
+      if (obj.type === 'line') {
+        return (
+          <div
+            key={`canvas-line-${obj.id || index}`}
+            style={{
+              ...baseStyle,
+              backgroundColor: obj.stroke || '#000000',
+              border: 'none',
+              height: obj.strokeWidth || 1,
+              borderRadius: 1,
+              boxSizing: 'border-box',
+            }}
+          />
+        );
+      }
+
+      // Handle Image elements
+      // Complete fix for social icon positioning in RealTimePreview
+      // Replace the entire image handling section with this:
+
       // Handle Image elements
       if (obj.type === 'image') {
         // Handle social icons with special styling
         if (obj.elementType === 'socialIcon') {
+          // For social icons, we need to handle the positioning differently
+          // Fabric.js images can have different origin settings (center, left, etc.)
+
+          // Calculate the actual position accounting for origin
+          let actualLeft = left;
+          let actualTop = top;
+
+          // Check if the object has originX/originY settings (common for social icons)
+          if (obj.originX === 'center') {
+            actualLeft = left - (width / 2);
+          } else if (obj.originX === 'right') {
+            actualLeft = left - width;
+          }
+
+          if (obj.originY === 'center') {
+            actualTop = top - (height / 2);
+          } else if (obj.originY === 'bottom') {
+            actualTop = top - height;
+          }
+
+          // Also handle cases where the image might be positioned from center by default
+          // Fabric.js sometimes centers images by default
+          if (!obj.originX && !obj.originY) {
+            // Check if this looks like a centered object by examining the position
+            const canvasWidth = canvasState?.width || 800;
+            const canvasHeight = canvasState?.height || 600;
+
+            // If the object appears to be positioned from center (common with social icons)
+            if (Math.abs(left - canvasWidth / 2) < canvasWidth / 3 && Math.abs(top - canvasHeight / 2) < canvasHeight / 3) {
+              actualLeft = left - (width / 2);
+              actualTop = top - (height / 2);
+            }
+          }
+
           return (
             <div
               key={`canvas-social-icon-${obj.id || index}`}
               style={{
-                ...baseStyle,
+                position: 'absolute',
+                left: `${actualLeft}px`,
+                top: `${actualTop}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                transform: `rotate(${angle}deg)`,
+                transformOrigin: obj.originX === 'center' && obj.originY === 'center'
+                  ? 'center center'
+                  : obj.originX === 'center'
+                    ? 'center top'
+                    : obj.originY === 'center'
+                      ? 'left center'
+                      : 'left top',
+                opacity: obj.opacity !== undefined ? obj.opacity : 1,
+                zIndex: index + 1,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
                 borderRadius: '8px',
                 overflow: 'hidden',
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: '2px solid rgba(59, 130, 246, 0.2)',
+                border: obj.url ? '2px solid rgba(34, 197, 94, 0.4)' : '2px solid rgba(59, 130, 246, 0.2)',
+                boxSizing: 'border-box',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = `rotate(${angle}deg) scale(1.1)`;
-                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                e.currentTarget.style.transform = `rotate(${angle}deg) scale(1.05)`;
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.borderColor = obj.url ? 'rgba(34, 197, 94, 0.6)' : 'rgba(59, 130, 246, 0.4)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = `rotate(${angle}deg) scale(1)`;
                 e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = obj.url ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.2)';
               }}
             >
               <Image
@@ -275,11 +491,43 @@ export function RealTimePreview({
                   pointerEvents: 'none',
                 }}
               />
+              {/* Add a small indicator if the icon has a URL */}
+              {obj.url && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#10b981',
+                    borderRadius: '50%',
+                    border: '1px solid white',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
             </div>
           );
         }
 
-        // Regular image handling
+        // Regular image handling with improved positioning
+        let imageLeft = left;
+        let imageTop = top;
+
+        // Handle origin positioning for regular images too
+        if (obj.originX === 'center') {
+          imageLeft = left - (width / 2);
+        } else if (obj.originX === 'right') {
+          imageLeft = left - width;
+        }
+
+        if (obj.originY === 'center') {
+          imageTop = top - (height / 2);
+        } else if (obj.originY === 'bottom') {
+          imageTop = top - height;
+        }
+
         return (
           <Image
             key={`canvas-image-${obj.id || index}`}
@@ -288,9 +536,18 @@ export function RealTimePreview({
             width={width}
             height={height}
             style={{
-              ...baseStyle,
-              // objectFit: 'cover', // or 'contain', depending on desired behavior. Fabric default is like 'fill'
-              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover', // A common default
+              position: 'absolute',
+              left: `${imageLeft}px`,
+              top: `${imageTop}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              transform: `rotate(${angle}deg)`,
+              transformOrigin: obj.originX === 'center' && obj.originY === 'center'
+                ? 'center center'
+                : 'left top',
+              opacity: obj.opacity !== undefined ? obj.opacity : 1,
+              zIndex: index + 1,
+              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover',
               boxSizing: 'border-box',
             }}
           />
