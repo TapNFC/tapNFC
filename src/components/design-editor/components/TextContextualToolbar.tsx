@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -107,20 +107,22 @@ export function TextContextualToolbar({
               size="sm"
               className="size-8 rounded-lg p-0 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
             >
-              <Link className="size-4" />
+              <MoreHorizontal className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="bg-gray-800 text-white">
-            <p>Add link to text</p>
+            <p>Text actions</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
       {/* Arrow pointing down to element */}
       <div
-        className="absolute -bottom-2 size-4 rotate-45 border-b border-r border-white/30 bg-white/95"
+        className="absolute -bottom-2 h-2 w-4 bg-white/95"
         style={{
-          left: `${toolbarWidth / 2 - 8}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)',
         }}
       />
     </div>

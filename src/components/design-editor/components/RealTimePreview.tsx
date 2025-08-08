@@ -146,18 +146,45 @@ export function RealTimePreview({
               }}
               onClick={() => {
                 if (obj.url) {
-                  // Format URL to ensure it has proper protocol
-                  const formatUrl = (url: string) => {
+                  // Handle different URL types
+                  const formatUrl = (url: string, urlType?: string) => {
                     if (!url) {
                       return '';
                     }
-                    // If URL doesn't start with http:// or https://, add https://
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+
+                    // If urlType is specified, handle accordingly
+                    if (urlType) {
+                      switch (urlType) {
+                        case 'email':
+                          // If it already has mailto:, use as is, otherwise add it
+                          return url.startsWith('mailto:') ? url : `mailto:${url}`;
+                        case 'phone':
+                          // If it already has tel:, use as is, otherwise add it
+                          return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'url':
+                        default:
+                          // For URLs, add https:// if not present
+                          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            return `https://${url}`;
+                          }
+                          return url;
+                      }
+                    }
+
+                    // Fallback: detect type from URL format
+                    if (url.startsWith('mailto:')) {
+                      return url;
+                    } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
                     }
+
                     return url;
                   };
-                  window.open(formatUrl(obj.url), '_blank');
+
+                  const formattedUrl = formatUrl(obj.url, obj.urlType);
+                  window.open(formattedUrl, '_blank');
                 }
               }}
               onMouseEnter={(e) => {
