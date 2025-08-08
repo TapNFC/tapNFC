@@ -3,6 +3,7 @@
 import {
   ChevronDown,
   Grid3x3,
+  LayoutDashboard,
   LogOut,
   Menu,
   Settings,
@@ -383,6 +384,18 @@ export function DesignToolbar({
           </Button>
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
+
+          {/* Dashboard Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/dashboard')}
+            className="group rounded-lg p-2 text-gray-600 backdrop-blur-sm transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
+            title="Go to Dashboard"
+          >
+            <LayoutDashboard className="size-5 transition-transform duration-200 group-hover:scale-110" />
+            Dashboard
+          </Button>
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
