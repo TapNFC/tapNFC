@@ -56,6 +56,26 @@ export function useThrottle<T extends (...args: any[]) => any>(
 }
 
 /**
+ * Coalesce multiple canvas.renderAll() calls into a single rAF tick
+ */
+export function useCanvasRenderScheduler(canvas: any) {
+  const rafIdRef = useRef<number | null>(null);
+
+  return useCallback(() => {
+    if (!canvas) {
+      return;
+    }
+    if (rafIdRef.current !== null) {
+      return;
+    }
+    rafIdRef.current = requestAnimationFrame(() => {
+      canvas.renderAll?.();
+      rafIdRef.current = null;
+    });
+  }, [canvas]);
+}
+
+/**
  * Memoized object comparison for canvas states
  */
 export function useCanvasStateMemo(canvasState: any) {

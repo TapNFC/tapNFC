@@ -1,6 +1,7 @@
 'use client';
 
 import type { UseQrCodeGeneratorReturn } from '@/hooks/useQrCodeGenerator';
+import { useDebounce } from '@/components/design-editor/utils/performance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,8 @@ export function QrStylingCard({
   isSaving,
   isGenerating,
 }: QrStylingCardProps) {
+  const debouncedSetQrColor = useDebounce((val: string) => setQrColor(val), 80);
+  const debouncedSetBgColor = useDebounce((val: string) => setBgColor(val), 80);
   // Hide styling options only if we have a saved QR code AND we're not in edit mode
   if (qrCodeUrl && !isEditMode) {
     return null;
@@ -92,7 +95,7 @@ export function QrStylingCard({
             <Input
               type="color"
               value={qrColor}
-              onChange={e => setQrColor(e.target.value)}
+              onChange={e => debouncedSetQrColor(e.target.value)}
               disabled={isSaving || isGenerating}
             />
           </div>
@@ -101,7 +104,7 @@ export function QrStylingCard({
             <Input
               type="color"
               value={bgColor}
-              onChange={e => setBgColor(e.target.value)}
+              onChange={e => debouncedSetBgColor(e.target.value)}
               disabled={isSaving || isGenerating}
             />
           </div>
