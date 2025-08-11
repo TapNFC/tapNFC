@@ -16,6 +16,8 @@ import {
   Unlock,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useCanvasRenderScheduler, useThrottle } from '@/components/design-editor/utils/performance';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +38,26 @@ export function PropertiesPanel({
   updateLinkProperties,
 }: PropertiesPanelProps) {
   const [objectProperties, setObjectProperties] = useState<any>({});
+  const scheduleRender = useCanvasRenderScheduler(canvas);
+
+  // Throttled setters specifically for high-frequency color updates
+  const throttledSetFill = useThrottle((value: string) => {
+    if (!canvas || !selectedObject) {
+      return;
+    }
+    selectedObject.set('fill', value);
+    scheduleRender();
+    setObjectProperties((prev: any) => ({ ...prev, fill: value }));
+  }, 80);
+
+  const throttledSetStroke = useThrottle((value: string) => {
+    if (!canvas || !selectedObject) {
+      return;
+    }
+    selectedObject.set('stroke', value);
+    scheduleRender();
+    setObjectProperties((prev: any) => ({ ...prev, stroke: value }));
+  }, 80);
 
   // Update local state when selected object changes
   useEffect(() => {
@@ -81,7 +103,7 @@ export function PropertiesPanel({
 
     try {
       selectedObject.set(property, value);
-      canvas.renderAll();
+      scheduleRender();
 
       // Update local state
       setObjectProperties((prev: any) => ({ ...prev, [property]: value }));
@@ -100,7 +122,7 @@ export function PropertiesPanel({
         selectedObject.set(key, updates[key]);
       });
       selectedObject.setCoords();
-      canvas.renderAll();
+      scheduleRender();
 
       // Update local state
       setObjectProperties((prev: any) => ({ ...prev, ...updates }));
@@ -167,7 +189,7 @@ export function PropertiesPanel({
         });
         canvas.add(cloned);
         canvas.setActiveObject(cloned);
-        canvas.renderAll();
+        scheduleRender();
       });
     } catch (error) {
       console.error('Error duplicating element:', error);
@@ -181,7 +203,7 @@ export function PropertiesPanel({
 
     try {
       canvas.remove(selectedObject);
-      canvas.renderAll();
+      scheduleRender();
     } catch (error) {
       console.error('Error deleting element:', error);
     }
@@ -743,12 +765,12 @@ export function PropertiesPanel({
                 id="text-color"
                 type="color"
                 value={objectProperties.fill}
-                onChange={e => updateObjectProperty('fill', e.target.value)}
+                onChange={e => throttledSetFill(e.target.value)}
                 className="h-8 w-16 rounded border border-gray-300"
               />
               <Input
                 value={objectProperties.fill}
-                onChange={e => updateObjectProperty('fill', e.target.value)}
+                onChange={e => throttledSetFill(e.target.value)}
                 className="h-8 flex-1"
               />
             </div>
@@ -787,12 +809,12 @@ export function PropertiesPanel({
                 id="fill-color"
                 type="color"
                 value={objectProperties.fill}
-                onChange={e => updateObjectProperty('fill', e.target.value)}
+                onChange={e => throttledSetFill(e.target.value)}
                 className="h-8 w-16 rounded border border-gray-300"
               />
               <Input
                 value={objectProperties.fill}
-                onChange={e => updateObjectProperty('fill', e.target.value)}
+                onChange={e => throttledSetFill(e.target.value)}
                 className="h-8 flex-1"
               />
             </div>
@@ -805,12 +827,12 @@ export function PropertiesPanel({
                 id="stroke-color"
                 type="color"
                 value={objectProperties.stroke}
-                onChange={e => updateObjectProperty('stroke', e.target.value)}
+                onChange={e => throttledSetStroke(e.target.value)}
                 className="h-8 w-16 rounded border border-gray-300"
               />
               <Input
                 value={objectProperties.stroke}
-                onChange={e => updateObjectProperty('stroke', e.target.value)}
+                onChange={e => throttledSetStroke(e.target.value)}
                 className="h-8 flex-1"
               />
             </div>

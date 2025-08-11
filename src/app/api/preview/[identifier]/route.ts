@@ -63,7 +63,7 @@ export async function GET(
 
     return NextResponse.json(previewData, {
       headers: {
-        'Cache-Control': 'public, max-age=300, s-maxage=600', // Cache for 5 minutes, CDN for 10 minutes
+        'Cache-Control': 'no-cache, no-store, must-revalidate', // Disable caching for previews
       },
     });
   } catch (error) {

@@ -9,6 +9,7 @@ type PublicDesignPreviewProps = {
   designId?: string;
   designSlug?: string;
   initialData?: Design | null;
+  forceRefresh?: boolean;
 };
 
 // Define a type for Fabric-like gradient objects that might be passed
@@ -140,7 +141,7 @@ const createDemoDesign = (designId: string): Design => {
   };
 };
 
-export function PublicDesignPreview({ designId, designSlug, initialData }: PublicDesignPreviewProps) {
+export function PublicDesignPreview({ designId, designSlug, initialData, forceRefresh = false }: PublicDesignPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [designData, setDesignData] = useState<Design | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
@@ -168,81 +169,93 @@ export function PublicDesignPreview({ designId, designSlug, initialData }: Publi
     return { backgroundColor: '#ffffff' }; // Fallback
   }, [designData]);
 
+  // Function to load design data from backend API
+  const loadDesignData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Determine the identifier to use (slug takes precedence)
+      const identifier = designSlug || designId;
+      if (!identifier) {
+        throw new Error('No design identifier provided');
+      }
+
+      // Use the unified API endpoint with cache busting
+      const timestamp = Date.now();
+      const apiEndpoint = `/api/preview/${identifier}?_t=${timestamp}`;
+
+      console.log('Attempting to load design from backend API:', identifier); // eslint-disable-line no-console
+      const response = await fetch(apiEndpoint, {
+        cache: 'no-store', // Disable browser caching
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('Design not found in backend, showing demo design'); // eslint-disable-line no-console
+          // Design not found, show demo design
+          const demoDesign = createDemoDesign(identifier);
+          setDesignData(demoDesign);
+          return;
+        }
+
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const design = await response.json();
+      console.log('Design loaded from backend API:', identifier); // eslint-disable-line no-console
+      setDesignData(design);
+
+      // Record the scan if we have a valid design ID (not a demo)
+      if (design.id && design.id !== 'demo') {
+        try {
+          // Record the scan asynchronously (don't wait for it to complete)
+          fetch(`/api/scan/${design.id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }).catch((error) => {
+            // Silently fail if scan recording fails - don't affect user experience
+            console.error('Failed to record scan:', error);
+          });
+        } catch (scanError) {
+          // Silently fail if scan recording fails
+          console.error('Error recording scan:', scanError);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading design data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load design';
+      setError(errorMessage);
+
+      // Show demo design as fallback
+      const fallbackIdentifier = designSlug || designId || 'demo';
+      const demoDesign = createDemoDesign(fallbackIdentifier);
+      setDesignData(demoDesign);
+
+      toast.error(`Error: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to refresh design data
+  // const handleRefresh = async () => { // Removed handleRefresh function
+  //   if (designId || designSlug) {
+  //     await loadDesignData(true);
+  //     toast.success('Design refreshed successfully!');
+  //   }
+  // };
+
   // Load design data from backend API if not provided via initialData
   useEffect(() => {
-    const loadDesignData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Determine the identifier to use (slug takes precedence)
-        const identifier = designSlug || designId;
-        if (!identifier) {
-          throw new Error('No design identifier provided');
-        }
-
-        // Use the unified API endpoint
-        const apiEndpoint = `/api/preview/${identifier}`;
-
-        console.log('Attempting to load design from backend API:', identifier); // eslint-disable-line no-console
-        const response = await fetch(apiEndpoint);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            console.log('Design not found in backend, showing demo design'); // eslint-disable-line no-console
-            // Design not found, show demo design
-            const demoDesign = createDemoDesign(identifier);
-            setDesignData(demoDesign);
-            return;
-          }
-
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `HTTP ${response.status}`);
-        }
-
-        const design = await response.json();
-        console.log('Design loaded from backend API:', identifier); // eslint-disable-line no-console
-        setDesignData(design);
-
-        // Record the scan if we have a valid design ID (not a demo)
-        if (design.id && design.id !== 'demo') {
-          try {
-            // Record the scan asynchronously (don't wait for it to complete)
-            fetch(`/api/scan/${design.id}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }).catch((error) => {
-              // Silently fail if scan recording fails - don't affect user experience
-              console.error('Failed to record scan:', error);
-            });
-          } catch (scanError) {
-            // Silently fail if scan recording fails
-            console.error('Error recording scan:', scanError);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading design data:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load design';
-        setError(errorMessage);
-
-        // Show demo design as fallback
-        const fallbackIdentifier = designSlug || designId || 'demo';
-        const demoDesign = createDemoDesign(fallbackIdentifier);
-        setDesignData(demoDesign);
-
-        toast.error(`Error: ${errorMessage}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     // Only load data if not provided as initialData and we have an identifier
-    if ((designId || designSlug) && !initialData) {
+    if ((designId || designSlug) && (!initialData || forceRefresh)) {
       loadDesignData();
     }
-  }, [designId, designSlug, initialData]);
+  }, [designId, designSlug, initialData, forceRefresh]);
 
   // Record scan when design is provided via initialData
   useEffect(() => {

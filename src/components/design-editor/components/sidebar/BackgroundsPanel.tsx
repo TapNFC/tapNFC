@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useThrottle } from '@/components/design-editor/utils/performance';
 import { SidebarSection } from './SidebarSection';
 
 type FabricColorStop = { offset: number; color: string };
@@ -220,6 +221,9 @@ export function BackgroundsPanel({ onBackgroundChange, currentBackground: curren
     : null;
   const [selectedBackground, setSelectedBackground] = useState<string | null>(initialSelectedBackground);
 
+  // Throttle background updates for smoother color dragging
+  const throttledBackgroundChange = useThrottle(onBackgroundChange, 100);
+
   useEffect(() => {
     if (typeof currentBackgroundProp === 'string') {
       setSelectedBackground(currentBackgroundProp);
@@ -284,13 +288,13 @@ export function BackgroundsPanel({ onBackgroundChange, currentBackground: curren
       const newColor = e.target.value;
       setCustomColor(newColor);
       setSelectedBackground(newColor);
-      onBackgroundChange(newColor);
-      toast.success('Custom background color applied!');
+      // Throttle updates while dragging the color picker to avoid excessive re-renders
+      throttledBackgroundChange(newColor);
     } catch (error) {
       console.error('Error setting custom color:', error);
       toast.error('Failed to apply custom color');
     }
-  }, [onBackgroundChange]);
+  }, [throttledBackgroundChange]);
 
   return (
     <SidebarSection title="Backgrounds">

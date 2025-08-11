@@ -18,8 +18,9 @@ import {
   Underline,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useCanvasRenderScheduler, useThrottle } from '@/components/design-editor/utils/performance';
 
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -93,6 +94,8 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   // Common properties
   const [opacity, setOpacity] = useState(100);
 
+  const scheduleRender = useCanvasRenderScheduler(canvas);
+
   const isTextObject = selectedObject
     && (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox');
 
@@ -152,15 +155,20 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   const updateObjectProperty = useCallback((property: string, value: any) => {
     if (selectedObject && canvas) {
       selectedObject.set?.(property, value);
-      canvas.renderAll?.();
+      scheduleRender();
     }
-  }, [selectedObject, canvas]);
+  }, [selectedObject, canvas, scheduleRender]);
 
   const updateTextProperty = useCallback((property: string, value: any) => {
     if (isTextObject) {
       updateObjectProperty(property, value);
     }
   }, [isTextObject, updateObjectProperty]);
+
+  // Throttled updaters for color changes to avoid excessive canvas renders while dragging
+  const throttledUpdateTextFill = useThrottle((color: string) => updateTextProperty('fill', color), 80);
+  const throttledUpdateFill = useThrottle((color: string) => updateObjectProperty('fill', color), 80);
+  const throttledUpdateStroke = useThrottle((color: string) => updateObjectProperty('stroke', color), 80);
 
   const handleFontFamilyChange = useCallback((value: string) => {
     setFontFamily(value);
@@ -206,18 +214,18 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
   const handleTextColorChange = useCallback((color: string) => {
     setTextColor(color);
-    updateTextProperty('fill', color);
-  }, [updateTextProperty]);
+    throttledUpdateTextFill(color);
+  }, [throttledUpdateTextFill]);
 
   const handleFillColorChange = useCallback((color: string) => {
     setFillColor(color);
-    updateObjectProperty('fill', color);
-  }, [updateObjectProperty]);
+    throttledUpdateFill(color);
+  }, [throttledUpdateFill]);
 
   const handleStrokeColorChange = useCallback((color: string) => {
     setStrokeColor(color);
-    updateObjectProperty('stroke', color);
-  }, [updateObjectProperty]);
+    throttledUpdateStroke(color);
+  }, [throttledUpdateStroke]);
 
   const handleStrokeWidthChange = useCallback((width: number) => {
     setStrokeWidth(width);

@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { PublicDesignPreview } from '@/components/design-editor/PublicDesignPreview';
 
+export const dynamic = 'force-dynamic';
+
 type PreviewPageProps = {
   params: Promise<{
     identifier: string;
@@ -13,9 +15,16 @@ function isUUID(str: string): boolean {
   return uuidRegex.test(str);
 }
 
-export default async function PreviewPage({ params }: PreviewPageProps) {
+export default async function PreviewPage({
+  params,
+  searchParams,
+}: PreviewPageProps & { searchParams: Promise<{ refresh?: string }> }) {
   const { identifier } = await params;
+  const { refresh } = await searchParams;
   const isUuid = isUUID(identifier);
+
+  // Support force refresh via URL parameter: ?refresh=true
+  // This bypasses caching to ensure the latest design is loaded
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,6 +41,7 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
         <PublicDesignPreview
           designId={isUuid ? identifier : undefined}
           designSlug={!isUuid ? identifier : undefined}
+          forceRefresh={refresh === 'true'}
         />
       </Suspense>
     </div>
