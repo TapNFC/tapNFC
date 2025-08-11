@@ -3,7 +3,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, QrCode } from 'lucide-react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -23,16 +24,14 @@ const formSchema = z.object({
 
 type AcceptInviteFormValues = z.infer<typeof formSchema>;
 
-export function AcceptInviteForm() {
+export function AcceptInviteForm({ token }: { token: string }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [exchangeDone, setExchangeDone] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const locale = params.locale as string;
+  const locale = useLocale();
 
   const form = useForm<AcceptInviteFormValues>({
     resolver: zodResolver(formSchema),
@@ -41,7 +40,7 @@ export function AcceptInviteForm() {
 
   useEffect(() => {
     const run = async () => {
-      const code = searchParams.get('code') || searchParams.get('token');
+      const code = token;
       if (!code) {
         toast({ variant: 'error', title: 'Invalid link', description: 'Missing invite code.' });
         router.push(`/${locale}/sign-in`);
