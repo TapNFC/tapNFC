@@ -23,8 +23,8 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    // Use a direct redirect URL that doesn't require PKCE
-    const redirectTo = `${getBaseUrl()}/${safeLocale}/accept-invite`;
+    // Redirect directly to localized sign-in so it can parse the invite hash
+    const redirectTo = `${getBaseUrl()}/${safeLocale}/sign-in`;
 
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,

@@ -54,7 +54,7 @@ export function SignInForm() {
       }
 
       router.refresh();
-      router.push('/dashboard');
+      router.push(`/${locale}/dashboard`);
     } catch (err: unknown) {
       console.error(err);
       setError('An unexpected error occurred');
