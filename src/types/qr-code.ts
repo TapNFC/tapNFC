@@ -9,6 +9,7 @@ export type QRCode = {
   qrCodeUrl: string | null;
   qrCodeData: string | null; // SVG data for the QR code for multi-resolution downloads
   isArchived: boolean;
+  createdBy: string; // User ID of the creator
 };
 
 export type QRCodeStats = {

@@ -239,4 +239,41 @@ export const storageService = {
       // We don't re-throw here to avoid blocking the main UI operation if deletion fails
     }
   },
+
+  /**
+   * Deletes QR code images from Supabase Storage.
+   * @param designId - The ID of the design whose QR code images should be deleted.
+   */
+  async deleteQrCodeImages(designId: string): Promise<void> {
+    try {
+      const supabase = createClient();
+
+      // List all files in the qr-codes/{designId} folder
+      const { data: files, error: listError } = await supabase.storage
+        .from('designs')
+        .list(`qr-codes/${designId}`);
+
+      if (listError) {
+        console.warn('Error listing QR code files:', listError);
+        return;
+      }
+
+      if (files && files.length > 0) {
+        // Create array of file paths to delete
+        const filePaths = files.map(file => `qr-codes/${designId}/${file.name}`);
+
+        // Delete all QR code images for this design
+        const { error: deleteError } = await supabase.storage
+          .from('designs')
+          .remove(filePaths);
+
+        if (deleteError) {
+          console.warn('Error deleting QR code images:', deleteError);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deleting QR code images:', error);
+      // We don't re-throw here to avoid blocking the main UI operation if deletion fails
+    }
+  },
 };

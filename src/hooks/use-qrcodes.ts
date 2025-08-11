@@ -4,6 +4,7 @@ import type { QRCode, QRCodeStats } from '@/types/qr-code';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { designService } from '@/services/designService';
+import { createClient } from '@/utils/supabase/client';
 
 export const useQRCodes = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,14 +15,21 @@ export const useQRCodes = () => {
   const [, setQrCodeStats] = useState<Record<string, QRCodeStats>>({});
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [selectedQRCodeForDownload, setSelectedQRCodeForDownload] = useState<QRCode | null>(null);
-  const [customUrlModalOpen, setCustomUrlModalOpen] = useState(false);
-  const [selectedQRCodeForCustomUrl, setSelectedQRCodeForCustomUrl] = useState<QRCode | null>(null);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQRCodeForDelete, setSelectedQRCodeForDelete] = useState<QRCode | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const fetchQRCodes = async () => {
     try {
       setIsLoading(true);
+
+      // Get current user ID
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      setCurrentUserId(userId || null);
+
       const designs = await designService.getUserQrCodes(/* includeArchived */ true);
 
       const transformedQRCodes: QRCode[] = designs.map((design) => {
@@ -40,6 +48,7 @@ export const useQRCodes = () => {
           qrCodeUrl: design.qr_code_url || null,
           qrCodeData: design.qr_code_data || null,
           isArchived: Boolean(design.is_archived),
+          createdBy: design.user_id,
         };
       });
 
@@ -166,16 +175,6 @@ export const useQRCodes = () => {
     setSelectedQRCodeForDownload(null);
   };
 
-  const handleCustomUrl = (qrCode: QRCode) => {
-    setSelectedQRCodeForCustomUrl(qrCode);
-    setCustomUrlModalOpen(true);
-  };
-
-  const closeCustomUrlModal = () => {
-    setCustomUrlModalOpen(false);
-    setSelectedQRCodeForCustomUrl(null);
-  };
-
   const handleEditQRCode = (qrCode: QRCode) => {
     window.location.href = `/design/${qrCode.id}/qr-code`;
   };
@@ -253,29 +252,73 @@ export const useQRCodes = () => {
 
   const deleteQRCodePermanently = async (qrCode: QRCode) => {
     try {
-      const ok = await designService.deleteDesign(qrCode.id);
-      if (!ok) {
-        throw new Error('Failed to delete');
-      }
-      const updatedQRCodes = qrCodes.filter(qr => qr.id !== qrCode.id);
-      setQrCodes(updatedQRCodes);
-      setFilteredQRCodes(
-        searchQuery
-          ? updatedQRCodes.filter(qr =>
-              qr.name.toLowerCase().includes(searchQuery.toLowerCase())
-              || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
-            )
-          : updatedQRCodes,
-      );
-      if (selectedQRCodes.includes(qrCode.id)) {
-        setSelectedQRCodes(prev => prev.filter(id => id !== qrCode.id));
-      }
-      toast.success(`"${qrCode.name}" deleted`);
+      await designService.deleteDesign(qrCode.id);
+      await fetchQRCodes(); // Refresh the list
+      toast.success('QR code deleted permanently');
     } catch (error) {
-      console.error('Error deleting QR code:', error);
-      toast.error('Failed to delete QR code');
-      throw error;
+      console.error('Error deleting QR code permanently:', error);
+      toast.error('Failed to delete QR code permanently');
     }
+  };
+
+  // Helper function to check if current user owns the QR code
+  const isOwnedByCurrentUser = (qrCode: QRCode): boolean => {
+    return currentUserId === qrCode.createdBy;
+  };
+
+  // Bulk actions for selected QR codes
+  const deleteSelectedQRCodes = async () => {
+    try {
+      const selectedCodes = qrCodes.filter(qr => selectedQRCodes.includes(qr.id));
+      const ownedCodes = selectedCodes.filter(qr => isOwnedByCurrentUser(qr));
+
+      if (ownedCodes.length === 0) {
+        toast.error('No owned QR codes selected for deletion');
+        return;
+      }
+
+      // Delete each owned QR code
+      for (const qrCode of ownedCodes) {
+        await designService.deleteDesign(qrCode.id);
+      }
+
+      // Clear selection and refresh
+      setSelectedQRCodes([]);
+      await fetchQRCodes();
+      toast.success(`Deleted ${ownedCodes.length} QR code${ownedCodes.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Error deleting selected QR codes:', error);
+      toast.error('Failed to delete selected QR codes');
+    }
+  };
+
+  const archiveSelectedQRCodes = async () => {
+    try {
+      const selectedCodes = qrCodes.filter(qr => selectedQRCodes.includes(qr.id));
+      const ownedCodes = selectedCodes.filter(qr => isOwnedByCurrentUser(qr));
+
+      if (ownedCodes.length === 0) {
+        toast.error('No owned QR codes selected for archiving');
+        return;
+      }
+
+      // Archive each owned QR code
+      for (const qrCode of ownedCodes) {
+        await designService.archiveDesign(qrCode.id);
+      }
+
+      // Clear selection and refresh
+      setSelectedQRCodes([]);
+      await fetchQRCodes();
+      toast.success(`Archived ${ownedCodes.length} QR code${ownedCodes.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Error archiving selected QR codes:', error);
+      toast.error('Failed to archive selected QR codes');
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedQRCodes([]);
   };
 
   return {
@@ -284,13 +327,15 @@ export const useQRCodes = () => {
     qrCodes,
     filteredQRCodes,
     selectedQRCodes,
+    setSelectedQRCodes,
     isLoading,
     downloadModalOpen,
     selectedQRCodeForDownload,
-    customUrlModalOpen,
-    selectedQRCodeForCustomUrl,
+
     deleteModalOpen,
     selectedQRCodeForDelete,
+    currentUserId,
+    isOwnedByCurrentUser,
     handleSearch,
     clearSearch,
     toggleQRCodeSelection,
@@ -298,8 +343,7 @@ export const useQRCodes = () => {
     updateQRCodeName,
     handleDownload,
     closeDownloadModal,
-    handleCustomUrl,
-    closeCustomUrlModal,
+
     handleEditQRCode,
     handleEditDesign,
     handleDeleteQRCode,
@@ -309,5 +353,8 @@ export const useQRCodes = () => {
     restoreQRCode,
     deleteQRCodePermanently,
     refreshQRCodes: fetchQRCodes,
+    deleteSelectedQRCodes,
+    archiveSelectedQRCodes,
+    clearSelection,
   };
 };

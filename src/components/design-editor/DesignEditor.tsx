@@ -119,13 +119,21 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   });
 
   // Get preview data for real-time preview - use state to trigger updates
-  const [previewData, setPreviewData] = useState(() => getPreviewData());
+  const [previewData, setPreviewData] = useState<any>(null);
+
+  // Use a ref to store the latest getPreviewData function to avoid dependency issues
+  const getPreviewDataRef = useRef(getPreviewData);
+
+  // Update the ref when getPreviewData changes
+  useEffect(() => {
+    getPreviewDataRef.current = getPreviewData;
+  }, [getPreviewData]);
 
   // Update preview data when canvas changes
   useEffect(() => {
     if (canvas && isCanvasReady) {
       const updatePreview = () => {
-        const data = getPreviewData();
+        const data = getPreviewDataRef.current();
         if (data) {
           setPreviewData(data);
         }
@@ -145,6 +153,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       canvas.on('object:moving', handleCanvasChange);
       canvas.on('object:scaling', handleCanvasChange);
       canvas.on('object:rotating', handleCanvasChange);
+      canvas.on('canvas:background:changed', handleCanvasChange);
 
       return () => {
         canvas.off('object:added', handleCanvasChange);
@@ -153,17 +162,22 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         canvas.off('object:moving', handleCanvasChange);
         canvas.off('object:scaling', handleCanvasChange);
         canvas.off('object:rotating', handleCanvasChange);
+        canvas.off('canvas:background:changed', handleCanvasChange);
       };
     }
     return undefined;
-  }, [canvas, isCanvasReady, getPreviewData]);
+  }, [canvas, isCanvasReady]); // Removed getPreviewData from dependencies
 
-  // Track canvas readiness
+  // Track canvas readiness and initialize preview data
   useEffect(() => {
-    if (isCanvasReady) {
-      // Canvas is ready for design
+    if (isCanvasReady && canvas) {
+      // Canvas is ready for design, initialize preview data
+      const initialData = getPreviewDataRef.current();
+      if (initialData) {
+        setPreviewData(initialData);
+      }
     }
-  }, [isCanvasReady, designId]);
+  }, [isCanvasReady, canvas, designId]); // Removed getPreviewData from dependencies
 
   // Update the useEffect for double-click handling
   useEffect(() => {

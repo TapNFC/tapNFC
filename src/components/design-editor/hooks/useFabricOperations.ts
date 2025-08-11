@@ -102,15 +102,11 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         const colorValue = backgroundInput;
         if (colorValue.toLowerCase() === 'transparent') {
           canvas.setBackgroundColor?.('rgba(0,0,0,0)', () => {
-            canvas.renderAll?.();
-            // Fire event to trigger auto-save
-            canvas.fire?.('canvas:background:changed');
+            // Rendering and event firing are now handled by the overridden setBackgroundColor method
           });
         } else {
           canvas.setBackgroundColor?.(colorValue, () => {
-            canvas.renderAll?.();
-            // Fire event to trigger auto-save
-            canvas.fire?.('canvas:background:changed');
+            // Rendering and event firing are now handled by the overridden setBackgroundColor method
           });
         }
       } else if (
@@ -144,15 +140,11 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         });
 
         canvas.setBackgroundColor?.(gradient, () => {
-          canvas.renderAll?.();
-          // Fire event to trigger auto-save
-          canvas.fire?.('canvas:background:changed');
+          // Rendering and event firing are now handled by the overridden setBackgroundColor method
         });
       } else if (typeof backgroundInput?.value === 'string') { // Check for the old structure { type: string, value: string }
         canvas.setBackgroundColor?.(backgroundInput.value, () => {
-          canvas.renderAll?.();
-          // Fire event to trigger auto-save
-          canvas.fire?.('canvas:background:changed');
+          // Rendering and event firing are now handled by the overridden setBackgroundColor method
         });
       } else {
         toast.error('Invalid background type or format');

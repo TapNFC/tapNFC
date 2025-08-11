@@ -5,12 +5,12 @@ import { Grid3X3, List, QrCode, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQRCodes } from '@/hooks/use-qrcodes';
 import { cn } from '@/lib/utils';
 import {
-  CustomUrlModal,
   DeleteQRCodeDialog,
   DownloadModal,
   EmptyState,
@@ -29,6 +29,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQRCodeForDelete, setSelectedQRCodeForDelete] = useState<QRCode | null>(null);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const router = useRouter();
   const {
     searchQuery,
@@ -36,8 +37,9 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     isLoading,
     downloadModalOpen,
     selectedQRCodeForDownload,
-    customUrlModalOpen,
-    selectedQRCodeForCustomUrl,
+
+    selectedQRCodes,
+    setSelectedQRCodes,
     handleSearch,
     clearSearch,
     toggleQRCodeSelection,
@@ -45,13 +47,16 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     updateQRCodeName,
     handleDownload,
     closeDownloadModal,
-    handleCustomUrl,
-    closeCustomUrlModal,
+
     handleEditQRCode,
     handleEditDesign,
     archiveQRCode,
     restoreQRCode,
     deleteQRCodePermanently,
+    isOwnedByCurrentUser,
+    deleteSelectedQRCodes,
+    archiveSelectedQRCodes,
+    clearSelection,
   } = useQRCodes();
 
   const handleCreateQRCode = () => {
@@ -73,9 +78,22 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     }
   };
 
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      await deleteSelectedQRCodes();
+      setBulkDeleteModalOpen(false);
+    } catch (error) {
+      console.error('Error deleting selected QR codes:', error);
+    }
+  };
+
   const closeDeleteModal = () => {
     setDeleteModalOpen(false);
     setSelectedQRCodeForDelete(null);
+  };
+
+  const closeBulkDeleteModal = () => {
+    setBulkDeleteModalOpen(false);
   };
 
   // Filter QR codes based on active tab
@@ -131,6 +149,87 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
           </Tabs>
         </div>
 
+        {/* Bulk Actions */}
+        {selectedQRCodes.length > 0 && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                {selectedQRCodes.length}
+                {' '}
+                QR code
+                {selectedQRCodes.length > 1 ? 's' : ''}
+                {' '}
+                selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={archiveSelectedQRCodes}
+                className="border-blue-200 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-800/30"
+              >
+                Archive Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => setBulkDeleteModalOpen(true)}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={clearSelection}
+                className="text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-800/30"
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Select All Section */}
+        {tabFilteredQRCodes.length > 0 && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedQRCodes.length === tabFilteredQRCodes.filter(qr => isOwnedByCurrentUser(qr)).length && selectedQRCodes.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      // Select all owned QR codes
+                      const ownedQRCodes = tabFilteredQRCodes.filter(qr => isOwnedByCurrentUser(qr));
+                      setSelectedQRCodes(ownedQRCodes.map(qr => qr.id));
+                    } else {
+                      // Clear selection
+                      setSelectedQRCodes([]);
+                    }
+                  }}
+                  className="size-4"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Select All Owned
+                </span>
+              </div>
+              {selectedQRCodes.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  (
+                  {selectedQRCodes.length}
+                  {' '}
+                  of
+                  {' '}
+                  {tabFilteredQRCodes.filter(qr => isOwnedByCurrentUser(qr)).length}
+                  {' '}
+                  owned)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
@@ -182,10 +281,10 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                           onDownload={handleDownload}
                           onEditQRCode={handleEditQRCode}
                           onEditDesign={handleEditDesign}
-                          onCustomUrl={handleCustomUrl}
                           onArchive={archiveQRCode}
                           onRestore={restoreQRCode}
                           onDeleteForever={handleDeleteForever}
+                          isOwnedByCurrentUser={isOwnedByCurrentUser(qrCode)}
                         />
                       )
                     : (
@@ -197,10 +296,10 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                           onDownload={handleDownload}
                           onEditQRCode={handleEditQRCode}
                           onEditDesign={handleEditDesign}
-                          onCustomUrl={handleCustomUrl}
                           onArchive={archiveQRCode}
                           onRestore={restoreQRCode}
                           onDeleteForever={handleDeleteForever}
+                          isOwnedByCurrentUser={isOwnedByCurrentUser(qrCode)}
                         />
                       )}
                 </div>
@@ -213,13 +312,32 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
 
         <DownloadModal isOpen={downloadModalOpen} onClose={closeDownloadModal} qrCode={selectedQRCodeForDownload} />
 
-        <CustomUrlModal isOpen={customUrlModalOpen} onClose={closeCustomUrlModal} qrCode={selectedQRCodeForCustomUrl} />
-
         <DeleteQRCodeDialog
           isOpen={deleteModalOpen}
           onClose={closeDeleteModal}
           onDelete={handleConfirmDelete}
           qrCode={selectedQRCodeForDelete}
+        />
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <DeleteQRCodeDialog
+          isOpen={bulkDeleteModalOpen}
+          onClose={closeBulkDeleteModal}
+          onDelete={handleBulkDeleteConfirm}
+          qrCode={{
+            id: 'bulk',
+            name: `${selectedQRCodes.length} selected QR code${selectedQRCodes.length > 1 ? 's' : ''}`,
+            url: '',
+            scans: 0,
+            type: 'Bulk',
+            created: '',
+            previewImage: '',
+            qrCodeUrl: null,
+            qrCodeData: null,
+            isArchived: false,
+            createdBy: '',
+          }}
+          isBulkDelete={true}
         />
       </div>
     </div>

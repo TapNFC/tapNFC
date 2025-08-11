@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { storageService } from '@/services/storageService';
 import { generateSlug } from '@/utils/slugUtils';
 import { createAppServerClient } from '@/utils/supabase/server-app';
 
@@ -153,10 +154,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // First check if the user owns this design
+    // First check if the user owns this design and get image URLs
     const { data: designCheck, error: checkError } = await supabase
       .from('designs')
-      .select('user_id')
+      .select('user_id, preview_url, qr_code_url')
       .eq('id', id)
       .single();
 
@@ -171,6 +172,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'You do not have permission to delete this design' }, { status: 403 });
     }
 
+    // Delete associated images from storage
+    if (designCheck.preview_url) {
+      await storageService.deleteDesignPreview(designCheck.preview_url);
+    }
+
+    // Delete QR code images from storage
+    await storageService.deleteQrCodeImages(id);
+
+    // Now delete the design record
     const { error } = await supabase
       .from('designs')
       .delete()

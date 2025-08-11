@@ -167,7 +167,7 @@ export function useCanvasAutoSave({
 
   // Function to get preview data for real-time preview
   const getPreviewData = useCallback(() => {
-    if (!canvas) {
+    if (!canvas || !canvas.getWidth || !canvas.toJSON) {
       return null;
     }
 
@@ -178,7 +178,7 @@ export function useCanvasAutoSave({
         canvasData: canvasJSON,
         width: canvas.getWidth(),
         height: canvas.getHeight(),
-        backgroundColor: canvas.backgroundColor || '#ffffff', // Removed .toString()
+        backgroundColor: canvas.backgroundColor || '#ffffff',
       };
 
       return result;
@@ -274,7 +274,7 @@ export function useCanvasAutoSave({
 
   // Setup canvas change detection
   useEffect(() => {
-    if (!canvas || !enabled) {
+    if (!canvas) {
       return;
     }
 
@@ -292,12 +292,7 @@ export function useCanvasAutoSave({
       }, autoSaveInterval);
     };
 
-    // Add event listeners for canvas changes
-    canvas.on('object:added', handleCanvasChange);
-    canvas.on('object:removed', handleCanvasChange);
-    canvas.on('object:modified', handleCanvasChange);
-
-    // Custom event for background changes
+    // Custom event for background changes - always override regardless of auto-save enabled state
     const originalSetBackgroundColor = canvas.setBackgroundColor.bind(canvas);
     canvas.setBackgroundColor = ((
       backgroundColor: string | Pattern | Gradient,
@@ -307,10 +302,26 @@ export function useCanvasAutoSave({
         if (callback) {
           callback(renderedCanvas);
         }
-        handleCanvasChange();
+        // Ensure canvas is rendered before firing events
+        canvas.renderAll?.();
+
+        // Only trigger auto-save if enabled
+        if (enabled) {
+          handleCanvasChange();
+        }
+
+        // Always fire the background change event for real-time preview updates
+        canvas.fire?.('canvas:background:changed');
       });
       return canvas;
     }) as any;
+
+    // Add event listeners for canvas changes only when auto-save is enabled
+    if (enabled) {
+      canvas.on('object:added', handleCanvasChange);
+      canvas.on('object:removed', handleCanvasChange);
+      canvas.on('object:modified', handleCanvasChange);
+    }
 
     // Cleanup function
     return () => {
@@ -318,9 +329,12 @@ export function useCanvasAutoSave({
         clearTimeout(saveTimeoutRef.current);
       }
 
-      canvas.off('object:added', handleCanvasChange);
-      canvas.off('object:removed', handleCanvasChange);
-      canvas.off('object:modified', handleCanvasChange);
+      // Only remove event listeners if they were added
+      if (enabled) {
+        canvas.off('object:added', handleCanvasChange);
+        canvas.off('object:removed', handleCanvasChange);
+        canvas.off('object:modified', handleCanvasChange);
+      }
 
       // Restore original setBackgroundColor method on cleanup
       canvas.setBackgroundColor = originalSetBackgroundColor;

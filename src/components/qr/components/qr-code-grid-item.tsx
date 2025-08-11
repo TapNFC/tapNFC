@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { getSimpleUrl } from '@/utils/urlUtils';
 import { EditableName } from './editable-name';
 import { QRPattern } from './qr-pattern';
@@ -22,10 +23,11 @@ export const QRCodeGridItem = ({
   onDownload,
   onEditQRCode,
   onEditDesign,
-  onCustomUrl,
+
   onArchive,
   onRestore,
   onDeleteForever,
+  isOwnedByCurrentUser,
 }: {
   qrCode: QRCode;
   isSelected: boolean;
@@ -34,10 +36,11 @@ export const QRCodeGridItem = ({
   onDownload: (qrCode: QRCode) => void;
   onEditQRCode: (qrCode: QRCode) => void;
   onEditDesign: (qrCode: QRCode) => void;
-  onCustomUrl: (qrCode: QRCode) => void;
+
   onArchive: (qrCode: QRCode) => void;
   onRestore: (qrCode: QRCode) => void;
   onDeleteForever: (qrCode: QRCode) => void;
+  isOwnedByCurrentUser: boolean;
 }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -84,14 +87,20 @@ export const QRCodeGridItem = ({
   const simpleUrl = getSimpleUrl(qrCode.url);
 
   return (
-    <Card className="overflow-hidden border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <Card className={cn(
+      'overflow-hidden border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800',
+      isSelected && 'ring-2 ring-blue-500 border-blue-300 dark:border-blue-600',
+    )}
+    >
       <div className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelection(qrCode.id)}
-            className="size-4"
-          />
+          {isOwnedByCurrentUser && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelection(qrCode.id)}
+              className="size-4"
+            />
+          )}
         </div>
 
         <div className="mb-4 flex items-center justify-center gap-4">
@@ -124,10 +133,16 @@ export const QRCodeGridItem = ({
 
         <div className="text-center">
           <div className="flex items-center justify-center">
-            <EditableName
-              name={qrCode.name}
-              onSave={newName => onUpdateName(qrCode.id, newName)}
-            />
+            {isOwnedByCurrentUser
+              ? (
+                  <EditableName
+                    name={qrCode.name}
+                    onSave={newName => onUpdateName(qrCode.id, newName)}
+                  />
+                )
+              : (
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">{qrCode.name}</span>
+                )}
             {qrCode.isArchived && (
               <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Archived</span>
             )}
@@ -184,32 +199,34 @@ export const QRCodeGridItem = ({
               <Download className="mr-1 size-4" />
               Download
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="flex-1 shadow-sm transition-all hover:shadow">
-                  Options
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onCustomUrl(qrCode)}>Custom URL</DropdownMenuItem>
-                {!qrCode.isArchived
-                  ? (
-                      <DropdownMenuItem onClick={() => onArchive(qrCode)} className="text-amber-600 hover:text-amber-700">
-                        Archive
-                      </DropdownMenuItem>
-                    )
-                  : (
-                      <>
-                        <DropdownMenuItem onClick={() => onRestore(qrCode)}>Restore</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDeleteForever(qrCode)} className="text-red-600 hover:text-red-700">
-                          Delete Forever
+            {isOwnedByCurrentUser && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="flex-1 shadow-sm transition-all hover:shadow">
+                    Options
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
+
+                  {!qrCode.isArchived
+                    ? (
+                        <DropdownMenuItem onClick={() => onArchive(qrCode)} className="text-amber-600 hover:text-amber-700">
+                          Archive
                         </DropdownMenuItem>
-                      </>
-                    )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      )
+                    : (
+                        <>
+                          <DropdownMenuItem onClick={() => onRestore(qrCode)}>Restore</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDeleteForever(qrCode)} className="text-red-600 hover:text-red-700">
+                            Delete Forever
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

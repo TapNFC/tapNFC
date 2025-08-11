@@ -1,4 +1,3 @@
-export { CustomUrlModal } from './custom-url-modal';
 export { DeleteQRCodeDialog } from './delete-qr-code-dialog';
 export { DownloadModal } from './download-modal';
 export { EditableName } from './editable-name';
