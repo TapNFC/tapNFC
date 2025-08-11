@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronRight, Loader2 } from 'lucide-react';
+import { Check, ChevronRight, Loader2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -132,6 +132,15 @@ export function DesignCreationStepsDialog({
       {open && (
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="max-w-2xl overflow-hidden border-none bg-gradient-to-br from-white via-slate-50 to-blue-50 p-0 shadow-2xl">
+            {/* Custom close button positioned correctly */}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </button>
+
             {/* Decorative background elements */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute -right-20 -top-20 size-80 rounded-full bg-blue-100/70 blur-3xl"></div>

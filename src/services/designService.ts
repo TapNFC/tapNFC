@@ -1,6 +1,7 @@
 import type { Design } from '@/types/design';
 import { generateSlug } from '@/utils/slugUtils';
 import { createClient } from '@/utils/supabase/client';
+import { storageService } from './storageService';
 
 // Client-side Supabase functions
 export const designService = {
@@ -177,17 +178,44 @@ export const designService = {
   // Delete a design
   async deleteDesign(id: string): Promise<boolean> {
     const supabase = createClient();
-    const { error } = await supabase
-      .from('designs')
-      .delete()
-      .eq('id', id);
 
-    if (error) {
-      console.error(`Error deleting design ${id}:`, error);
+    try {
+      // First, get the design to access its image URLs
+      const { data: design, error: fetchError } = await supabase
+        .from('designs')
+        .select('preview_url, qr_code_url')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error(`Error fetching design ${id} for deletion:`, fetchError);
+        return false;
+      }
+
+      // Delete associated images from storage
+      if (design?.preview_url) {
+        await storageService.deleteDesignPreview(design.preview_url);
+      }
+
+      // Delete QR code images from storage
+      await storageService.deleteQrCodeImages(id);
+
+      // Now delete the design record
+      const { error } = await supabase
+        .from('designs')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error(`Error deleting design ${id}:`, error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`Error in deleteDesign for ${id}:`, error);
       return false;
     }
-
-    return true;
   },
 
   // Upload a preview image for a design

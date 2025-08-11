@@ -18,6 +18,7 @@ type DeleteQRCodeDialogProps = {
   onClose: () => void;
   onDelete: (qrCode: QRCode) => Promise<void>;
   qrCode: QRCode | null;
+  isBulkDelete?: boolean;
 };
 
 export function DeleteQRCodeDialog({
@@ -25,6 +26,7 @@ export function DeleteQRCodeDialog({
   onClose,
   onDelete,
   qrCode,
+  isBulkDelete = false,
 }: DeleteQRCodeDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -50,17 +52,32 @@ export function DeleteQRCodeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="size-5" />
-            Delete Forever
+            {isBulkDelete ? 'Delete Selected QR Codes' : 'Delete Forever'}
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to permanently delete the QR code for
-            {' '}
-            <strong className="text-slate-900 dark:text-slate-50">
-              "
-              {qrCode?.name}
-              "
-            </strong>
-            ? This action cannot be undone and will permanently remove the QR code and its associated design.
+            {isBulkDelete
+              ? (
+                  <>
+                    Are you sure you want to permanently delete
+                    {' '}
+                    <strong className="text-slate-900 dark:text-slate-50">
+                      {qrCode?.name}
+                    </strong>
+                    ? This action cannot be undone and will permanently remove the QR codes and their associated designs.
+                  </>
+                )
+              : (
+                  <>
+                    Are you sure you want to permanently delete the QR code for
+                    {' '}
+                    <strong className="text-slate-900 dark:text-slate-50">
+                      "
+                      {qrCode?.name}
+                      "
+                    </strong>
+                    ? This action cannot be undone and will permanently remove the QR code and its associated design.
+                  </>
+                )}
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
@@ -72,7 +89,9 @@ export function DeleteQRCodeDialog({
               <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Warning</h3>
               <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                 <p>
-                  This will permanently delete the QR code and its associated design. This action cannot be undone.
+                  {isBulkDelete
+                    ? 'This will permanently delete the selected QR codes and their associated designs. This action cannot be undone.'
+                    : 'This will permanently delete the QR code and its associated design. This action cannot be undone.'}
                 </p>
               </div>
             </div>
@@ -97,13 +116,13 @@ export function DeleteQRCodeDialog({
               ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    Deleting...
+                    {isBulkDelete ? 'Deleting...' : 'Deleting...'}
                   </>
                 )
               : (
                   <>
                     <Trash2 className="mr-2 size-4" />
-                    Delete Forever
+                    {isBulkDelete ? 'Delete Selected' : 'Delete Forever'}
                   </>
                 )}
           </Button>

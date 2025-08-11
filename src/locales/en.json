@@ -70,5 +70,6 @@
     "dashboard_link": "Dashboard",
     "user_profile_link": "Manage your account",
     "sign_out": "Sign out"
-  }
+  },
+  "meta_description": "Professional QR management platform."
 }

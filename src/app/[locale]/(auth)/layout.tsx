@@ -13,14 +13,14 @@ export default async function AuthLayout(props: {
 
   // If you want to keep the logic for signInUrl, signUpUrl, etc. for future use:
   let signInUrl = '/sign-in';
-  let signUpUrl = '/sign-up';
+  // let signUpUrl = '/sign-up'; // disabled
   let dashboardUrl = '/dashboard';
   let afterSignOutUrl = '/sign-in';
 
   // Adjust URLs when locale != default, so e.g. "/fr/sign-in"
   if (locale !== routing.defaultLocale) {
     signInUrl = `/${locale}${signInUrl}`;
-    signUpUrl = `/${locale}${signUpUrl}`;
+    // signUpUrl = `/${locale}${signUpUrl}`;
     dashboardUrl = `/${locale}${dashboardUrl}`;
     afterSignOutUrl = `/${locale}${afterSignOutUrl}`;
   }
