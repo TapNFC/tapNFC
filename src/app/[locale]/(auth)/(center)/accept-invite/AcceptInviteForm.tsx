@@ -7,11 +7,11 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/utils/supabase/client';
 
 const formSchema = z.object({
@@ -29,7 +29,6 @@ export function AcceptInviteForm({ token }: { token: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [exchangeDone, setExchangeDone] = useState(false);
-  const { toast } = useToast();
   const router = useRouter();
   const locale = useLocale();
 
@@ -42,22 +41,14 @@ export function AcceptInviteForm({ token }: { token: string }) {
     const run = async () => {
       const code = token;
       if (!code) {
-        toast({ variant: 'error', title: 'Invalid link', description: 'Missing invite code.' });
+        toast.error('Invalid link: Missing invite code.');
         router.push(`/${locale}/sign-in`);
         return;
       }
-      try {
-        const supabase = createClient();
-        // Exchange the code for a session so the user is authenticated
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          throw error;
-        }
-        setExchangeDone(true);
-      } catch (e: any) {
-        toast({ variant: 'error', title: 'Invite error', description: e.message || 'Unable to accept invite' });
-        router.push(`/${locale}/sign-in`);
-      }
+
+      // For invite tokens, we'll validate them during the password submission
+      // This allows us to handle any PKCE or validation errors properly
+      setExchangeDone(true);
     };
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,16 +59,29 @@ export function AcceptInviteForm({ token }: { token: string }) {
       setLoading(true);
       const supabase = createClient();
 
-      const { error } = await supabase.auth.updateUser({ password: values.password });
-      if (error) {
-        toast({ variant: 'error', title: 'Error', description: error.message });
+      // For invite acceptance, we need to use the token to complete the signup process
+      // Let's try to use the invite token in the correct way
+
+      // First, try to exchange the invite token for a session
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(token);
+      if (exchangeError) {
+        console.error('Token exchange failed:', exchangeError);
+        toast.error(`Failed to validate invite: ${exchangeError.message}`);
         return;
       }
 
-      toast({ title: 'Welcome!', description: 'Your account is ready.' });
+      // Now try to update the user's password
+      const { error } = await supabase.auth.updateUser({ password: values.password });
+      if (error) {
+        toast.error(`Error: ${error.message}`);
+        return;
+      }
+
+      toast.success('Welcome! Your account is ready.');
       router.push(`/${locale}/dashboard`);
     } catch (err: any) {
-      toast({ variant: 'error', title: 'Error', description: err.message || 'Unexpected error' });
+      console.error('Password update error:', err);
+      toast.error(`Error: ${err.message || 'Unexpected error'}`);
     } finally {
       setLoading(false);
     }
