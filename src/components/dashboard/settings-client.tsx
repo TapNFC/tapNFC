@@ -2,7 +2,7 @@
 
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Key, Loader2, Save, User } from 'lucide-react';
+import { Eye, EyeOff, Key, Loader2, Mail, Save, Send, User } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,40 @@ export function SettingsClient({ user }: SettingsClientProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
 
   const isChanged
     = settings.name !== (user?.user_metadata?.full_name || '');
 
   const handleSettingChange = (key: string, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail || !inviteEmail.includes('@')) {
+      toast.error('Please enter a valid email');
+      return;
+    }
+    setIsInviting(true);
+    try {
+      const locale = (user?.user_metadata?.locale as string) || 'en';
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, locale }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Failed to send invite');
+      }
+      toast.success('Invitation sent');
+      setInviteEmail('');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send invite');
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -151,6 +179,33 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80">
+            <div className="p-6">
+              <div className="mb-6 flex items-center space-x-2">
+                <Mail className="size-5 text-slate-600" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Invite a User
+                </h3>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input
+                  placeholder="email@example.com"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                />
+                <Button onClick={handleInvite} disabled={isInviting} className="sm:w-40">
+                  {isInviting
+                    ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      )
+                    : (
+                        <Send className="mr-2 size-4" />
+                      )}
+                  {isInviting ? 'Sending...' : 'Send Invite'}
+                </Button>
               </div>
             </div>
           </Card>

@@ -146,15 +146,6 @@ export function SignInForm() {
         </form>
       </Form>
 
-      <div className="mt-4 text-center text-sm">
-        <span>Don&apos;t have an account? </span>
-        <Link
-          href={`/${locale}/sign-up`}
-          className="font-medium text-primary hover:text-primary/80 dark:text-primary-blue-light dark:hover:text-primary-blue-light/80"
-        >
-          Sign up
-        </Link>
-      </div>
     </div>
   );
 }
