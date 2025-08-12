@@ -102,6 +102,9 @@ export function DesignCreationStepsDialog({
         user_id: user.id,
         name: data.name,
         description: data.description,
+        width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
+        height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
+        background_color: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR,
         canvas_data: {
           canvasJSON: { objects: [] },
           width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,

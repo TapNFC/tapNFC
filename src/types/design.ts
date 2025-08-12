@@ -47,6 +47,9 @@ export type Design = {
   is_public: boolean;
   is_archived?: boolean;
   slug?: string; // URL-friendly slug for preview URLs
+  width?: number; // Canvas width in pixels
+  height?: number; // Canvas height in pixels
+  background_color?: string; // Canvas background color
   created_at: string;
   updated_at: string;
 };

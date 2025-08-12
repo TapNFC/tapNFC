@@ -400,11 +400,24 @@ export function useFabricCanvas({
             return; // Canvas has been disposed, don't try to resize
           }
           try {
-            const { width: newWidth, height: newHeight } = calculateCanvasDimensions();
-            fabricCanvas.setDimensions({
-              width: newWidth,
-              height: newHeight,
-            });
+            // Preserve current canvas dimensions instead of recalculating to defaults
+            const currentWidth = fabricCanvas.getWidth();
+            const currentHeight = fabricCanvas.getHeight();
+
+            // Only recalculate if we don't have valid dimensions
+            if (currentWidth && currentHeight && currentWidth > 0 && currentHeight > 0) {
+              // Keep current dimensions - don't change them
+              console.warn('Preserving current canvas dimensions during resize:', { width: currentWidth, height: currentHeight });
+            } else {
+              // Fallback to calculated dimensions only if current ones are invalid
+              const { width: newWidth, height: newHeight } = calculateCanvasDimensions();
+              fabricCanvas.setDimensions({
+                width: newWidth,
+                height: newHeight,
+              });
+              console.warn('Using calculated dimensions during resize (fallback):', { width: newWidth, height: newHeight });
+            }
+
             fabricCanvas.renderAll();
           } catch (error) {
             console.warn('Error during canvas resize:', error);
