@@ -19,7 +19,7 @@ export async function GET(
   try {
     let query = supabase
       .from('designs')
-      .select('id, name, description, canvas_data, preview_url, qr_code_url, qr_code_data, created_at, updated_at, slug')
+      .select('id, name, description, canvas_data, preview_url, qr_code_url, qr_code_data, created_at, updated_at, slug, is_archived')
       .eq('is_public', true);
 
     // Use the appropriate field based on whether it's a UUID or slug
@@ -54,6 +54,7 @@ export async function GET(
       created_at: data.created_at,
       updated_at: data.updated_at,
       slug: data.slug,
+      is_archived: data.is_archived,
       // Add required fields for compatibility
       user_id: 'public',
       tags: [],
