@@ -401,7 +401,7 @@ export const useQrCodeGenerator = (
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(blobUrl);
-            toast.success(`QR code downloaded at ${resolution}x${resolution}px!`);
+            // toast.success(`QR code downloaded at ${resolution}x${resolution}px!`);
           }, 'image/png');
         };
         img.onerror = () => {
@@ -419,13 +419,24 @@ export const useQrCodeGenerator = (
 
     // If we have a saved QR code URL and we're not in edit mode, download it directly
     if (qrCodeUrl && !isEditMode) {
-      const link = document.createElement('a');
-      link.href = qrCodeUrl;
-      link.download = `qr-code-${designId}${selectedQrSample?.id !== 'style-none' ? `-${selectedQrSample?.id}` : ''}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('QR code downloaded!');
+      // Fetch the image data to create a blob URL for proper downloading
+      fetch(qrCodeUrl)
+        .then(response => response.blob())
+        .then((blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = `qr-code-${designId}${selectedQrSample?.id !== 'style-none' ? `-${selectedQrSample?.id}` : ''}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+          // toast.success('QR code downloaded!');
+        })
+        .catch((error) => {
+          console.error('Error downloading saved QR code:', error);
+          toast.error('Failed to download saved QR code');
+        });
       return;
     }
 
@@ -472,7 +483,7 @@ export const useQrCodeGenerator = (
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
-        toast.success(`QR code downloaded${resolution ? ` at ${resolution}x${resolution}px` : ''}!`);
+        // toast.success(`QR code downloaded${resolution ? ` at ${resolution}x${resolution}px` : ''}!`);
       });
     };
     img.onerror = () => {
