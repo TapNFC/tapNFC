@@ -79,6 +79,17 @@ export function ElementsPanel({ onAddShape, onAddLink, onAddSocialIcon }: Elemen
       {/* Social Icons */}
       <SocialIconsPanel onAddSocialIcon={onAddSocialIcon} />
 
+      {/* Helpful tip for social icons */}
+      <div className="rounded-lg border border-purple-200/50 bg-purple-50/80 p-3">
+        <p className="text-xs text-purple-700">
+          💡
+          {' '}
+          <strong>Tip:</strong>
+          {' '}
+          Click any social icon to edit its URL and name!
+        </p>
+      </div>
+
       {/* Shapes */}
       <SidebarSection title="Shapes">
         <div className="grid grid-cols-3 gap-3">

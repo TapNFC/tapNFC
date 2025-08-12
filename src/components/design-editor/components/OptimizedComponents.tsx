@@ -3,6 +3,7 @@ import React from 'react';
 import { TextToolbar } from '../TextToolbar';
 import { LinkEditPopup } from './LinkEditPopup';
 import { RealTimePreview } from './RealTimePreview';
+import { SocialIconContextualToolbar } from './SocialIconContextualToolbar';
 
 // Memoized Link Edit Popup
 export const MemoizedLinkEditPopup = React.memo(LinkEditPopup);
@@ -35,6 +36,22 @@ export const MemoizedTextToolbar = React.memo(
   },
 );
 MemoizedTextToolbar.displayName = 'MemoizedTextToolbar';
+
+// Memoized Social Icon Contextual Toolbar
+export const MemoizedSocialIconContextualToolbar = React.memo(
+  SocialIconContextualToolbar,
+  (prevProps, nextProps) => {
+    // Only re-render if visibility, position, or callbacks change
+    return (
+      prevProps.isVisible === nextProps.isVisible
+      && prevProps.position.x === nextProps.position.x
+      && prevProps.position.y === nextProps.position.y
+      && prevProps.onActionsClick === nextProps.onActionsClick
+      && prevProps.onClose === nextProps.onClose
+    );
+  },
+);
+MemoizedSocialIconContextualToolbar.displayName = 'MemoizedSocialIconContextualToolbar';
 
 // Generic memoized wrapper for design editor components
 export function withMemo<T extends ComponentProps<any>>(

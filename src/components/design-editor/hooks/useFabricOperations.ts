@@ -633,16 +633,6 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         }
       });
 
-      // Add double-click handler to edit URL
-      img.on('dblclick', (e: any) => {
-        // Prevent default to avoid selecting the object
-        e.e.preventDefault();
-        e.e.stopPropagation();
-
-        // Show a toast message instead of prompt
-        toast.info('Double-click editing is available in the design editor. Please use the properties panel to edit URLs.');
-      });
-
       // Add the image to the canvas
       canvas.add(img);
       canvas.setActiveObject(img);
@@ -662,8 +652,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       // Notify that a new element was added
       canvas.fire('object:modified', { target: img });
 
-      // Show a hint about double-clicking
-      toast.info('Double-click the icon to add a URL link');
+      // Show a hint about single-clicking
+      toast.info('Click the icon to edit its URL and name');
     });
   }, [canvas, fabric, fabricReady]);
 
