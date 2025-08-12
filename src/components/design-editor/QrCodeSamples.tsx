@@ -56,8 +56,6 @@ const createSocialStyle = ({
   IconComponent,
   bgColor = 'white',
   qrBg = 'transparent',
-  useRealImage = false,
-  imagePath = '',
   svgIcon = '',
 }: {
   id: string;
@@ -66,8 +64,6 @@ const createSocialStyle = ({
   IconComponent: React.ElementType;
   bgColor?: string;
   qrBg?: string;
-  useRealImage?: boolean;
-  imagePath?: string;
   svgIcon?: string;
 }): QrSampleProps => ({
   id,
@@ -98,20 +94,9 @@ const createSocialStyle = ({
           ? (
               <g dangerouslySetInnerHTML={{ __html: svgIcon }} />
             )
-          : useRealImage && imagePath
-            ? (
-                <image
-                  href={imagePath}
-                  x="0"
-                  y="0"
-                  width="16"
-                  height="16"
-                  preserveAspectRatio="xMidYMid meet"
-                />
-              )
-            : (
-                <IconComponent color={color} size={16} />
-              )}
+          : (
+              <IconComponent color={color} size={16} />
+            )}
       </g>
     </svg>
   ),
