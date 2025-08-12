@@ -252,7 +252,7 @@ export function QrCodePreviewCard({
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
-                      disabled={isGenerating}
+                      disabled={isGenerating || !qrCodeUrl}
                     >
                       <Download className="size-4" />
                       <span>Download</span>
