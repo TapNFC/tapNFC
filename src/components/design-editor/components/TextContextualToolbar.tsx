@@ -79,14 +79,14 @@ export function TextContextualToolbar({
   const calculatedLeft = Math.max(
     padding,
     Math.min(
-      position.x - toolbarWidth / 2,
+      position.x - toolbarWidth / 2 + 18,
       window.innerWidth - toolbarWidth - padding,
     ),
   );
 
   const calculatedTop = Math.max(
     padding,
-    position.y - toolbarHeight - 20, // Position above with 20px gap`
+    position.y - toolbarHeight - 18, // Position above with 20px gap`
   );
 
   return (
