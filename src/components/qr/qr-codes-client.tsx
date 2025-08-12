@@ -4,6 +4,7 @@ import type { QRCode } from '@/types/qr-code';
 import { Grid3X3, List, QrCode, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import QRCodesSkeleton from '@/components/qr/QRCodesSkeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -252,11 +253,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
         </div>
 
         {isLoading && (
-          <div className="flex justify-center py-12">
-            <div className="flex flex-col items-center">
-              <div className="size-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading QR codes...</p>
-            </div>
+          <div className="py-6">
+            <QRCodesSkeleton />
           </div>
         )}
         {!isLoading && (
