@@ -66,7 +66,7 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
 
     const position = {
       x: rect.left + iconCenterX * zoom,
-      y: rect.top + (iconCenterY - iconHeight / 2) * zoom, // Position above the element, accounting for height and scale
+      y: rect.top + (iconCenterY - iconHeight / 2) - 40 * zoom, // Position above the element, accounting for height and scale
     };
 
     // Show contextual toolbar instead of popup

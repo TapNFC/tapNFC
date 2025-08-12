@@ -86,7 +86,7 @@ export function SocialIconContextualToolbar({
 
   const calculatedTop = Math.max(
     padding,
-    position.y - toolbarHeight - 18,
+    position.y - toolbarHeight + 18,
   );
 
   return (
