@@ -1,8 +1,16 @@
 'use client';
 
-import { Ruler, Settings } from 'lucide-react';
+import { AlertTriangle, Ruler, Settings } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +25,7 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
   // Set mobile as default canvas size
   const [canvasWidth, setCanvasWidth] = useState(375);
   const [canvasHeight, setCanvasHeight] = useState(667);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
 
   const handleCanvasSizeChange = useCallback(() => {
     if (!canvas) {
@@ -37,7 +46,12 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
     canvas.clear?.();
     canvas.backgroundColor = '#ffffff';
     canvas.renderAll?.();
+    setIsClearDialogOpen(false);
   }, [canvas]);
+
+  const openClearDialog = useCallback(() => {
+    setIsClearDialogOpen(true);
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -101,7 +115,7 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
           </div>
         </div>
         <Button
-          onClick={handleClearCanvas}
+          onClick={openClearDialog}
           variant="outline"
           className="w-full border-red-200 text-red-600 transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
           disabled={!canvas}
@@ -109,6 +123,35 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
           Clear Canvas
         </Button>
       </div>
+
+      {/* Clear Canvas Confirmation Dialog */}
+      <Dialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-red-500" />
+              <span>Confirm Canvas Clear</span>
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to clear the canvas? This action will remove all elements and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-4 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setIsClearDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleClearCanvas}
+            >
+              Clear Canvas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
