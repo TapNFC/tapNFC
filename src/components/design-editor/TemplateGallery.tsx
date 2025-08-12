@@ -6,20 +6,8 @@ import Image from 'next/image';
 import { useCallback, useMemo, useState } from 'react';
 
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDesigns } from '@/hooks/useDesigns';
-
-const DESIGN_TAGS = [
-  { id: 'all', label: 'All' },
-  { id: 'social', label: 'Social Media' },
-  { id: 'business', label: 'Business' },
-  { id: 'personal', label: 'Personal' },
-  { id: 'marketing', label: 'Marketing' },
-  { id: 'education', label: 'Education' },
-  { id: 'event', label: 'Event' },
-  { id: 'other', label: 'Other' },
-];
 
 type TemplateGalleryProps = {
   canvas: any;
@@ -27,11 +15,9 @@ type TemplateGalleryProps = {
 
 export function TemplateGallery({ canvas }: TemplateGalleryProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTag, setActiveTag] = useState('all');
 
   const { designs, loading, error } = useDesigns({
     category: 'Templates',
-    tag: activeTag === 'all' ? undefined : activeTag,
     searchQuery: searchTerm,
   });
 
@@ -77,19 +63,6 @@ export function TemplateGallery({ canvas }: TemplateGalleryProps) {
           onChange={e => setSearchTerm(e.target.value)}
           className="w-full"
         />
-        <div className="flex flex-wrap gap-2">
-          {DESIGN_TAGS.map(tag => (
-            <Button
-              key={tag.id}
-              variant={activeTag === tag.id ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTag(tag.id)}
-              className="rounded-full px-3 py-1 text-xs"
-            >
-              {tag.label}
-            </Button>
-          ))}
-        </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading && (

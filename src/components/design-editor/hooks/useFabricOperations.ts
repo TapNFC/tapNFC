@@ -59,7 +59,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           break;
         case 'add-body':
         default:
-          textObject = new fabric.Textbox('Body text lorem ipsum dolor sit amet.', {
+          textObject = new fabric.Textbox('Body text', {
             left: 50,
             top: 200,
             fontSize: 16,

@@ -22,7 +22,7 @@ const backgrounds = [
   { id: 'light-gray', color: '#f8fafc', border: true },
   { id: 'gray', color: '#f1f5f9', border: true },
   { id: 'dark-gray', color: '#64748b', border: false },
-  { id: 'black', color: '#0f172a', border: false },
+  { id: 'black', color: '#000000', border: false },
   { id: 'blue', color: '#3b82f6', border: false },
   { id: 'indigo', color: '#6366f1', border: false },
   { id: 'purple', color: '#8b5cf6', border: false },
