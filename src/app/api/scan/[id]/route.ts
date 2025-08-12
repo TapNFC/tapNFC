@@ -17,7 +17,7 @@ export async function POST(
   const supabase = createAppServerClient();
 
   try {
-    // First, verify the design exists and is public
+    // First, verify the design exists
     const { data: design, error: designError } = await supabase
       .from('designs')
       .select('id, name, is_public, is_archived')
@@ -29,10 +29,7 @@ export async function POST(
       return NextResponse.json({ error: 'Design not found' }, { status: 404 });
     }
 
-    if (!design.is_public) {
-      return NextResponse.json({ error: 'Design is not publicly accessible' }, { status: 403 });
-    }
-
+    // If the design is archived, do not record scans
     if (design.is_archived) {
       return NextResponse.json({ error: 'QR code is archived' }, { status: 410 });
     }

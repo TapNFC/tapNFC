@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAppServerClient } from '@/utils/supabase/server-app';
+import { createServiceClient } from '@/utils/supabase/server-service';
 
 /**
  * GET endpoint to fetch QR code data for a design
@@ -12,6 +13,7 @@ export async function GET(
   const { id } = await params;
 
   const supabase = createAppServerClient();
+  const supabaseService = createServiceClient();
 
   try {
     // Query for the design, focusing only on QR code related fields
@@ -41,8 +43,8 @@ export async function GET(
       return NextResponse.json({ error: 'QR code has not been generated for this design' }, { status: 404 });
     }
 
-    // Get actual scan statistics from the qr_code_scans table
-    const { data: scanStats, error: scanError } = await supabase
+    // Get actual scan statistics from the qr_code_scans table using the service client (bypass RLS)
+    const { data: scanStats, error: scanError } = await supabaseService
       .from('qr_code_scans')
       .select('created_at, country_code, city, device_type, browser, os')
       .eq('design_id', id)
