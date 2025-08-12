@@ -1,7 +1,8 @@
 'use client';
 
 import { AlertTriangle, Ruler, Settings } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { designService } from '@/services/designService';
 
 type CanvasSettingsProps = {
   canvas: any;
@@ -21,23 +23,90 @@ type CanvasSettingsProps = {
   locale?: string;
 };
 
-export function CanvasSettings({ canvas }: CanvasSettingsProps) {
-  // Set mobile as default canvas size
-  const [canvasWidth, setCanvasWidth] = useState(375);
-  const [canvasHeight, setCanvasHeight] = useState(667);
+export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
+  // Don't set default values initially - wait for design to load
+  const [canvasWidth, setCanvasWidth] = useState<number | ''>('');
+  const [canvasHeight, setCanvasHeight] = useState<number | ''>('');
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleCanvasSizeChange = useCallback(() => {
-    if (!canvas) {
+  // Load current design dimensions when component mounts or designId changes
+  useEffect(() => {
+    if (!designId) {
+      setIsLoading(false);
       return;
     }
 
-    canvas.setDimensions?.({
-      width: canvasWidth,
-      height: canvasHeight,
-    });
-    canvas.renderAll?.();
-  }, [canvas, canvasWidth, canvasHeight]);
+    const loadDesignDimensions = async () => {
+      try {
+        setIsLoading(true);
+        const design = await designService.getDesignById(designId);
+        if (design) {
+          // Load width and height from the design record (top-level attributes)
+          if (design.width && design.height) {
+            setCanvasWidth(design.width);
+            setCanvasHeight(design.height);
+          } else if (design.canvas_data?.width && design.canvas_data?.height) {
+            // Fallback to canvas_data if top-level not available
+            setCanvasWidth(design.canvas_data.width);
+            setCanvasHeight(design.canvas_data.height);
+          } else {
+            // If no dimensions found, set to empty
+            setCanvasWidth('');
+            setCanvasHeight('');
+          }
+        } else {
+          // No design found, set to empty
+          setCanvasWidth('');
+          setCanvasHeight('');
+        }
+      } catch (error) {
+        console.error('Failed to load design dimensions:', error);
+        setCanvasWidth('');
+        setCanvasHeight('');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDesignDimensions();
+  }, [designId]);
+
+  const handleCanvasSizeChange = useCallback(async () => {
+    if (!canvas || !designId || !canvasWidth || !canvasHeight) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Update canvas dimensions
+      canvas.setDimensions?.({
+        width: canvasWidth,
+        height: canvasHeight,
+      });
+      canvas.renderAll?.();
+
+      // Save the new dimensions to the database
+      const result = await designService.updateDesign(designId, {
+        width: canvasWidth,
+        height: canvasHeight,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (result) {
+        toast.success('Canvas size updated and saved');
+      } else {
+        toast.error('Failed to save canvas size');
+      }
+    } catch (error) {
+      console.error('Error updating canvas size:', error);
+      toast.error('Failed to update canvas size');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [canvas, canvasWidth, canvasHeight, designId]);
 
   const handleClearCanvas = useCallback(() => {
     if (!canvas) {
@@ -74,9 +143,10 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
               id="width"
               type="number"
               value={canvasWidth}
-              onChange={e => setCanvasWidth(Number(e.target.value))}
+              onChange={e => setCanvasWidth(e.target.value === '' ? '' : Number(e.target.value))}
               className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-              disabled={!canvas}
+              disabled={!canvas || isSaving || isLoading}
+              placeholder={isLoading ? 'Loading...' : 'Width'}
             />
           </div>
           <div className="space-y-2">
@@ -85,9 +155,10 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
               id="height"
               type="number"
               value={canvasHeight}
-              onChange={e => setCanvasHeight(Number(e.target.value))}
+              onChange={e => setCanvasHeight(e.target.value === '' ? '' : Number(e.target.value))}
               className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-              disabled={!canvas}
+              disabled={!canvas || isSaving || isLoading}
+              placeholder={isLoading ? 'Loading...' : 'Height'}
             />
           </div>
         </div>
@@ -95,9 +166,9 @@ export function CanvasSettings({ canvas }: CanvasSettingsProps) {
         <Button
           onClick={handleCanvasSizeChange}
           className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
-          disabled={!canvas}
+          disabled={!canvas || isSaving || isLoading || !canvasWidth || !canvasHeight}
         >
-          Apply Size
+          {isSaving ? 'Saving...' : 'Apply Size'}
         </Button>
       </div>
 
