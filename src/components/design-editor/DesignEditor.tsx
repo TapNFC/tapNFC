@@ -6,6 +6,7 @@ import { CanvasContainer } from './components/CanvasContainer';
 import {
   MemoizedLinkEditPopup,
   MemoizedRealTimePreview,
+  MemoizedSocialIconContextualToolbar,
   MemoizedTextToolbar,
 } from './components/OptimizedComponents';
 import { SocialIconEditPopup } from './components/SocialIconEditPopup';
@@ -61,10 +62,12 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Add the social icon editor hook
   const {
+    socialIconContextualToolbar,
     socialIconEditPopup,
-    handleSocialIconDoubleClick,
+    handleActionsClick,
     handleUpdateSocialIcon,
     handleCloseSocialIconEdit,
+    handleCloseContextualToolbar: handleCloseSocialIconContextualToolbar,
   } = useSocialIconEditor({ canvas });
 
   // Add the text URL editor hook
@@ -74,7 +77,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     handleLinkIconClick,
     handleUpdateTextUrl,
     handleCloseTextUrlEdit,
-    handleCloseContextualToolbar,
+    handleCloseContextualToolbar: handleCloseTextContextualToolbar,
   } = useTextUrlEditor({ canvas });
 
   // Extract design loading logic to custom hook
@@ -198,9 +201,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         return;
       }
 
-      if (target.elementType === 'socialIcon') {
-        handleSocialIconDoubleClick(target, options.e);
-      } else if (target.elementType === 'link') {
+      if (target.elementType === 'link') {
         handleLinkDoubleClick(target, options.e);
       } else if (target.elementType === 'button') {
         // For buttons, we'll focus on the URL field in the properties panel
@@ -213,6 +214,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
+      // Note: Social icon double-click is now handled in the useSocialIconEditor hook
     });
 
     // Clean up event listeners on unmount
@@ -228,7 +230,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         }
       }
     };
-  }, [canvas, fabric, handleSocialIconDoubleClick, handleLinkDoubleClick]);
+  }, [canvas, fabric, handleLinkDoubleClick]);
 
   return (
     <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.MAIN}>
@@ -298,6 +300,14 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         backgroundColor={previewData?.backgroundColor || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR}
       />
 
+      {/* Add the social icon contextual toolbar */}
+      <MemoizedSocialIconContextualToolbar
+        isVisible={socialIconContextualToolbar.isVisible}
+        position={socialIconContextualToolbar.position}
+        onActionsClick={handleActionsClick}
+        onClose={handleCloseSocialIconContextualToolbar}
+      />
+
       {/* Add the social icon edit popup */}
       {socialIconEditPopup.isVisible && (
         <SocialIconEditPopup
@@ -314,7 +324,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         isVisible={contextualToolbar.isVisible}
         position={contextualToolbar.position}
         onLinkClick={handleLinkIconClick}
-        onClose={handleCloseContextualToolbar}
+        onClose={handleCloseTextContextualToolbar}
       />
 
       {/* Add the text URL edit popup */}

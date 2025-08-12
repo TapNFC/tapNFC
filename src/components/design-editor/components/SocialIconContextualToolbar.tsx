@@ -5,19 +5,19 @@ import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-type TextContextualToolbarProps = {
+type SocialIconContextualToolbarProps = {
   isVisible: boolean;
   position: { x: number; y: number };
-  onLinkClick: () => void;
+  onActionsClick: () => void;
   onClose: () => void;
 };
 
-export function TextContextualToolbar({
+export function SocialIconContextualToolbar({
   isVisible,
   position,
-  onLinkClick,
+  onActionsClick,
   onClose,
-}: TextContextualToolbarProps) {
+}: SocialIconContextualToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Handle clicks outside the toolbar to close it
@@ -79,14 +79,14 @@ export function TextContextualToolbar({
   const calculatedLeft = Math.max(
     padding,
     Math.min(
-      position.x - toolbarWidth / 2 + 18,
+      position.x - toolbarWidth / 2 + 3, // Add 20px offset to the right
       window.innerWidth - toolbarWidth - padding,
     ),
   );
 
   const calculatedTop = Math.max(
     padding,
-    position.y - toolbarHeight - 18, // Position above with 20px gap`
+    position.y - toolbarHeight + 18,
   );
 
   return (
@@ -102,7 +102,7 @@ export function TextContextualToolbar({
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <Button
-              onClick={onLinkClick}
+              onClick={onActionsClick}
               variant="ghost"
               size="sm"
               className="size-8 rounded-lg p-0 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
@@ -111,7 +111,7 @@ export function TextContextualToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="bg-gray-800 text-white">
-            <p>Text actions</p>
+            <p>Social icon actions</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
