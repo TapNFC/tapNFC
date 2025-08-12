@@ -106,9 +106,9 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
       gradient: 'from-emerald-500 to-teal-600',
       description: 'Typography tools',
       items: [
-        { id: 'add-text', label: 'Heading', icon: Type, description: 'Large title text' },
-        { id: 'add-subheading', label: 'Subheading', icon: Type, description: 'Medium subtitle' },
-        { id: 'add-body', label: 'Body Text', icon: Type, description: 'Regular paragraph' },
+        { id: 'add-text', label: 'Heading', icon: Type },
+        { id: 'add-subheading', label: 'Subheading', icon: Type },
+        { id: 'add-body', label: 'Body Text', icon: Type },
       ],
     },
     {
@@ -325,7 +325,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
                         </div>
                         <div>
                           <span className="font-semibold text-gray-900 transition-colors group-hover:text-green-700">{item.label}</span>
-                          <p className="mt-1 text-sm text-gray-600">{item.description}</p>
                         </div>
                       </div>
                     </button>

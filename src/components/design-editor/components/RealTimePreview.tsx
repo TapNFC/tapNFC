@@ -804,7 +804,19 @@ export function RealTimePreview({
   }, []);
 
   if (!isVisible) {
-    return null;
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          onClick={() => setIsVisible(true)}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl"
+          title="Click to open Live Preview"
+        >
+          <Eye className="size-4" />
+          <span className="text-sm font-medium">Live Preview</span>
+          <div className="size-2 animate-pulse rounded-full bg-green-400" />
+        </button>
+      </div>
+    );
   }
 
   return (
