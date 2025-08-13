@@ -1,23 +1,13 @@
-import type { TemplateData } from '@/lib/indexedDB';
+import type { CreateTemplateData, Template } from '@/services/templateService';
 import { create } from 'zustand';
-import { designDB } from '@/lib/indexedDB';
-
-export type Template = {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  data: any;
-  createdAt: Date;
-  updatedAt: Date;
-};
+import { templateService } from '@/services/templateService';
 
 type TemplateState = {
   templates: Template[];
   isLoading: boolean;
   error: string | null;
   loadTemplates: () => Promise<void>;
-  saveTemplate: (template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  saveTemplate: (template: Omit<CreateTemplateData, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
   getTemplate: (id: string) => Promise<Template | null>;
   saveCurrentTemplate: (canvasData: any, name: string, description?: string, category?: string) => Promise<void>;
@@ -31,16 +21,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   loadTemplates: async () => {
     set({ isLoading: true, error: null });
     try {
-      const templatesData = await designDB.getAllTemplates();
-      const templates = templatesData.map((templateData): Template => ({
-        id: templateData.id,
-        name: templateData.name,
-        description: templateData.description,
-        category: templateData.category,
-        data: templateData.canvasData,
-        createdAt: templateData.createdAt,
-        updatedAt: templateData.updatedAt,
-      }));
+      const templates = await templateService.getUserTemplates();
       set({ templates, isLoading: false });
     } catch (error) {
       console.error('Failed to load templates:', error);
@@ -51,33 +32,25 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   saveTemplate: async (template) => {
     set({ isLoading: true, error: null });
     try {
-      const templateData: TemplateData = {
-        id: generateTemplateId(),
+      const newTemplate = await templateService.createTemplate({
         name: template.name,
         description: template.description,
         category: template.category,
-        canvasData: template.data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        canvas_data: template.canvas_data,
+        user_id: undefined, // Will be set by Supabase RLS
+        is_public: false,
+        is_template: true,
+      });
 
-      await designDB.saveTemplate(templateData);
-
-      // Add to local state
-      const newTemplate: Template = {
-        id: templateData.id,
-        name: templateData.name,
-        description: templateData.description,
-        category: templateData.category,
-        data: templateData.canvasData,
-        createdAt: templateData.createdAt,
-        updatedAt: templateData.updatedAt,
-      };
-
-      set(state => ({
-        templates: [...state.templates, newTemplate],
-        isLoading: false,
-      }));
+      if (newTemplate) {
+        // Add to local state
+        set(state => ({
+          templates: [...state.templates, newTemplate],
+          isLoading: false,
+        }));
+      } else {
+        throw new Error('Failed to create template');
+      }
     } catch (error) {
       console.error('Failed to save template:', error);
       set({ error: 'Failed to save template', isLoading: false });
@@ -88,11 +61,15 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   deleteTemplate: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      await designDB.deleteTemplate(id);
-      set(state => ({
-        templates: state.templates.filter(t => t.id !== id),
-        isLoading: false,
-      }));
+      const success = await templateService.deleteTemplate(id);
+      if (success) {
+        set(state => ({
+          templates: state.templates.filter(t => t.id !== id),
+          isLoading: false,
+        }));
+      } else {
+        throw new Error('Failed to delete template');
+      }
     } catch (error) {
       console.error('Failed to delete template:', error);
       set({ error: 'Failed to delete template', isLoading: false });
@@ -102,20 +79,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   getTemplate: async (id) => {
     try {
-      const templateData = await designDB.getTemplate(id);
-      if (!templateData) {
-        return null;
-      }
-
-      return {
-        id: templateData.id,
-        name: templateData.name,
-        description: templateData.description,
-        category: templateData.category,
-        data: templateData.canvasData,
-        createdAt: templateData.createdAt,
-        updatedAt: templateData.updatedAt,
-      };
+      const template = await templateService.getTemplateById(id);
+      return template;
     } catch (error) {
       console.error('Failed to get template:', error);
       return null;
@@ -131,15 +96,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       name,
       description,
       category,
-      data: canvasData,
+      canvas_data: canvasData,
     });
   },
 }));
-
-// Generate a unique template ID
-function generateTemplateId(): string {
-  return `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
 
 // Format date for display
 export function formatDate(date: Date): string {
@@ -154,7 +114,7 @@ export function formatDate(date: Date): string {
 
 // Load templates on store initialization
 if (typeof window !== 'undefined') {
-  // Initialize templates after a short delay to ensure IndexedDB is ready
+  // Initialize templates after a short delay to ensure Supabase is ready
   setTimeout(() => {
     useTemplateStore.getState().loadTemplates().catch(console.error);
   }, 100);

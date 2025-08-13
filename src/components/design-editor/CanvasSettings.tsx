@@ -17,6 +17,10 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { designService } from '@/services/designService';
 
+// Canvas size limits
+const MAX_WIDTH = 1024;
+const MAX_HEIGHT = 768;
+
 type CanvasSettingsProps = {
   canvas: any;
   designId?: string;
@@ -30,6 +34,10 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Error states for validation
+  const [widthError, setWidthError] = useState<string>('');
+  const [heightError, setHeightError] = useState<string>('');
 
   // Load current design dimensions when component mounts or designId changes
   useEffect(() => {
@@ -73,8 +81,73 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
     loadDesignDimensions();
   }, [designId]);
 
+  // Validation functions
+  const validateWidth = useCallback((value: number | ''): string => {
+    if (value === '') {
+      return '';
+    }
+    if (value <= 0) {
+      return 'Width must be greater than 0';
+    }
+    if (value > MAX_WIDTH) {
+      return `Width cannot exceed ${MAX_WIDTH}px`;
+    }
+    return '';
+  }, []);
+
+  const validateHeight = useCallback((value: number | ''): string => {
+    if (value === '') {
+      return '';
+    }
+    if (value <= 0) {
+      return 'Height must be greater than 0';
+    }
+    if (value > MAX_HEIGHT) {
+      return `Height cannot exceed ${MAX_HEIGHT}px`;
+    }
+    return '';
+  }, []);
+
+  // Handle width change with validation
+  const handleWidthChange = useCallback((value: string) => {
+    const numValue = value === '' ? '' : Number(value);
+    setCanvasWidth(numValue);
+
+    if (numValue !== '') {
+      const error = validateWidth(numValue);
+      setWidthError(error);
+    } else {
+      setWidthError('');
+    }
+  }, [validateWidth]);
+
+  // Handle height change with validation
+  const handleHeightChange = useCallback((value: string) => {
+    const numValue = value === '' ? '' : Number(value);
+    setCanvasHeight(numValue);
+
+    if (numValue !== '') {
+      const error = validateHeight(numValue);
+      setHeightError(error);
+    } else {
+      setHeightError('');
+    }
+  }, [validateHeight]);
+
+  // Check if form is valid
+  const isFormValid = useCallback(() => {
+    return canvasWidth !== ''
+      && canvasHeight !== ''
+      && !widthError
+      && !heightError
+      && canvasWidth > 0
+      && canvasHeight > 0
+      && canvasWidth <= MAX_WIDTH
+      && canvasHeight <= MAX_HEIGHT;
+  }, [canvasWidth, canvasHeight, widthError, heightError]);
+
   const handleCanvasSizeChange = useCallback(async () => {
-    if (!canvas || !designId || !canvasWidth || !canvasHeight) {
+    if (!canvas || !designId || !isFormValid()) {
       return;
     }
 
@@ -83,15 +156,15 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
     try {
       // Update canvas dimensions
       canvas.setDimensions?.({
-        width: canvasWidth,
-        height: canvasHeight,
+        width: canvasWidth as number,
+        height: canvasHeight as number,
       });
       canvas.renderAll?.();
 
       // Save the new dimensions to the database
       const result = await designService.updateDesign(designId, {
-        width: canvasWidth,
-        height: canvasHeight,
+        width: canvasWidth as number,
+        height: canvasHeight as number,
         updated_at: new Date().toISOString(),
       });
 
@@ -106,7 +179,7 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [canvas, canvasWidth, canvasHeight, designId]);
+  }, [canvas, canvasWidth, canvasHeight, designId, isFormValid]);
 
   const handleClearCanvas = useCallback(() => {
     if (!canvas) {
@@ -143,11 +216,18 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
               id="width"
               type="number"
               value={canvasWidth}
-              onChange={e => setCanvasWidth(e.target.value === '' ? '' : Number(e.target.value))}
-              className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              onChange={e => handleWidthChange(e.target.value)}
+              className={`h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 ${
+                widthError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+              }`}
               disabled={!canvas || isSaving || isLoading}
               placeholder={isLoading ? 'Loading...' : 'Width'}
+              min="1"
+              max={MAX_WIDTH}
             />
+            {widthError && (
+              <p className="text-xs text-red-600">{widthError}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="height" className="text-sm font-medium text-gray-700">Height</Label>
@@ -155,18 +235,25 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
               id="height"
               type="number"
               value={canvasHeight}
-              onChange={e => setCanvasHeight(e.target.value === '' ? '' : Number(e.target.value))}
-              className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              onChange={e => handleHeightChange(e.target.value)}
+              className={`h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 ${
+                heightError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+              }`}
               disabled={!canvas || isSaving || isLoading}
               placeholder={isLoading ? 'Loading...' : 'Height'}
+              min="1"
+              max={MAX_HEIGHT}
             />
+            {heightError && (
+              <p className="text-xs text-red-600">{heightError}</p>
+            )}
           </div>
         </div>
 
         <Button
           onClick={handleCanvasSizeChange}
-          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
-          disabled={!canvas || isSaving || isLoading || !canvasWidth || !canvasHeight}
+          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+          disabled={!canvas || isSaving || isLoading || !isFormValid()}
         >
           {isSaving ? 'Saving...' : 'Apply Size'}
         </Button>

@@ -19,7 +19,7 @@ export async function GET(
   try {
     let query = supabase
       .from('designs')
-      .select('id, name, description, canvas_data, preview_url, qr_code_url, qr_code_data, created_at, updated_at, slug, is_archived')
+      .select('id, name, description, canvas_data, preview_url, qr_code_url, qr_code_data, created_at, updated_at, slug, is_archived, width, height, background_color')
       .eq('is_public', true);
 
     // Use the appropriate field based on whether it's a UUID or slug
@@ -55,6 +55,9 @@ export async function GET(
       updated_at: data.updated_at,
       slug: data.slug,
       is_archived: data.is_archived,
+      width: data.width || 800, // Include width with fallback
+      height: data.height || 600, // Include height with fallback
+      background_color: data.background_color || '#ffffff', // Include background color with fallback
       // Add required fields for compatibility
       user_id: 'public',
       tags: [],
