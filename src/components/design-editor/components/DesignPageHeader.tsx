@@ -4,7 +4,8 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DesignTypeDialog } from '@/components/design-editor/components/dialogs/DesignTypeDialog';
 import { Button } from '@/components/ui/button';
-import { designDB } from '@/lib/indexedDB';
+import { designService } from '@/services/designService';
+import { templateService } from '@/services/templateService';
 
 type DesignPageHeaderProps = {
   locale: string;
@@ -21,8 +22,8 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
   const loadStats = async () => {
     try {
       const [designs, templates] = await Promise.all([
-        designDB.getAllDesigns(),
-        designDB.getAllTemplates(),
+        designService.getUserDesigns(),
+        templateService.getUserTemplates(),
       ]);
 
       // Ensure designs and templates are arrays before processing
@@ -32,7 +33,7 @@ export function DesignPageHeader({ locale }: DesignPageHeaderProps) {
       // Count recent designs (last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const recentDesigns = validDesigns.filter(d => d?.updatedAt && d.updatedAt > weekAgo);
+      const recentDesigns = validDesigns.filter(d => d?.updated_at && new Date(d.updated_at) > weekAgo);
 
       setStats({
         totalDesigns: validDesigns.length,

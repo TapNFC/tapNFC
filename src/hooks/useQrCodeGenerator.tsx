@@ -187,9 +187,12 @@ export const useQrCodeGenerator = (
         }
 
         // Set other necessary state values for displaying the existing QR code
-        if (design?.metadata?.designType === 'image-to-qr') {
+        if (design?.type === 'image-to-qr') {
           setIsImageQr(true);
-          setSourceImage(design.metadata.imageUrl || null);
+          // Check for image in canvas data or use a default
+          const canvasData = design.canvas_data || {};
+          const imageUrl = canvasData.imageUrl || canvasData.metadata?.imageUrl || null;
+          setSourceImage(imageUrl);
           setQrUrl(`${baseUrl}/api/image-qr/${designId}`);
         } else {
           // Use slug-based URL if available, otherwise fall back to ID-based URL
@@ -242,9 +245,12 @@ export const useQrCodeGenerator = (
         setDescription('Scan this QR code to view the design');
       }
 
-      if (design?.metadata?.designType === 'image-to-qr') {
+      if (design?.type === 'image-to-qr') {
         setIsImageQr(true);
-        setSourceImage(design.metadata.imageUrl || null);
+        // Check for image in canvas data or use a default
+        const canvasData = design.canvas_data || {};
+        const imageUrl = canvasData.imageUrl || canvasData.metadata?.imageUrl || null;
+        setSourceImage(imageUrl);
         setQrUrl(`${baseUrl}/api/image-qr/${designId}`);
       } else {
         // Use slug-based URL if available, otherwise fall back to ID-based URL

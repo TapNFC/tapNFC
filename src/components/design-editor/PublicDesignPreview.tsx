@@ -695,8 +695,8 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
           // Also handle cases where the image might be positioned from center by default
           if (!obj.originX && !obj.originY) {
             // Check if this looks like a centered object by examining the position
-            const canvasWidth = designData?.canvas_data?.width || 800;
-            const canvasHeight = designData?.canvas_data?.height || 600;
+            const canvasWidth = designData?.width || 800;
+            const canvasHeight = designData?.height || 600;
 
             // If the object appears to be positioned from center (common with social icons)
             if (Math.abs(left - canvasWidth / 2) < canvasWidth / 3 && Math.abs(top - canvasHeight / 2) < canvasHeight / 3) {
@@ -1094,8 +1094,8 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
   }
 
   const canvasData = designData.canvas_data || {};
-  const canvasWidth = canvasData.width || 375;
-  const canvasHeight = canvasData.height || 667;
+  const canvasWidth = designData.width || 800;
+  const canvasHeight = designData.height || 600;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -1124,7 +1124,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
       {/* Design Preview */}
       <main className="flex flex-1 items-center justify-center p-4">
-        <div className="relative mx-auto max-w-sm">
+        <div className="relative flex flex-col items-center">
           {/* Canvas Container */}
           <div
             ref={containerRef}

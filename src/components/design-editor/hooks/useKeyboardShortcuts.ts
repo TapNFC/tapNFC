@@ -212,8 +212,8 @@ export function useKeyboardShortcuts({
         const templateIndex = Number.parseInt(event.code.replace('Digit', ''), 10) - 1;
         if (templates[templateIndex]) {
           const template = templates[templateIndex];
-          if (template && template.data) {
-            canvas.loadFromJSON(template.data, (loadedCanvas: any, error: any) => {
+          if (template && template.canvas_data) {
+            canvas.loadFromJSON(template.canvas_data, (loadedCanvas: any, error: any) => {
               if (error) {
                 console.error('Error loading quick template:', error);
                 return;

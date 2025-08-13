@@ -1,316 +1,313 @@
-import type { DesignData, TemplateData } from './indexedDB';
-import { designDB } from './indexedDB';
+import { designService } from '@/services/designService';
+import { templateService } from '@/services/templateService';
 
-export const createSampleDesigns = async () => {
-  try {
-    // Sample design data
-    const sampleDesigns: DesignData[] = [
-      {
-        id: 'design_sample_1',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'i-text',
-              left: 50,
-              top: 50,
-              width: 200,
-              height: 40,
-              text: 'Welcome to My Business',
-              fontSize: 24,
-              fontFamily: 'Arial',
-              fill: '#333333',
-            },
-            {
-              type: 'rect',
-              left: 50,
-              top: 120,
-              width: 300,
-              height: 200,
-              fill: '#3b82f6',
-              rx: 10,
-              ry: 10,
-            },
-          ],
-          background: '#ffffff',
-          width: 400,
-          height: 300,
-        },
-        metadata: {
-          width: 400,
-          height: 300,
-          backgroundColor: '#ffffff',
-          title: 'Business Card Design',
-          description: 'A simple business card template with company name and logo area',
-        },
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      },
-      {
-        id: 'design_sample_2',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'i-text',
-              left: 100,
-              top: 100,
-              width: 300,
-              height: 60,
-              text: 'Social Media Post',
-              fontSize: 32,
-              fontFamily: 'Arial',
-              fill: '#ffffff',
-              textAlign: 'center',
-            },
-            {
-              type: 'circle',
-              left: 200,
-              top: 200,
-              radius: 80,
-              fill: '#ef4444',
-            },
-          ],
-          background: '#1f2937',
-          width: 500,
-          height: 500,
-        },
-        metadata: {
-          width: 500,
-          height: 500,
-          backgroundColor: '#1f2937',
-          title: 'Instagram Post',
-          description: 'Square format social media post with dark theme',
-        },
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-      },
-      {
-        id: 'design_sample_3',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'i-text',
-              left: 50,
-              top: 30,
-              width: 500,
-              height: 40,
-              text: 'Event Flyer',
-              fontSize: 28,
-              fontFamily: 'Arial',
-              fill: '#7c3aed',
-              textAlign: 'center',
-            },
-            {
-              type: 'rect',
-              left: 50,
-              top: 100,
-              width: 500,
-              height: 300,
-              fill: '#f3f4f6',
-              stroke: '#7c3aed',
-              strokeWidth: 3,
-            },
-          ],
-          background: '#ffffff',
-          width: 600,
-          height: 800,
-        },
-        metadata: {
-          width: 600,
-          height: 800,
-          backgroundColor: '#ffffff',
-          title: 'Event Flyer Design',
-          description: 'Vertical flyer template for events and announcements',
-        },
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-        updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      },
-    ];
-
-    // Sample template data
-    const sampleTemplates: TemplateData[] = [
-      {
-        id: 'template_business_card',
-        name: 'Professional Business Card',
-        description: 'Clean and professional business card template',
-        category: 'Business Cards',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'i-text',
-              left: 20,
-              top: 20,
-              width: 160,
-              height: 25,
-              text: 'Your Name',
-              fontSize: 18,
-              fontFamily: 'Arial',
-              fill: '#1f2937',
-              fontWeight: 'bold',
-            },
-            {
-              type: 'i-text',
-              left: 20,
-              top: 50,
-              width: 160,
-              height: 20,
-              text: 'Job Title',
-              fontSize: 14,
-              fontFamily: 'Arial',
-              fill: '#6b7280',
-            },
-            {
-              type: 'line',
-              left: 20,
-              top: 80,
-              x1: 0,
-              y1: 0,
-              x2: 160,
-              y2: 0,
-              stroke: '#3b82f6',
-              strokeWidth: 2,
-            },
-          ],
-          background: '#ffffff',
+// Sample design data for testing and development
+export const sampleDesigns = [
+  {
+    id: 'sample-design-1',
+    name: 'Modern Business Card',
+    description: 'A clean and professional business card design',
+    type: 'business-card',
+    width: 350,
+    height: 200,
+    backgroundColor: '#ffffff',
+    canvas_data: {
+      version: '5.3.0',
+      objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
           width: 350,
           height: 200,
+          fill: '#ffffff',
+          stroke: '#e0e0e0',
+          strokeWidth: 1,
         },
-        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      },
-      {
-        id: 'template_social_media',
-        name: 'Social Media Square',
-        description: 'Perfect for Instagram posts and social media',
-        category: 'Social Media',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'rect',
-              left: 0,
-              top: 0,
-              width: 500,
-              height: 500,
-              fill: 'linear-gradient(45deg, #ff6b6b, #4ecdc4)',
-            },
-            {
-              type: 'i-text',
-              left: 250,
-              top: 250,
-              width: 300,
-              height: 40,
-              text: 'Your Message',
-              fontSize: 24,
-              fontFamily: 'Arial',
-              fill: '#ffffff',
-              textAlign: 'center',
-              originX: 'center',
-              originY: 'center',
-            },
-          ],
-          background: '#ffffff',
+        {
+          type: 'text',
+          left: 25,
+          top: 30,
+          fontSize: 24,
+          fontWeight: 'bold',
+          fill: '#2563eb',
+          text: 'John Doe',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 65,
+          fontSize: 14,
+          fill: '#6b7280',
+          text: 'Software Engineer',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 90,
+          fontSize: 12,
+          fill: '#9ca3af',
+          text: 'john.doe@example.com',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 110,
+          fontSize: 12,
+          fill: '#9ca3af',
+          text: '+1 (555) 123-4567',
+        },
+      ],
+    },
+    is_template: false,
+    is_public: true,
+  },
+  {
+    id: 'sample-design-2',
+    name: 'Event Flyer',
+    description: 'An eye-catching event promotion flyer',
+    type: 'flyer',
+    width: 600,
+    height: 800,
+    backgroundColor: '#f3f4f6',
+    canvas_data: {
+      version: '5.3.0',
+      objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
+          width: 600,
+          height: 800,
+          fill: '#f3f4f6',
+        },
+        {
+          type: 'rect',
+          left: 50,
+          top: 50,
           width: 500,
-          height: 500,
+          height: 700,
+          fill: '#ffffff',
+          rx: 10,
+          ry: 10,
         },
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 20 days ago
-        updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days ago
-      },
-      {
-        id: 'template_presentation',
-        name: 'Presentation Slide',
-        description: 'Professional presentation slide template',
-        category: 'Presentations',
-        canvasData: {
-          version: '5.3.0',
-          objects: [
-            {
-              type: 'i-text',
-              left: 50,
-              top: 50,
-              width: 600,
-              height: 60,
-              text: 'Slide Title',
-              fontSize: 36,
-              fontFamily: 'Arial',
-              fill: '#1f2937',
-              fontWeight: 'bold',
-            },
-            {
-              type: 'i-text',
-              left: 50,
-              top: 150,
-              width: 600,
-              height: 200,
-              text: 'Your content goes here. This is a placeholder for your presentation content.',
-              fontSize: 18,
-              fontFamily: 'Arial',
-              fill: '#374151',
-              lineHeight: 1.5,
-            },
-          ],
-          background: '#f9fafb',
-          width: 800,
-          height: 600,
+        {
+          type: 'text',
+          left: 300,
+          top: 120,
+          fontSize: 36,
+          fontWeight: 'bold',
+          fill: '#dc2626',
+          text: 'SUMMER FESTIVAL',
+          textAlign: 'center',
+          originX: 'center',
         },
-        createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), // 12 days ago
-        updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-      },
-    ];
+        {
+          type: 'text',
+          left: 300,
+          top: 180,
+          fontSize: 18,
+          fill: '#374151',
+          text: 'Join us for an amazing celebration!',
+          textAlign: 'center',
+          originX: 'center',
+        },
+        {
+          type: 'text',
+          left: 300,
+          top: 250,
+          fontSize: 24,
+          fontWeight: 'bold',
+          fill: '#059669',
+          text: 'July 15-17, 2024',
+          textAlign: 'center',
+          originX: 'center',
+        },
+      ],
+    },
+    is_template: false,
+    is_public: true,
+  },
+];
 
-    // Save sample designs
-    for (const design of sampleDesigns) {
-      await designDB.saveDesign(design);
-    }
+// Sample template data
+export const sampleTemplates = [
+  {
+    id: 'template-business-card',
+    name: 'Business Card Template',
+    description: 'Professional business card template with modern design',
+    category: 'Business',
+    canvas_data: {
+      version: '5.3.0',
+      objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
+          width: 350,
+          height: 200,
+          fill: '#ffffff',
+          stroke: '#e0e0e0',
+          strokeWidth: 1,
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 30,
+          fontSize: 24,
+          fontWeight: 'bold',
+          fill: '#2563eb',
+          text: 'Your Name',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 65,
+          fontSize: 14,
+          fill: '#6b7280',
+          text: 'Your Title',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 90,
+          fontSize: 12,
+          fill: '#9ca3af',
+          text: 'your.email@example.com',
+        },
+        {
+          type: 'text',
+          left: 25,
+          top: 110,
+          fontSize: 12,
+          fill: '#9ca3af',
+          text: '+1 (555) 123-4567',
+        },
+      ],
+    },
+    is_template: true,
+    is_public: true,
+  },
+  {
+    id: 'template-social-media',
+    name: 'Social Media Post',
+    description: 'Instagram and Facebook post template',
+    category: 'Social Media',
+    canvas_data: {
+      version: '5.3.0',
+      objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
+          width: 1080,
+          height: 1080,
+          fill: '#f8fafc',
+        },
+        {
+          type: 'rect',
+          left: 40,
+          top: 40,
+          width: 1000,
+          height: 1000,
+          fill: '#ffffff',
+          rx: 20,
+          ry: 20,
+        },
+        {
+          type: 'text',
+          left: 540,
+          top: 200,
+          fontSize: 48,
+          fontWeight: 'bold',
+          fill: '#1e40af',
+          text: 'Your Post Title',
+          textAlign: 'center',
+          originX: 'center',
+        },
+        {
+          type: 'text',
+          left: 540,
+          top: 300,
+          fontSize: 24,
+          fill: '#374151',
+          text: 'Add your content here',
+          textAlign: 'center',
+          originX: 'center',
+        },
+      ],
+    },
+    is_template: true,
+    is_public: true,
+  },
+];
 
-    // Save sample templates
-    for (const template of sampleTemplates) {
-      await designDB.saveTemplate(template);
-    }
-
-    return {
-      designsCreated: sampleDesigns.length,
-      templatesCreated: sampleTemplates.length,
-    };
-  } catch (error) {
-    console.error('Error creating sample designs:', error);
-    throw error;
-  }
-};
-
-export const clearAllDesigns = async () => {
+// Function to populate the database with sample data
+export async function populateWithSampleData() {
   try {
-    await designDB.clearAll();
-  } catch (error) {
-    console.error('Error clearing designs:', error);
-    throw error;
-  }
-};
+    // Create sample designs
+    for (const design of sampleDesigns) {
+      const createdDesign = await designService.createDesign(design);
+      if (!createdDesign) {
+        // Handle failed design creation silently
+      }
+    }
 
-// Helper function to check if sample data exists
-export const hasSampleData = async () => {
+    // Create sample templates
+    for (const template of sampleTemplates) {
+      const createdTemplate = await templateService.createTemplate(template);
+      if (!createdTemplate) {
+        // Handle failed template creation silently
+      }
+    }
+  } catch {
+    // Handle errors silently
+  }
+}
+
+// Function to clear all sample data
+export async function clearSampleData() {
+  try {
+    // Get all designs and templates
+    const [designs, templates] = await Promise.all([
+      designService.getUserDesigns(),
+      templateService.getUserTemplates(),
+    ]);
+
+    // Delete sample designs
+    for (const design of designs) {
+      if (design.name.includes('Sample') || design.name.includes('sample')) {
+        await designService.deleteDesign(design.id);
+      }
+    }
+
+    // Delete sample templates
+    for (const template of templates) {
+      if (template.name.includes('Template') || template.name.includes('template')) {
+        await templateService.deleteTemplate(template.id);
+      }
+    }
+  } catch {
+    // Handle errors silently
+  }
+}
+
+// Function to get all sample data for display
+export async function getAllSampleData() {
   try {
     const [designs, templates] = await Promise.all([
-      designDB.getAllDesigns(),
-      designDB.getAllTemplates(),
+      designService.getUserDesigns(),
+      templateService.getUserTemplates(),
     ]);
 
     return {
-      hasDesigns: designs.length > 0,
-      hasTemplates: templates.length > 0,
-      totalDesigns: designs.length,
-      totalTemplates: templates.length,
+      designs,
+      templates,
     };
-  } catch (error) {
-    console.error('Error checking sample data:', error);
+  } catch {
     return {
-      hasDesigns: false,
-      hasTemplates: false,
-      totalDesigns: 0,
-      totalTemplates: 0,
+      designs: [],
+      templates: [],
     };
   }
-};
+}
