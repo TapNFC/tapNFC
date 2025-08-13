@@ -24,9 +24,9 @@ export const QRCodeListItem = ({
   onEditQRCode,
   onEditDesign,
 
-  onArchive,
-  onRestore,
-  onDeleteForever,
+  // onArchive,
+  // onRestore,
+  // onDeleteForever,
   isOwnedByCurrentUser,
 }: {
   qrCode: QRCode;
@@ -225,7 +225,7 @@ export const QRCodeListItem = ({
                     <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
 
-                    {
+                    {/* {
                       !qrCode.isArchived
                         ? (
                             <DropdownMenuItem
@@ -246,7 +246,7 @@ export const QRCodeListItem = ({
                               </DropdownMenuItem>
                             </>
                           )
-                    }
+                    } */}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

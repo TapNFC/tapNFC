@@ -27,7 +27,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
 
   const isChanged
     = settings.name !== (user?.user_metadata?.full_name || '');
@@ -37,29 +36,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
   };
 
   const handleInvite = async () => {
-    if (!inviteEmail || !inviteEmail.includes('@')) {
-      toast.error('Please enter a valid email');
-      return;
-    }
-    setIsInviting(true);
-    try {
-      const locale = (user?.user_metadata?.locale as string) || 'en';
-      const res = await fetch('/api/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, locale }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || 'Failed to send invite');
-      }
-      toast.success('Invitation sent');
-      setInviteEmail('');
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to send invite');
-    } finally {
-      setIsInviting(false);
-    }
+    // Function disabled
   };
 
   const handleSave = async () => {
@@ -182,12 +159,12 @@ export function SettingsClient({ user }: SettingsClientProps) {
               </div>
             </div>
           </Card>
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80">
+          <Card className="mb-6 border-slate-200/60 bg-slate-100/80 opacity-60 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-700/80">
             <div className="p-6">
               <div className="mb-6 flex items-center space-x-2">
-                <Mail className="size-5 text-slate-600" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Invite a User
+                <Mail className="size-5 text-slate-400" />
+                <h3 className="text-lg font-semibold text-slate-500 dark:text-slate-400">
+                  Invite a User (Disabled)
                 </h3>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -195,16 +172,12 @@ export function SettingsClient({ user }: SettingsClientProps) {
                   placeholder="email@example.com"
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
+                  disabled
+                  className="mt-2 bg-slate-50 text-slate-400"
                 />
-                <Button onClick={handleInvite} disabled={isInviting} className="sm:w-40">
-                  {isInviting
-                    ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      )
-                    : (
-                        <Send className="mr-2 size-4" />
-                      )}
-                  {isInviting ? 'Sending...' : 'Send Invite'}
+                <Button onClick={handleInvite} disabled className="cursor-not-allowed bg-slate-300 text-slate-500 sm:w-40">
+                  <Send className="mr-2 size-4" />
+                  Send Invite
                 </Button>
               </div>
             </div>

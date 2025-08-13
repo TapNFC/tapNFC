@@ -24,9 +24,9 @@ export const QRCodeGridItem = ({
   onEditQRCode,
   onEditDesign,
 
-  onArchive,
-  onRestore,
-  onDeleteForever,
+  // onArchive,
+  // onRestore,
+  // onDeleteForever,
   isOwnedByCurrentUser,
 }: {
   qrCode: QRCode;
@@ -225,7 +225,7 @@ export const QRCodeGridItem = ({
                   <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
 
-                  {!qrCode.isArchived
+                  {/* {!qrCode.isArchived
                     ? (
                         <DropdownMenuItem onClick={() => onArchive(qrCode)} className="text-amber-600 hover:text-amber-700">
                           Archive
@@ -238,7 +238,7 @@ export const QRCodeGridItem = ({
                             Delete Forever
                           </DropdownMenuItem>
                         </>
-                      )}
+                      )} */}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

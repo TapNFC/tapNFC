@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import QRCodesSkeleton from '@/components/qr/QRCodesSkeleton';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQRCodes } from '@/hooks/use-qrcodes';
@@ -40,7 +39,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     selectedQRCodeForDownload,
 
     selectedQRCodes,
-    setSelectedQRCodes,
+    // setSelectedQRCodes,
     handleSearch,
     clearSearch,
     toggleQRCodeSelection,
@@ -56,8 +55,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     deleteQRCodePermanently,
     isOwnedByCurrentUser,
     deleteSelectedQRCodes,
-    archiveSelectedQRCodes,
-    clearSelection,
+    // archiveSelectedQRCodes,
+    // clearSelection,
   } = useQRCodes();
 
   const handleCreateQRCode = () => {
@@ -163,7 +162,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                 selected
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -188,7 +187,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
               >
                 Clear Selection
               </Button>
-            </div>
+            </div> */}
           </div>
         )}
 
@@ -196,7 +195,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
         {tabFilteredQRCodes.length > 0 && (
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Checkbox
                   checked={selectedQRCodes.length === tabFilteredQRCodes.filter(qr => isOwnedByCurrentUser(qr)).length && selectedQRCodes.length > 0}
                   onCheckedChange={(checked) => {
@@ -214,7 +213,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   Select All Owned
                 </span>
-              </div>
+              </div> */}
               {selectedQRCodes.length > 0 && (
                 <span className="text-sm text-gray-500">
                   (
