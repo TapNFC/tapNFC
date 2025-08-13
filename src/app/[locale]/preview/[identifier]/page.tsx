@@ -30,10 +30,16 @@ export default async function PreviewPage({
     <div className="min-h-screen bg-gray-50">
       <Suspense
         fallback={(
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
-              <p className="text-gray-600">Loading design...</p>
+          <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white p-6 dark:from-slate-950 dark:to-slate-900">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_50%_at_50%_0%,rgba(59,130,246,0.15)_0%,rgba(59,130,246,0)_60%)]" />
+            <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/80 bg-white/70 p-8 text-center shadow-2xl backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-900/60">
+              <div className="mx-auto mb-6 size-16" />
+              <h1 className="mb-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+                This QR code is no longer active
+              </h1>
+              <p className="mx-auto mb-8 max-w-md text-balance text-base text-slate-600 dark:text-slate-300">
+                The content linked to this QR code is unavailable or still loading.
+              </p>
             </div>
           </div>
         )}

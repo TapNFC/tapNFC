@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
 
-export const useQRCodes = () => {
+export const useQRCodes = (locale: string = 'en') => {
   const [searchQuery, setSearchQuery] = useState('');
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [filteredQRCodes, setFilteredQRCodes] = useState<QRCode[]>([]);
@@ -34,7 +34,6 @@ export const useQRCodes = () => {
 
       const transformedQRCodes: QRCode[] = designs.map((design) => {
         const baseUrl = window.location.origin;
-        const locale = document.documentElement.lang || 'en';
         const previewIdentifier = design.slug || design.id;
 
         return {
@@ -144,21 +143,71 @@ export const useQRCodes = () => {
         throw new Error('Failed to update design name');
       }
 
-      const updatedQRCodes = qrCodes.map(qr =>
-        qr.id === id ? { ...qr, name: newName } : qr,
-      );
+      // If the design has a QR code, we need to regenerate it with the new URL
+      const currentQRCode = qrCodes.find(qr => qr.id === id);
+      if (currentQRCode?.qrCodeUrl) {
+        // Get the new URL based on the updated slug
+        const baseUrl = window.location.origin;
+        const previewIdentifier = updatedDesign.slug || id;
+        const newUrl = `${baseUrl}/${locale}/preview/${previewIdentifier}`;
 
-      setQrCodes(updatedQRCodes);
-      setFilteredQRCodes(
-        searchQuery
-          ? updatedQRCodes.filter(qr =>
-              qr.name.toLowerCase().includes(searchQuery.toLowerCase())
-              || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
-            )
-          : updatedQRCodes,
-      );
+        // Update the QR code URL in the database to reflect the new URL
+        await designService.updateDesign(id, {
+          qr_code_url: null, // Clear the old QR code URL to force regeneration
+          qr_code_data: null,
+        });
 
-      toast.success('QR code name updated successfully');
+        // Update local state with new name and URL
+        const updatedQRCodes = qrCodes.map(qr =>
+          qr.id === id
+            ? {
+                ...qr,
+                name: newName,
+                url: newUrl,
+                qrCodeUrl: null, // Clear QR code URL to indicate it needs regeneration
+              }
+            : qr,
+        );
+
+        setQrCodes(updatedQRCodes);
+        setFilteredQRCodes(
+          searchQuery
+            ? updatedQRCodes.filter(qr =>
+                qr.name.toLowerCase().includes(searchQuery.toLowerCase())
+                || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
+              )
+            : updatedQRCodes,
+        );
+
+        toast.success('QR code name updated successfully. Please regenerate the QR code to reflect the new URL.');
+      } else {
+        // No existing QR code, just update the name and URL
+        const baseUrl = window.location.origin;
+        const previewIdentifier = updatedDesign.slug || id;
+        const newUrl = `${baseUrl}/${locale}/preview/${previewIdentifier}`;
+
+        const updatedQRCodes = qrCodes.map(qr =>
+          qr.id === id
+            ? {
+                ...qr,
+                name: newName,
+                url: newUrl,
+              }
+            : qr,
+        );
+
+        setQrCodes(updatedQRCodes);
+        setFilteredQRCodes(
+          searchQuery
+            ? updatedQRCodes.filter(qr =>
+                qr.name.toLowerCase().includes(searchQuery.toLowerCase())
+                || qr.url.toLowerCase().includes(searchQuery.toLowerCase()),
+              )
+            : updatedQRCodes,
+        );
+
+        toast.success('QR code name updated successfully');
+      }
     } catch (error) {
       console.error('Error updating QR code name:', error);
       toast.error('Failed to update QR code name');
@@ -176,11 +225,11 @@ export const useQRCodes = () => {
   };
 
   const handleEditQRCode = (qrCode: QRCode) => {
-    window.location.href = `/design/${qrCode.id}/qr-code`;
+    window.location.href = `/${locale}/design/${qrCode.id}/qr-code`;
   };
 
   const handleEditDesign = (qrCode: QRCode) => {
-    window.location.href = `/design/${qrCode.id}`;
+    window.location.href = `/${locale}/design/${qrCode.id}`;
   };
 
   const handleDeleteQRCode = (qrCode: QRCode) => {

@@ -20,127 +20,7 @@ type FabricGradient = {
   coords?: { x1?: number; y1?: number; x2?: number; y2?: number };
 };
 
-// Create a demo design fallback with interactive elements
-const createDemoDesign = (designId: string): Design => {
-  return {
-    id: designId,
-    user_id: 'demo-user',
-    name: 'Welcome Demo Design',
-    description: 'A demo design showcasing interactive elements',
-    canvas_data: {
-      version: '5.2.4',
-      objects: [
-        {
-          type: 'text',
-          left: 187.5,
-          top: 150,
-          width: 200,
-          height: 40,
-          text: 'Welcome to Our Design!',
-          fontSize: 24,
-          fontWeight: 'bold',
-          fill: '#1e40af',
-          textAlign: 'center',
-          fontFamily: 'Arial',
-        },
-        {
-          type: 'rect',
-          left: 187.5,
-          top: 220,
-          width: 200,
-          height: 80,
-          fill: '#3b82f6',
-          stroke: '#1e40af',
-          strokeWidth: 2,
-          rx: 12,
-        },
-        {
-          type: 'text',
-          left: 187.5,
-          top: 250,
-          width: 200,
-          height: 20,
-          text: 'Click to Learn More',
-          fontSize: 16,
-          fill: '#ffffff',
-          textAlign: 'center',
-          fontFamily: 'Arial',
-        },
-        {
-          elementType: 'button',
-          left: 187.5,
-          top: 320,
-          width: 160,
-          height: 45,
-          buttonData: {
-            text: 'Get Started',
-            backgroundColor: '#10b981',
-            textColor: '#ffffff',
-            borderRadius: 8,
-            fontSize: 16,
-            fontWeight: '600',
-            action: {
-              type: 'url',
-              value: 'https://example.com',
-            },
-          },
-        },
-        {
-          elementType: 'link',
-          left: 187.5,
-          top: 380,
-          width: 120,
-          height: 25,
-          linkData: {
-            text: 'Visit Website',
-            url: 'https://example.com',
-            color: '#2563eb',
-            fontSize: 14,
-            underline: true,
-          },
-        },
-        {
-          elementType: 'socialIcon',
-          left: 250,
-          top: 420,
-          width: 40,
-          height: 40,
-          socialData: {
-            platform: 'instagram',
-            url: 'https://instagram.com/example',
-            iconColor: '#e91e63',
-            backgroundColor: '#ffffff',
-            borderRadius: 8,
-          },
-        },
-        {
-          elementType: 'socialIcon',
-          left: 300,
-          top: 420,
-          width: 40,
-          height: 40,
-          socialData: {
-            platform: 'facebook',
-            url: 'https://facebook.com/example',
-            iconColor: '#1877f2',
-            backgroundColor: '#ffffff',
-            borderRadius: 8,
-          },
-        },
-      ],
-      background: '#ffffff',
-      width: 375,
-      height: 667,
-    },
-    preview_url: null,
-    qr_code_url: null,
-    qr_code_data: null,
-    is_template: false,
-    is_public: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-};
+// Removed demo design fallback
 
 export function PublicDesignPreview({ designId, designSlug, initialData, forceRefresh = false }: PublicDesignPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -193,15 +73,20 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('Design not found in backend, showing demo design'); // eslint-disable-line no-console
-          // Design not found, show demo design
-          const demoDesign = createDemoDesign(identifier);
-          setDesignData(demoDesign);
+          console.log('Design not found in backend, showing expired screen'); // eslint-disable-line no-console
+          setDesignData(null);
+          setError('not_found');
           return;
         }
 
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData?.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {}
+        throw new Error(errorMessage);
       }
 
       const design = await response.json();
@@ -231,10 +116,8 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       const errorMessage = err instanceof Error ? err.message : 'Failed to load design';
       setError(errorMessage);
 
-      // Show demo design as fallback
-      const fallbackIdentifier = designSlug || designId || 'demo';
-      const demoDesign = createDemoDesign(fallbackIdentifier);
-      setDesignData(demoDesign);
+      // On error, surface not found-like experience and clear design data
+      setDesignData(null);
 
       toast.error(`Error: ${errorMessage}`);
     } finally {
@@ -1124,23 +1007,35 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
   }
 
   if (error && !designData) {
+    // Render the same elegant expired/archived screen for not found
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="rounded-lg bg-white p-8 shadow-lg">
-          <div className="mb-4 flex items-center justify-center">
-            <AlertTriangle className="size-12 text-red-500" />
+      <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white p-6 dark:from-slate-950 dark:to-slate-900">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_50%_at_50%_0%,rgba(59,130,246,0.15)_0%,rgba(59,130,246,0)_60%)]" />
+        <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/80 bg-white/70 p-8 text-center shadow-2xl backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-900/60">
+          <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300">
+            <AlertTriangle className="size-8" />
           </div>
-          <h1 className="mb-2 text-center text-xl font-semibold text-gray-900">
-            Design Not Found
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+            This QR code is no longer active
           </h1>
-          <p className="mb-4 text-center text-gray-600">
-            The design you're looking for doesn't exist or is no longer available.
+          <p className="mx-auto mb-8 max-w-md text-balance text-base text-slate-600 dark:text-slate-300">
+            The content linked to this QR code is unavailable. It may have been removed or the link has expired.
           </p>
-          <p className="text-center text-sm text-gray-500">
-            Error:
-            {' '}
-            {error}
-          </p>
+          <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/en"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white shadow hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              Go to home
+            </Link>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Try again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1173,14 +1068,6 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
           <p className="mx-auto mb-8 max-w-md text-balance text-base text-slate-600 dark:text-slate-300">
             The content linked to this QR code has been archived by the owner. If you believe this is a mistake, please contact the brand or try again later.
           </p>
-
-          <div className="mx-auto mb-8 w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
-            <div className="mb-2 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Details</div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Title</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">{designData.name || 'Untitled'}</span>
-            </div>
-          </div>
 
           <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
