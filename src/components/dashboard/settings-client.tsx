@@ -27,6 +27,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  // const [isInviting, setIsInviting] = useState(false);
 
   const isChanged
     = settings.name !== (user?.user_metadata?.full_name || '');
@@ -36,7 +37,32 @@ export function SettingsClient({ user }: SettingsClientProps) {
   };
 
   const handleInvite = async () => {
-    // Function disabled
+    // Function disabled - uncomment below to re-enable
+    /*
+    if (!inviteEmail || !inviteEmail.includes('@')) {
+      toast.error('Please enter a valid email');
+      return;
+    }
+    setIsInviting(true);
+    try {
+      const locale = (user?.user_metadata?.locale as string) || 'en';
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, locale }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Failed to send invite');
+      }
+      toast.success('Invitation sent');
+      setInviteEmail('');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send invite');
+    } finally {
+      setIsInviting(false);
+    }
+    */
   };
 
   const handleSave = async () => {
@@ -176,7 +202,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
                   className="mt-2 bg-slate-50 text-slate-400"
                 />
                 <Button onClick={handleInvite} disabled className="cursor-not-allowed bg-slate-300 text-slate-500 sm:w-40">
+                  {/* {isInviting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />} */}
                   <Send className="mr-2 size-4" />
+                  {/* {isInviting ? 'Sending...' : 'Send Invite'} */}
                   Send Invite
                 </Button>
               </div>
