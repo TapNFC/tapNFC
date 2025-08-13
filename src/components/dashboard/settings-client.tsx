@@ -199,7 +199,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
                   disabled
-                  className="mt-2 bg-slate-50 text-slate-400"
+                  className=" bg-slate-50 text-slate-400"
                 />
                 <Button onClick={handleInvite} disabled className="cursor-not-allowed bg-slate-300 text-slate-500 sm:w-40">
                   {/* {isInviting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />} */}
