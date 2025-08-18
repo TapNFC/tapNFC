@@ -71,7 +71,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error(`Unexpected error in GET /api/preview/[identifier]:`, error);
+    console.error(`Unexpected error in GET /api/[identifier]:`, error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

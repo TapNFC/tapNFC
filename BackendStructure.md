@@ -270,7 +270,7 @@ POST   /api/customers/import             # Import customers from CSV
 ### Public Access
 
 ```
-GET    /api/preview/{id}                 # Get public design preview
+GET    /api/{identifier}                 # Get public design preview
 GET    /api/share/{shortCode}            # Access shared design by short code
 ```
 

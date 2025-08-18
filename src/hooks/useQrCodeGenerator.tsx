@@ -195,9 +195,9 @@ export const useQrCodeGenerator = (
           setSourceImage(imageUrl);
           setQrUrl(`${baseUrl}/api/image-qr/${designId}`);
         } else {
-          // Use slug-based URL if available, otherwise fall back to ID-based URL
+        // Use slug-based URL if available, otherwise fall back to ID-based URL
           const previewIdentifier = design?.slug || designId;
-          setQrUrl(`${baseUrl}/${locale}/preview/${previewIdentifier}`);
+          setQrUrl(`${baseUrl}/${locale}/${previewIdentifier}`);
         }
 
         // Try to determine the QR style from the URL
@@ -255,7 +255,7 @@ export const useQrCodeGenerator = (
       } else {
         // Use slug-based URL if available, otherwise fall back to ID-based URL
         const previewIdentifier = design?.slug || designId;
-        setQrUrl(`${baseUrl}/${locale}/preview/${previewIdentifier}`);
+        setQrUrl(`${baseUrl}/${locale}/${previewIdentifier}`);
       }
 
       const plainQrSample = (await import('@/components/design-editor/QrCodeSamples')).sampleQrDesigns.find(s => s.id === 'style-none');

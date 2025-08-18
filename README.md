@@ -249,7 +249,7 @@ src/
       (main)/            # Landing redirects to dashboard
       dashboard/         # Protected: analytics, QR codes, customers, settings
       design/            # Design editor, templates, previews
-      preview/           # Public previews
+      [identifier]/      # Public previews (direct access)
     api/                 # API routes (Supabase-backed)
     global-error.tsx     # Client error boundary with Sentry capture
   components/
@@ -301,7 +301,7 @@ Under `src/components/design-editor`:
 
 ### Public Preview & Scans
 
-- Public preview route: `/[locale]/preview/[identifier]` (identifier = slug or id)
+- Public preview route: `/[locale]/[identifier]` (identifier = slug or id)
 - When a QR code is scanned, clients POST to `/api/scan/[id]` (public)
   - Records device type, browser, OS, referrer, and IP (best-effort) into `qr_code_scans`
 - Per-design analytics are available via `/api/qr-codes/[id]` (public GET)

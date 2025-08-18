@@ -1,6 +1,6 @@
 /**
  * Utility function to extract simple URL from preview URL
- * Converts URLs like "http://localhost:3000/en/preview/demodesign" to "http://localhost:3000/demodesign"
+ * Converts URLs like "http://localhost:3000/en/demodesign" to "http://localhost:3000/demodesign"
  */
 export const getSimpleUrl = (fullUrl: string): string => {
   try {

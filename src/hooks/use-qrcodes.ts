@@ -39,7 +39,7 @@ export const useQRCodes = (locale: string = 'en') => {
         return {
           id: design.id,
           name: design.name,
-          url: `${baseUrl}/${locale}/preview/${previewIdentifier}`,
+          url: `${baseUrl}/${locale}/${previewIdentifier}`,
           scans: 0,
           type: design.is_template ? 'Template' : 'Design',
           created: new Date(design.created_at).toLocaleDateString(),
@@ -149,7 +149,7 @@ export const useQRCodes = (locale: string = 'en') => {
         // Get the new URL based on the updated slug
         const baseUrl = window.location.origin;
         const previewIdentifier = updatedDesign.slug || id;
-        const newUrl = `${baseUrl}/${locale}/preview/${previewIdentifier}`;
+        const newUrl = `${baseUrl}/${locale}/${previewIdentifier}`;
 
         // Update the QR code URL in the database to reflect the new URL
         await designService.updateDesign(id, {
@@ -184,7 +184,7 @@ export const useQRCodes = (locale: string = 'en') => {
         // No existing QR code, just update the name and URL
         const baseUrl = window.location.origin;
         const previewIdentifier = updatedDesign.slug || id;
-        const newUrl = `${baseUrl}/${locale}/preview/${previewIdentifier}`;
+        const newUrl = `${baseUrl}/${locale}/${previewIdentifier}`;
 
         const updatedQRCodes = qrCodes.map(qr =>
           qr.id === id

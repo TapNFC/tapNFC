@@ -107,7 +107,7 @@ export async function POST() {
     return NextResponse.json({
       message: 'Test design created successfully',
       design: data,
-      previewUrl: `/preview/${data.slug || data.id}`,
+      previewUrl: `/${data.slug || data.id}`,
     });
   } catch (error) {
     console.error('Error creating test design:', error);

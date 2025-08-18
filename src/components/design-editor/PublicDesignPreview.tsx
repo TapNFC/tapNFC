@@ -64,7 +64,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
       // Use the unified API endpoint with cache busting
       const timestamp = Date.now();
-      const apiEndpoint = `/api/preview/${identifier}?_t=${timestamp}`;
+      const apiEndpoint = `/api/${identifier}?_t=${timestamp}`;
 
       console.log('Attempting to load design from backend API:', identifier); // eslint-disable-line no-console
       const response = await fetch(apiEndpoint, {
