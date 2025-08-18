@@ -66,6 +66,7 @@ const FONT_FAMILIES = [
   'Oswald',
   'Raleway',
   'Ubuntu',
+  'Edwardian Script ITC',
 ] as const;
 
 // Memoize text alignment options
