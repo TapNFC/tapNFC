@@ -29,6 +29,7 @@ type QrStylingCardProps = Pick<
   | 'isEditMode'
   | 'isSaving'
   | 'isGenerating'
+  | 'selectedQrSample'
 >;
 
 export function QrStylingCard({
@@ -49,6 +50,7 @@ export function QrStylingCard({
   isEditMode,
   isSaving,
   isGenerating,
+  selectedQrSample,
 }: QrStylingCardProps) {
   const debouncedSetQrColor = useDebounce((val: string) => setQrColor(val), 80);
   const debouncedSetBgColor = useDebounce((val: string) => setBgColor(val), 80);
@@ -89,7 +91,7 @@ export function QrStylingCard({
         <Separator className="my-6" />
 
         {/* Color Pickers */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className={`grid gap-4 ${selectedQrSample?.id === 'style-none' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
           <div className="space-y-2">
             <Label>QR Color</Label>
             <Input
@@ -99,37 +101,42 @@ export function QrStylingCard({
               disabled={isSaving || isGenerating}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Background Color</Label>
-            <Input
-              type="color"
-              value={bgColor}
-              onChange={e => debouncedSetBgColor(e.target.value)}
-              disabled={isSaving || isGenerating}
-            />
-          </div>
+          {selectedQrSample?.id === 'style-none' && (
+            <div className="space-y-2">
+              <Label>Background Color</Label>
+              <Input
+                type="color"
+                value={bgColor}
+                onChange={e => debouncedSetBgColor(e.target.value)}
+                disabled={isSaving || isGenerating}
+              />
+            </div>
+          )}
         </div>
 
         <Separator className="my-6" />
 
         {/* Other Options */}
-        <div className="space-y-2">
-          <Label>Include Margin</Label>
-          <p className="mb-4 text-sm text-gray-500">
-            Enable or disable the margin around the QR code.
-          </p>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="include-margin"
-              checked={includeMargin}
-              onCheckedChange={setIncludeMargin}
-              disabled={isSaving || isGenerating}
-            />
-            <Label htmlFor="include-margin">Include Margin</Label>
-          </div>
-        </div>
-
-        <Separator className="my-6" />
+        {selectedQrSample?.id === 'style-none' && (
+          <>
+            <div className="space-y-2">
+              <Label>Include Margin</Label>
+              <p className="mb-4 text-sm text-gray-500">
+                Enable or disable the margin around the QR code.
+              </p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="include-margin"
+                  checked={includeMargin}
+                  onCheckedChange={setIncludeMargin}
+                  disabled={isSaving || isGenerating}
+                />
+                <Label htmlFor="include-margin">Include Margin</Label>
+              </div>
+            </div>
+            <Separator className="my-6" />
+          </>
+        )}
 
         {/* Add Logo */}
         <div>
