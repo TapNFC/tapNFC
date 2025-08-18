@@ -135,6 +135,7 @@ export function RealTimePreview({
         if (obj.url) {
           return (
             <button
+              type="button"
               key={`canvas-text-${obj.id || index}`}
               style={{
                 ...textStyle,
@@ -161,6 +162,9 @@ export function RealTimePreview({
                         case 'phone':
                           // If it already has tel:, use as is, otherwise add it
                           return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'pdf':
+                          // For PDFs, return the URL as is (should be a direct link to the file)
+                          return url;
                         case 'url':
                         default:
                           // For URLs, add https:// if not present
@@ -175,6 +179,9 @@ export function RealTimePreview({
                     if (url.startsWith('mailto:')) {
                       return url;
                     } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+                      // Detect PDF files
                       return url;
                     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
@@ -787,6 +794,7 @@ export function RealTimePreview({
     return (
       <div className="fixed bottom-4 right-4 z-50">
         <button
+          type="button"
           onClick={() => setIsVisible(true)}
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl"
           title="Click to open Live Preview"

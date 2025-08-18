@@ -18,10 +18,15 @@ export const urlValidation = z
   .string()
   .min(1, 'URL is required');
 
+// PDF validation schema - for file uploads
+export const pdfValidation = z
+  .string()
+  .min(1, 'PDF file is required');
+
 // Combined validation schema for all URL types
 export const textUrlValidation = z.object({
   url: z.string().min(1, 'This field is required'),
-  urlType: z.enum(['url', 'email', 'phone']),
+  urlType: z.enum(['url', 'email', 'phone', 'pdf']),
 });
 
 // Type for the validation result
@@ -31,7 +36,7 @@ export type TextUrlValidationResult = {
 };
 
 // Helper function to validate based on URL type
-export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone'): TextUrlValidationResult => {
+export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone' | 'pdf'): TextUrlValidationResult => {
   try {
     switch (urlType) {
       case 'email':
@@ -40,7 +45,11 @@ export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone
       case 'phone':
         phoneValidation.parse(value);
         break;
+      case 'pdf':
+        pdfValidation.parse(value);
+        break;
       case 'url':
+      default:
         urlValidation.parse(value);
         break;
     }
