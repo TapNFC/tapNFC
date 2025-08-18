@@ -55,4 +55,10 @@ export default antfu({
     'test/padding-around-all': 'error', // Add padding in test files
     'test/prefer-lowercase-title': 'off', // Allow using uppercase titles in test titles
   },
+}, {
+  files: ['src/components/design-editor/QrCodeSamples.tsx'],
+  rules: {
+    'style/no-tabs': 'off', // Allow tabs in QrCodeSamples file
+    'no-tabs': 'off', // Allow tabs in QrCodeSamples file
+  },
 });
