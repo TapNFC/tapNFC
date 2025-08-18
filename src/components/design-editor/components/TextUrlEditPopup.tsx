@@ -1,27 +1,31 @@
 'use client';
 
-import { Check, Link, X } from 'lucide-react';
+import { Check, Link, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { fileStorageService } from '@/services/fileStorageService';
 import { validateTextUrl } from '@/validations/TextUrlValidation';
 
 type TextUrlEditPopupProps = {
   isVisible: boolean;
   textObject: any;
   position: { x: number; y: number };
+  designId: string;
   onUpdateTextUrl: (updates: { url?: string; urlType?: string }) => void;
   onClose: () => void;
 };
 
-type UrlType = 'url' | 'email' | 'phone';
+type UrlType = 'url' | 'email' | 'phone' | 'pdf';
 
 export function TextUrlEditPopup({
   isVisible,
   textObject,
   position,
+  designId,
   onUpdateTextUrl,
   onClose,
 }: TextUrlEditPopupProps) {
@@ -31,10 +35,15 @@ export function TextUrlEditPopup({
     url: '',
     email: '',
     phone: '',
+    pdf: '',
   });
   const [error, setError] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form values when the popup becomes visible or textObject changes
   useEffect(() => {
@@ -51,6 +60,9 @@ export function TextUrlEditPopup({
         } else if (existingUrl.startsWith('tel:')) {
           detectedUrlType = 'phone';
           cleanValue = existingUrl.replace(/^tel:/, '');
+        } else if (existingUrl.includes('.pdf') || existingUrl.includes('file-storage/files/')) {
+          detectedUrlType = 'pdf';
+          cleanValue = existingUrl;
         } else {
           detectedUrlType = 'url';
           cleanValue = existingUrl;
@@ -59,7 +71,7 @@ export function TextUrlEditPopup({
 
       // Use the existing urlType if it exists, otherwise use detected type
       const finalUrlType = textObject.urlType || detectedUrlType;
-      setUrlType(finalUrlType);
+      setUrlType(() => finalUrlType);
 
       // Extract the clean value for the final type
       if (existingUrl) {
@@ -69,6 +81,9 @@ export function TextUrlEditPopup({
             break;
           case 'phone':
             cleanValue = existingUrl.replace(/^tel:/, '');
+            break;
+          case 'pdf':
+            cleanValue = existingUrl;
             break;
           default:
             cleanValue = existingUrl;
@@ -80,6 +95,7 @@ export function TextUrlEditPopup({
         url: '',
         email: '',
         phone: '',
+        pdf: '',
       };
 
       // Store the current value in the appropriate type slot
@@ -91,23 +107,29 @@ export function TextUrlEditPopup({
           case 'phone':
             newSavedValues.phone = cleanValue;
             break;
+          case 'pdf':
+            newSavedValues.pdf = cleanValue;
+            break;
           default:
             newSavedValues.url = cleanValue;
         }
       }
 
-      setSavedValues(newSavedValues);
-      setUrl(cleanValue);
-      setError(''); // Clear any existing errors
+      setSavedValues(() => newSavedValues);
+      setUrl(() => cleanValue);
+      setError(() => ''); // Clear any existing errors
+      setSelectedFile(() => null); // Clear selected file
 
       // Focus the URL input when popup opens
       if (urlInputRef.current) {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           urlInputRef.current?.focus();
         }, 100);
+        return () => clearTimeout(timeoutId);
       }
     }
-  }, [isVisible, textObject]);
+    return undefined;
+  }, [isVisible, textObject, onClose]);
 
   // Handle escape key to close popup
   useEffect(() => {
@@ -152,29 +174,135 @@ export function TextUrlEditPopup({
         return value.startsWith('mailto:') ? value : `mailto:${value}`;
       case 'phone':
         return value.startsWith('tel:') ? value : `tel:${value}`;
+      case 'pdf':
+        return value; // PDF URLs are already complete
       default:
         return value;
     }
   };
 
-  const handleSave = () => {
-    // Validate the input before saving
-    const validation = validateTextUrl(url.trim(), urlType);
-    if (!validation.isValid) {
-      setError(validation.error || 'Validation failed');
-      return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type for PDF
+      if (file.type !== 'application/pdf') {
+        setError('Please select a valid PDF file');
+        setSelectedFile(null);
+        return;
+      }
+
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB');
+        setSelectedFile(null);
+        return;
+      }
+
+      setSelectedFile(file);
+      setError('');
+      setUrl(file.name); // Show filename in the input
     }
+  };
 
-    const formattedUrl = formatUrl(url.trim(), urlType);
-    onUpdateTextUrl({ url: formattedUrl, urlType });
+  const handleDeletePdf = async () => {
+    try {
+      if (!url || !designId) {
+        setError('No PDF to delete');
+        return;
+      }
 
-    // Update saved values
-    setSavedValues(prev => ({
-      ...prev,
-      [urlType]: url.trim(),
-    }));
+      setIsDeleting(true);
+      setError('');
 
-    onClose();
+      // Delete the file from Supabase storage
+      await fileStorageService.deleteFile(url);
+
+      // Clear the URL and URL type
+      onUpdateTextUrl({ url: '', urlType: 'url' });
+
+      // Clear local state
+      setUrl('');
+      setUrlType('url');
+      setSelectedFile(null);
+
+      // Update saved values
+      setSavedValues(prev => ({
+        ...prev,
+        pdf: '',
+      }));
+
+      toast.success('PDF deleted successfully');
+    } catch (error: any) {
+      setError(error.message || 'Failed to delete PDF');
+      toast.error('Failed to delete PDF');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // For PDF type, upload the file first if selected
+      if (urlType === 'pdf') {
+        if (!selectedFile) {
+          setError('Please select a PDF file');
+          return;
+        }
+
+        if (!designId) {
+          setError('Design ID not found. Please try refreshing the page.');
+          return;
+        }
+
+        setIsUploading(true);
+        setError('');
+
+        // Upload the PDF file
+        const publicUrl = await fileStorageService.uploadPdfFile(selectedFile, designId);
+
+        // Update the URL with the public URL from Supabase
+        setUrl(publicUrl);
+        setSelectedFile(null);
+
+        toast.success('PDF uploaded successfully!');
+
+        // Continue with saving the public URL
+        const formattedUrl = formatUrl(publicUrl, urlType);
+        onUpdateTextUrl({ url: formattedUrl, urlType });
+
+        // Update saved values
+        setSavedValues(prev => ({
+          ...prev,
+          [urlType]: publicUrl,
+        }));
+
+        onClose();
+        return; // Exit early since we've already saved
+      }
+
+      // Validate the input before saving
+      const validation = validateTextUrl(url, urlType);
+      if (!validation.isValid) {
+        setError(validation.error || 'Validation failed');
+        return;
+      }
+
+      const formattedUrl = formatUrl(url, urlType);
+      onUpdateTextUrl({ url: formattedUrl, urlType });
+
+      // Update saved values
+      setSavedValues(prev => ({
+        ...prev,
+        [urlType]: url,
+      }));
+
+      onClose();
+    } catch (error: any) {
+      setError(error.message || 'Failed to upload PDF');
+      toast.error('Failed to upload PDF');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -201,6 +329,7 @@ export function TextUrlEditPopup({
     setUrl(savedValues[value] || '');
     // Clear error when changing URL type
     setError('');
+    setSelectedFile(null); // Clear selected file when changing type
   };
 
   const getInputPlaceholder = (type: UrlType): string => {
@@ -209,6 +338,8 @@ export function TextUrlEditPopup({
         return 'user@example.com';
       case 'phone':
         return '+1234567890';
+      case 'pdf':
+        return 'Upload a PDF file or enter PDF URL';
       default:
         return 'https://example.com';
     }
@@ -220,6 +351,8 @@ export function TextUrlEditPopup({
         return 'Email Address';
       case 'phone':
         return 'Phone Number';
+      case 'pdf':
+        return 'PDF File';
       default:
         return 'URL';
     }
@@ -231,7 +364,7 @@ export function TextUrlEditPopup({
 
   // Calculate popup position with proper boundary checking
   const popupWidth = 320;
-  const popupHeight = 240; // Increased height to accommodate error message
+  const popupHeight = urlType === 'pdf' ? 320 : 240; // Increased height for PDF upload
   const padding = 16;
 
   // Position near the element with proper boundary checking
@@ -293,28 +426,105 @@ export function TextUrlEditPopup({
               <SelectItem value="url">Website URL</SelectItem>
               <SelectItem value="email">Email Address</SelectItem>
               <SelectItem value="phone">Phone Number</SelectItem>
+              <SelectItem value="pdf">PDF File</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="text-url" className="mb-1 block text-xs font-medium text-gray-700">
-            {getInputLabel(urlType)}
-          </Label>
-          <Input
-            ref={urlInputRef}
-            id="text-url"
-            type={urlType === 'email' ? 'email' : urlType === 'phone' ? 'tel' : 'url'}
-            value={url}
-            onChange={e => handleUrlChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={getInputPlaceholder(urlType)}
-            className={`h-8 text-sm ${error ? 'border-red-500 focus:border-red-500' : ''}`}
-          />
-          {error && (
-            <p className="mt-1 text-xs text-red-500">{error}</p>
-          )}
-        </div>
+        {urlType === 'pdf'
+          ? (
+              <div className="space-y-3">
+                {/* Check if PDF already exists */}
+                {url && (url.includes('.pdf') || url.includes('file-storage/files/'))
+                  ? (
+                      <div className="space-y-3">
+                        <Label className="mb-1 block text-xs font-medium text-gray-700">
+                          Current PDF File
+                        </Label>
+                        <div className="flex items-center gap-2 rounded-lg border bg-gray-50 p-2">
+                          <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => window.open(url, '_blank')}
+                              className="block w-full truncate text-left text-sm text-blue-600 hover:text-blue-800"
+                              title="Click to open PDF"
+                            >
+                              {url.split('/').pop() || 'PDF File'}
+                            </button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDeletePdf}
+                            disabled={isDeleting}
+                            className="size-6 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Click the filename to open, or use the X button to delete
+                        </p>
+                      </div>
+                    )
+                  : (
+                      <div className="space-y-3">
+                        <Label className="mb-1 block text-xs font-medium text-gray-700">
+                          Upload PDF File
+                        </Label>
+                        <div className="flex gap-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,application/pdf"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-8 flex-1"
+                            disabled={isUploading}
+                          >
+                            <Upload className="mr-1 size-3" />
+                            {selectedFile ? 'Change File' : 'Select PDF'}
+                          </Button>
+                        </div>
+                        {selectedFile && (
+                          <p className="mt-1 text-xs text-gray-600">
+                            Selected:
+                            {' '}
+                            {selectedFile.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
+              </div>
+            )
+          : (
+              <div>
+                <Label htmlFor="text-url" className="mb-1 block text-xs font-medium text-gray-700">
+                  {getInputLabel(urlType)}
+                </Label>
+                <Input
+                  ref={urlInputRef}
+                  id="text-url"
+                  type={urlType === 'email' ? 'email' : urlType === 'phone' ? 'tel' : 'url'}
+                  value={url}
+                  onChange={e => handleUrlChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={getInputPlaceholder(urlType)}
+                  className={`h-8 text-sm ${error ? 'border-red-500 focus:border-red-500' : ''}`}
+                />
+              </div>
+            )}
+
+        {error && (
+          <p className="mt-1 text-xs text-red-500">{error}</p>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
@@ -322,7 +532,7 @@ export function TextUrlEditPopup({
             onClick={handleSave}
             size="sm"
             className="h-8 flex-1 bg-blue-600 text-white hover:bg-blue-700"
-            disabled={!!error || !url.trim()}
+            disabled={!!error || (!url.trim() && !selectedFile) || isUploading}
           >
             <Check className="mr-1 size-3" />
             Save

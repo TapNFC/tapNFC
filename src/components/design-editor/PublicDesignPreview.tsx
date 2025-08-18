@@ -1,7 +1,7 @@
 'use client';
 
 import type { Design } from '@/types/design';
-import { AlertTriangle, Eye, Share2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -131,7 +131,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
     if ((designId || designSlug) && (!initialData || forceRefresh)) {
       loadDesignData();
     }
-  }, [designId, designSlug, initialData, forceRefresh]);
+  }, [designId, designSlug, initialData, forceRefresh, loadDesignData]);
 
   // Record scan when design is provided via initialData
   useEffect(() => {
@@ -165,6 +165,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
           case 'phone':
             // If it already has tel:, use as is, otherwise add it
             return url.startsWith('tel:') ? url : `tel:${url}`;
+          case 'pdf':
+            // For PDFs, return the URL as is (should be a direct link to the file)
+            return url;
           case 'url':
           default:
             // For URLs, add https:// if not present
@@ -179,6 +182,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       if (url.startsWith('mailto:')) {
         return url;
       } else if (url.startsWith('tel:')) {
+        return url;
+      } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+        // Detect PDF files
         return url;
       } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
         return `https://${url}`;
@@ -218,6 +224,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       const { text, backgroundColor, textColor, borderRadius, fontSize, fontWeight } = obj.buttonData;
       return (
         <button
+          type="button"
           key={`button-${index}`}
           onClick={() => handleElementClick(obj)}
           className="transition-all duration-200 hover:scale-105 hover:opacity-80"
@@ -406,6 +413,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
         if (obj.url) {
           return (
             <button
+              type="button"
               key={`canvas-text-${obj.id || index}`}
               style={{
                 ...textStyle,
@@ -432,6 +440,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                         case 'phone':
                           // If it already has tel:, use as is, otherwise add it
                           return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'pdf':
+                          // For PDFs, return the URL as is (should be a direct link to the file)
+                          return url;
                         case 'url':
                         default:
                           // For URLs, add https:// if not present
@@ -446,6 +457,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                     if (url.startsWith('mailto:')) {
                       return url;
                     } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+                      // Detect PDF files
                       return url;
                     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
@@ -803,6 +817,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                         case 'phone':
                           // If it already has tel:, use as is, otherwise add it
                           return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'pdf':
+                          // For PDFs, return the URL as is (should be a direct link to the file)
+                          return url;
                         case 'url':
                         default:
                           // For URLs, add https:// if not present
@@ -817,6 +834,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                     if (url.startsWith('mailto:')) {
                       return url;
                     } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+                      // Detect PDF files
                       return url;
                     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
@@ -883,6 +903,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                         case 'phone':
                           // If it already has tel:, use as is, otherwise add it
                           return url.startsWith('tel:') ? url : `tel:${url}`;
+                        case 'pdf':
+                          // For PDFs, return the URL as is (should be a direct link to the file)
+                          return url;
                         case 'url':
                         default:
                           // For URLs, add https:// if not present
@@ -897,6 +920,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                     if (url.startsWith('mailto:')) {
                       return url;
                     } else if (url.startsWith('tel:')) {
+                      return url;
+                    } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+                      // Detect PDF files
                       return url;
                     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
                       return `https://${url}`;
@@ -1079,29 +1105,6 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl p-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Eye className="size-6 text-blue-600" />
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {designData.name || `Design Preview`}
-                </h1>
-                {designData.description && (
-                  <p className="text-sm text-gray-600">{designData.description}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Share2 className="size-5 text-gray-400" />
-              <span className="text-sm text-gray-500">Shared Design</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Design Preview */}
       <main className="flex flex-1 items-center justify-center p-4">
         <div className="relative flex flex-col items-center">
@@ -1125,22 +1128,6 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
               }
               return null;
             })}
-          </div>
-
-          {/* Design Info */}
-          <div className="mt-4 rounded-lg bg-white p-4 shadow-sm">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Created:
-                {' '}
-                {new Date(designData.created_at).toLocaleDateString()}
-              </p>
-              {designData.qr_code_url && (
-                <p className="mt-1 text-xs text-blue-600">
-                  This design has an associated QR code
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </main>

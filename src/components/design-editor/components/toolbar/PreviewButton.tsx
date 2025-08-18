@@ -91,6 +91,8 @@ export function PreviewButton({ canvas, onPreview, hasUnsavedChanges = false }: 
                       window.location.href = 'mailto:' + action.value;
                     } else if (action.type === 'phone' && action.value) {
                       window.location.href = 'tel:' + action.value;
+                    } else if (action.type === 'pdf' && action.value) {
+                      window.open(action.value, '_blank');
                     } else if (action.type === 'custom' && action.value) {
                       console.log('Custom action:', action.value);
                     }

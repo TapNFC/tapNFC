@@ -88,7 +88,7 @@ export function PropertiesPanel({
         linkData: selectedObject.linkData || null,
       };
 
-      setObjectProperties(newProperties);
+      setObjectProperties(() => newProperties);
     }
   }, [selectedObject]);
 
@@ -548,6 +548,7 @@ export function PropertiesPanel({
                   <SelectItem value="url">Open URL</SelectItem>
                   <SelectItem value="email">Send Email</SelectItem>
                   <SelectItem value="phone">Call Phone</SelectItem>
+                  <SelectItem value="pdf">Open PDF</SelectItem>
                   <SelectItem value="custom">Custom Action</SelectItem>
                 </SelectContent>
               </Select>
@@ -560,7 +561,9 @@ export function PropertiesPanel({
                       ? 'email@example.com'
                       : objectProperties.buttonData.action?.type === 'phone'
                         ? '+1234567890'
-                        : 'Custom action'
+                        : objectProperties.buttonData.action?.type === 'pdf'
+                          ? 'Upload PDF or enter PDF URL'
+                          : 'Custom action'
                 }
                 value={objectProperties.buttonData.action?.value || ''}
                 onChange={e => handleButtonActionChange('value', e.target.value)}

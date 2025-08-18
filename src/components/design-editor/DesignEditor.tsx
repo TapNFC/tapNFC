@@ -147,7 +147,10 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
       // Set up event listeners for canvas changes
       const handleCanvasChange = () => {
-        updatePreview();
+        const data = getPreviewDataRef.current();
+        if (data) {
+          setPreviewData(data);
+        }
       };
 
       canvas.on('object:added', handleCanvasChange);
@@ -180,7 +183,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         setPreviewData(initialData);
       }
     }
-  }, [isCanvasReady, canvas, designId]); // Removed getPreviewData from dependencies
+  }, [isCanvasReady, canvas, designId]);
 
   // Update the useEffect for double-click handling
   useEffect(() => {
@@ -333,6 +336,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           isVisible={textUrlEditPopup.isVisible}
           textObject={textUrlEditPopup.textObject}
           position={textUrlEditPopup.position}
+          designId={designId}
           onUpdateTextUrl={handleUpdateTextUrl}
           onClose={handleCloseTextUrlEdit}
         />

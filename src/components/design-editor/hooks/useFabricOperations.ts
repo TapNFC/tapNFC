@@ -241,8 +241,20 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           e.e.preventDefault();
           e.e.stopPropagation();
 
-          // Open the URL in a new tab
-          window.open(this.buttonData.action.value, '_blank');
+          // Handle different action types
+          const action = this.buttonData.action;
+          if (action.type === 'url' && action.value) {
+            window.open(action.value, '_blank');
+          } else if (action.type === 'email' && action.value) {
+            window.location.href = `mailto:${action.value}`;
+          } else if (action.type === 'phone' && action.value) {
+            window.location.href = `tel:${action.value}`;
+          } else if (action.type === 'pdf' && action.value) {
+            // For PDFs, open directly in new tab
+            window.open(action.value, '_blank');
+          } else if (action.type === 'custom' && action.value) {
+            console.warn('Custom action:', action.value);
+          }
         }
       });
 
