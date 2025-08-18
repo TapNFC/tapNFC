@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import type { Design } from '@/types/design';
@@ -131,7 +132,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
     if ((designId || designSlug) && (!initialData || forceRefresh)) {
       loadDesignData();
     }
-  }, [designId, designSlug, initialData, forceRefresh, loadDesignData]);
+  }, [designId, designSlug, initialData, forceRefresh]);
 
   // Record scan when design is provided via initialData
   useEffect(() => {
