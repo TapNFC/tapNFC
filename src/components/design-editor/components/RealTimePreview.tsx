@@ -464,19 +464,15 @@ export function RealTimePreview({
                 transition: 'all 0.2s ease-in-out',
                 borderRadius: '8px',
                 overflow: 'hidden',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: obj.url ? '2px solid rgba(34, 197, 94, 0.4)' : '2px solid rgba(59, 130, 246, 0.2)',
                 boxSizing: 'border-box',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = `rotate(${angle}deg) scale(1.05)`;
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                e.currentTarget.style.borderColor = obj.url ? 'rgba(34, 197, 94, 0.6)' : 'rgba(59, 130, 246, 0.4)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = `rotate(${angle}deg) scale(1)`;
                 e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = obj.url ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.2)';
               }}
             >
               <Image
@@ -491,22 +487,6 @@ export function RealTimePreview({
                   pointerEvents: 'none',
                 }}
               />
-              {/* Add a small indicator if the icon has a URL */}
-              {obj.url && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '-2px',
-                    right: '-2px',
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '1px solid white',
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
             </div>
           );
         }
