@@ -23,10 +23,15 @@ export const pdfValidation = z
   .string()
   .min(1, 'PDF file is required');
 
+// vCard validation schema - for vCard generation
+export const vCardValidation = z
+  .string()
+  .min(1, 'vCard is required');
+
 // Combined validation schema for all URL types
 export const textUrlValidation = z.object({
   url: z.string().min(1, 'This field is required'),
-  urlType: z.enum(['url', 'email', 'phone', 'pdf']),
+  urlType: z.enum(['url', 'email', 'phone', 'pdf', 'vcard']),
 });
 
 // Type for the validation result
@@ -36,7 +41,7 @@ export type TextUrlValidationResult = {
 };
 
 // Helper function to validate based on URL type
-export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone' | 'pdf'): TextUrlValidationResult => {
+export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone' | 'pdf' | 'vcard'): TextUrlValidationResult => {
   try {
     switch (urlType) {
       case 'email':
@@ -47,6 +52,9 @@ export const validateTextUrl = (value: string, urlType: 'url' | 'email' | 'phone
         break;
       case 'pdf':
         pdfValidation.parse(value);
+        break;
+      case 'vcard':
+        vCardValidation.parse(value);
         break;
       case 'url':
       default:

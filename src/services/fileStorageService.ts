@@ -53,7 +53,55 @@ export const fileStorageService = {
   },
 
   /**
-   * Deletes a file from Supabase Storage.
+   * Uploads a vCard file to Supabase Storage.
+   * @param vCardContent - The vCard content as a string.
+   * @param designId - The ID of the design this vCard belongs to.
+   * @returns The public URL of the uploaded vCard file.
+   */
+  async uploadVCardFile(vCardContent: string, designId: string): Promise<string> {
+    try {
+      const supabase = createClient();
+
+      // Create vCard blob
+      const vCardBlob = new Blob([vCardContent], { type: 'text/vcard' });
+
+      // Create file path: vcards/designId/vcard.vcf
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_contact.vcf`;
+      const filePath = `vcards/${designId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('file-storage')
+        .upload(filePath, vCardBlob, {
+          contentType: 'text/vcard',
+          upsert: false, // Don't overwrite existing files
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('file-storage')
+        .getPublicUrl(filePath);
+
+      if (!publicUrlData) {
+        throw new Error('Could not get public URL for the uploaded vCard file.');
+      }
+
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      throw new Error(`Failed to upload vCard: ${error.message}`);
+    }
+  },
+
+  /**
+   * Profile picture upload for vCard removed
+   */
+
+  /**
+   * Deletes a file from Supabase Storage using its public URL.
    * @param fileUrl - The public URL of the file to delete.
    * @returns Promise that resolves when the file is deleted.
    */
@@ -77,6 +125,26 @@ export const fileStorageService = {
       }
     } catch (error: any) {
       throw new Error(`Failed to delete file: ${error.message}`);
+    }
+  },
+
+  /**
+   * Deletes a file from Supabase Storage using its storage path.
+   * @param filePath - The file path relative to the bucket (e.g. "vcards/<designId>/<file>").
+   */
+  async deleteFileByPath(filePath: string): Promise<void> {
+    try {
+      const supabase = createClient();
+
+      const { error } = await supabase.storage
+        .from('file-storage')
+        .remove([filePath]);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      throw new Error(`Failed to delete file by path: ${error.message}`);
     }
   },
 
