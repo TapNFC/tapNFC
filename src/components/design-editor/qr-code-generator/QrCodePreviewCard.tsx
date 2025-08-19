@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
@@ -169,29 +169,30 @@ export function QrCodePreviewCard({
 
               <div className="space-y-2">
                 <Label>Preview URL</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    value={qrUrl}
-                    readOnly
-                    className=" w-full  flex-1 font-mono text-sm"
-                  />
+                <div className="flex items-center space-x-2 rounded-lg border bg-muted/30 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-all font-mono text-sm text-muted-foreground">
+                      {qrUrl}
+                    </p>
+                  </div>
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={copyToClipboard}
-                    className="flex items-center space-x-2"
+                    className="flex shrink-0 items-center space-x-2 hover:bg-background"
                     disabled={isGenerating}
                   >
                     {copied
                       ? (
                           <>
                             <Check className="size-4 text-green-600" />
-                            <span>Copied!</span>
+                            <span className="text-xs">Copied!</span>
                           </>
                         )
                       : (
                           <>
                             <Copy className="size-4" />
-                            <span>Copy</span>
+                            <span className="text-xs">Copy</span>
                           </>
                         )}
                   </Button>

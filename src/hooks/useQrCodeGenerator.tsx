@@ -129,8 +129,26 @@ export const useQrCodeGenerator = (
   }, [qrSize, qrColor, bgColor, includeMargin, logoImage, logoSize, selectedQrSample]);
 
   const setQrSize = useCallback((value: number) => {
+    const oldSize = qrSize;
+    const newSize = value;
+
+    // If there's a logo and we're changing the QR size, scale the logo proportionally
+    if (logoImage && logoSize > 0 && oldSize > 0) {
+      const scaleFactor = newSize / oldSize;
+      const newLogoSize = Math.round(logoSize * scaleFactor);
+      const maxLogoSize = Math.floor(newSize / 3);
+
+      // Ensure the new logo size doesn't exceed the maximum allowed for the new QR size
+      const adjustedLogoSize = Math.min(newLogoSize, maxLogoSize);
+
+      console.log(`QR size changed: ${oldSize}px → ${newSize}px`);
+      console.log(`Logo size scaled: ${logoSize}px → ${adjustedLogoSize}px (scale factor: ${scaleFactor.toFixed(2)})`);
+
+      setLogoSizeState(adjustedLogoSize);
+    }
+
     setQrSizeState(value);
-  }, []);
+  }, [qrSize, logoImage, logoSize]);
   const setLogoSize = useCallback((value: number) => {
     setLogoSizeState(value);
   }, []);
@@ -291,7 +309,7 @@ export const useQrCodeGenerator = (
           if (styleMatch && styleMatch[1]) {
             const filenameParts = styleMatch[1].split('-');
             if (filenameParts.length > 1) {
-              // The style ID might be after the timestamp
+            // The style ID might be after the timestamp
               const possibleStyleId = filenameParts.slice(1).join('-');
               if (sampleQrDesigns.some(s => s.id === possibleStyleId)) {
                 styleId = possibleStyleId;
@@ -337,7 +355,7 @@ export const useQrCodeGenerator = (
           if (matchedSample) {
             setSelectedQrSample(matchedSample);
           } else {
-            // Default to plain style if no match
+          // Default to plain style if no match
             const plainStyle = sampleQrDesigns.find(s => s.id === 'style-none');
             if (plainStyle) {
               setSelectedQrSample(plainStyle);
