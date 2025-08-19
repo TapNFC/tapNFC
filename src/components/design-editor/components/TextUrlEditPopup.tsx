@@ -242,6 +242,22 @@ export function TextUrlEditPopup({
 
   const handleSave = async () => {
     try {
+      // Check if current textObject has a PDF URL that needs to be deleted
+      // This covers both cases: changing from PDF to other types, and updating existing PDF
+      if (
+        textObject.url
+        && (textObject.url.includes('.pdf') || textObject.url.includes('file-storage/files/'))
+      ) {
+        try {
+          // Delete the PDF file from Supabase storage
+          await fileStorageService.deleteFile(textObject.url);
+          // Previous PDF file deleted successfully
+        } catch (deleteError: any) {
+          console.warn('Failed to delete previous PDF file:', deleteError.message);
+          // Continue with saving even if deletion fails
+        }
+      }
+
       // For PDF type, upload the file first if selected
       if (urlType === 'pdf') {
         if (!selectedFile) {
