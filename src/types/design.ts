@@ -1,5 +1,20 @@
 import type { User } from '@supabase/supabase-js';
 
+// QR Code styling settings and metadata type
+export type QrCodeStyling = {
+  qrSize: number;
+  qrColor: string;
+  bgColor: string;
+  includeMargin: boolean;
+  logoImage: string | null;
+  logoSize: number;
+  selectedQrSampleId: string;
+  // Additional metadata fields
+  createdAt?: string; // When the QR code was first generated
+  lastModified?: string; // When the QR code was last modified
+  version?: string; // Version of the QR code styling format
+};
+
 // Main Design type that matches the Supabase database schema
 export type Design = {
   id: string;
@@ -12,6 +27,7 @@ export type Design = {
   preview_url: string | null;
   qr_code_url?: string | null;
   qr_code_data?: string | null; // SVG data for the QR code (base64 or serialized SVG)
+  design_qr_metadata?: QrCodeStyling | null; // QR code styling settings and metadata
   is_template: boolean;
   is_public: boolean;
   is_archived?: boolean;

@@ -59,6 +59,15 @@ export type UseQrCodeGeneratorReturn = {
   qrCodeSvgData: string | null; // Added SVG data
   editQrCode: () => void;
   isEditMode: boolean;
+  getCurrentQrSettings: () => {
+    qrSize: number;
+    qrColor: string;
+    bgColor: string;
+    includeMargin: boolean;
+    logoImage: string | null;
+    logoSize: number;
+    selectedQrSampleId: string;
+  };
 };
 
 export const useQrCodeGenerator = (
@@ -95,8 +104,80 @@ export const useQrCodeGenerator = (
   // Ref to access the SVG element
   const qrCodeRef = useRef<SVGSVGElement | null>(null);
 
-  const setQrSize = useCallback((value: number) => setQrSizeState(value), []);
-  const setLogoSize = useCallback((value: number) => setLogoSizeState(value), []);
+  // Ref to store the latest QR settings for immediate access
+  const latestQrSettingsRef = useRef({
+    qrSize,
+    qrColor,
+    bgColor,
+    includeMargin,
+    logoImage,
+    logoSize,
+    selectedQrSampleId: selectedQrSample?.id || 'style-none',
+  });
+
+  // Update the ref whenever values change
+  useEffect(() => {
+    latestQrSettingsRef.current = {
+      qrSize,
+      qrColor,
+      bgColor,
+      includeMargin,
+      logoImage,
+      logoSize,
+      selectedQrSampleId: selectedQrSample?.id || 'style-none',
+    };
+  }, [qrSize, qrColor, bgColor, includeMargin, logoImage, logoSize, selectedQrSample]);
+
+  const setQrSize = useCallback((value: number) => {
+    setQrSizeState(value);
+  }, []);
+  const setLogoSize = useCallback((value: number) => {
+    setLogoSizeState(value);
+  }, []);
+
+  // Getter functions to access current state values
+  const getCurrentQrSettings = useCallback(() => ({
+    qrSize,
+    qrColor,
+    bgColor,
+    includeMargin,
+    logoImage,
+    logoSize,
+    selectedQrSampleId: selectedQrSample?.id || 'style-none',
+  }), [qrSize, qrColor, bgColor, includeMargin, logoImage, logoSize, selectedQrSample]);
+
+  // Function to save QR metadata when settings change
+  const saveQrMetadata = useCallback(async () => {
+    if (!designId) {
+      return;
+    }
+
+    try {
+      await designService.updateDesign(designId, {
+        design_qr_metadata: {
+          qrSize,
+          qrColor,
+          bgColor,
+          includeMargin,
+          logoImage,
+          logoSize,
+          selectedQrSampleId: selectedQrSample?.id || 'style-none',
+          lastModified: new Date().toISOString(),
+          version: '1.0',
+        },
+      });
+    } catch (error) {
+      console.error('Error saving QR metadata:', error);
+    }
+  }, [designId, qrSize, qrColor, bgColor, includeMargin, logoImage, logoSize, selectedQrSample]);
+
+  // Save metadata when QR settings change
+  useEffect(() => {
+    // Only save if we have a design and it's not the initial load
+    if (designId && _designData) {
+      saveQrMetadata();
+    }
+  }, [qrSize, qrColor, bgColor, includeMargin, logoImage, logoSize, selectedQrSample, saveQrMetadata]);
 
   // Function to enable QR code editing
   const editQrCode = useCallback(() => {
@@ -200,32 +281,67 @@ export const useQrCodeGenerator = (
           setQrUrl(`${baseUrl}/${locale}/${previewIdentifier}`);
         }
 
-        // Try to determine the QR style from the URL
+        // Load QR metadata and styling settings
         const sampleQrDesigns = (await import('@/components/design-editor/QrCodeSamples')).sampleQrDesigns;
 
         // Extract style ID from URL if it exists (format: qr-codes/designId/timestamp-styleId.png)
         let styleId = 'style-none';
-        const styleMatch = qrCodeUrl.match(/\/([^/]+)\.png$/);
-        if (styleMatch && styleMatch[1]) {
-          const filenameParts = styleMatch[1].split('-');
-          if (filenameParts.length > 1) {
-            // The style ID might be after the timestamp
-            const possibleStyleId = filenameParts.slice(1).join('-');
-            if (sampleQrDesigns.some(s => s.id === possibleStyleId)) {
-              styleId = possibleStyleId;
+        if (qrCodeUrl) {
+          const styleMatch = qrCodeUrl.match(/\/([^/]+)\.png$/);
+          if (styleMatch && styleMatch[1]) {
+            const filenameParts = styleMatch[1].split('-');
+            if (filenameParts.length > 1) {
+              // The style ID might be after the timestamp
+              const possibleStyleId = filenameParts.slice(1).join('-');
+              if (sampleQrDesigns.some(s => s.id === possibleStyleId)) {
+                styleId = possibleStyleId;
+              }
             }
           }
         }
 
-        // Set the selected QR sample based on the extracted style ID
-        const matchedSample = sampleQrDesigns.find(s => s.id === styleId);
-        if (matchedSample) {
-          setSelectedQrSample(matchedSample);
+        // Load QR metadata if they exist, otherwise use extracted style ID
+        if (design?.design_qr_metadata) {
+          console.log('Loading QR metadata from database:', design.design_qr_metadata);
+          const styling = design.design_qr_metadata;
+
+          // Set all the styling values
+          setQrSize(styling.qrSize);
+          setQrColor(styling.qrColor);
+          setBgColor(styling.bgColor);
+          setIncludeMargin(styling.includeMargin);
+          setLogoImage(styling.logoImage);
+          setLogoSize(styling.logoSize);
+
+          // Set the selected QR sample based on stored QR metadata
+          const matchedSample = sampleQrDesigns.find(s => s.id === styling.selectedQrSampleId);
+          if (matchedSample) {
+            setSelectedQrSample(matchedSample);
+          } else {
+            // Fallback to extracted style ID if stored sample not found
+            const fallbackSample = sampleQrDesigns.find(s => s.id === styleId);
+            if (fallbackSample) {
+              setSelectedQrSample(fallbackSample);
+            } else {
+              // Default to plain style if no match
+              const plainStyle = sampleQrDesigns.find(s => s.id === 'style-none');
+              if (plainStyle) {
+                setSelectedQrSample(plainStyle);
+              }
+            }
+          }
         } else {
-          // Default to plain style if no match
-          const plainStyle = sampleQrDesigns.find(s => s.id === 'style-none');
-          if (plainStyle) {
-            setSelectedQrSample(plainStyle);
+          console.log('No QR metadata found, using default values');
+          // Set the selected QR sample based on the extracted style ID (fallback for designs without QR metadata)
+          const matchedSample = sampleQrDesigns.find(s => s.id === styleId);
+          if (matchedSample) {
+            setSelectedQrSample(matchedSample);
+          } else {
+            // Default to plain style if no match
+            const plainStyle = sampleQrDesigns.find(s => s.id === 'style-none');
+            if (plainStyle) {
+              setSelectedQrSample(plainStyle);
+            }
           }
         }
 
@@ -258,9 +374,38 @@ export const useQrCodeGenerator = (
         setQrUrl(`${baseUrl}/${locale}/${previewIdentifier}`);
       }
 
-      const plainQrSample = (await import('@/components/design-editor/QrCodeSamples')).sampleQrDesigns.find(s => s.id === 'style-none');
-      if (plainQrSample) {
-        setSelectedQrSample(plainQrSample);
+      // Load QR metadata for designs without saved QR codes
+      const sampleQrDesigns = (await import('@/components/design-editor/QrCodeSamples')).sampleQrDesigns;
+
+      if (design?.design_qr_metadata) {
+        console.log('Loading QR metadata for design without saved QR code:', design.design_qr_metadata);
+        const styling = design.design_qr_metadata;
+
+        // Set all the styling values
+        setQrSize(styling.qrSize);
+        setQrColor(styling.qrColor);
+        setBgColor(styling.bgColor);
+        setIncludeMargin(styling.includeMargin);
+        setLogoImage(styling.logoImage);
+        setLogoSize(styling.logoSize);
+
+        // Set the selected QR sample based on stored QR metadata
+        const matchedSample = sampleQrDesigns.find(s => s.id === styling.selectedQrSampleId);
+        if (matchedSample) {
+          setSelectedQrSample(matchedSample);
+        } else {
+          // Default to plain style if no match
+          const plainStyle = sampleQrDesigns.find(s => s.id === 'style-none');
+          if (plainStyle) {
+            setSelectedQrSample(plainStyle);
+          }
+        }
+      } else {
+        console.log('No QR metadata found, using default values');
+        const plainQrSample = sampleQrDesigns.find(s => s.id === 'style-none');
+        if (plainQrSample) {
+          setSelectedQrSample(plainQrSample);
+        }
       }
 
       const timer = setTimeout(() => setIsGenerating(false), 2000);
@@ -560,16 +705,39 @@ export const useQrCodeGenerator = (
 
       console.log(`QR code uploaded successfully: ${qrCodeStorageUrl}`);
 
-      // Update the design in the database with the QR code URL and SVG data
-      console.log('Updating design in database with QR code URL and SVG data');
+      // Update the design in the database with the QR code URL, SVG data, and QR metadata
+      console.log('Updating design in database with QR code URL, SVG data, and QR metadata');
+
+      // Check if this is the first time generating QR code (no existing metadata)
+      const isFirstGeneration = !_designData?.design_qr_metadata;
+
+      // Always save the current metadata when updating QR code
+      // Use ref to get the absolute latest values (bypassing React's state batching)
+      const currentSettings = latestQrSettingsRef.current;
+      const currentMetadata = {
+        ...currentSettings,
+        lastModified: new Date().toISOString(),
+        version: '1.0',
+        ...(isFirstGeneration && { createdAt: new Date().toISOString() }),
+      };
+
       const updatedDesign = await designService.updateDesign(designId, {
         qr_code_url: qrCodeStorageUrl,
         qr_code_data: svgData,
+        design_qr_metadata: currentMetadata,
       });
 
       if (!updatedDesign) {
         throw new Error('Failed to update design with QR code URL and SVG data');
       }
+
+      // Update local design data with the new metadata
+      setDesignData((prev: any) => ({
+        ...prev,
+        qr_code_url: qrCodeStorageUrl,
+        qr_code_data: svgData,
+        design_qr_metadata: currentMetadata,
+      }));
 
       console.log('Database updated successfully');
 
@@ -583,7 +751,7 @@ export const useQrCodeGenerator = (
     } finally {
       setIsSaving(false);
     }
-  }, [designId, qrUrl, isGenerating, selectedQrSample, isEditMode]);
+  }, [designId, qrUrl, isGenerating, selectedQrSample, isEditMode, getCurrentQrSettings]);
 
   const imageSettings = useMemo(() => {
     if (!logoImage) {
@@ -698,5 +866,6 @@ export const useQrCodeGenerator = (
     qrCodeSvgData,
     editQrCode,
     isEditMode,
+    getCurrentQrSettings,
   };
 };

@@ -103,7 +103,7 @@ export const QRCodeListItem = ({
           )}
         </div>
 
-        <div className="mr-4 size-20 shrink-0 rounded-lg border-2 border-gray-200 bg-white p-2 dark:border-gray-600">
+        <div className="relative mr-4 size-20 shrink-0 rounded-lg border-2 border-gray-200 bg-white p-2 dark:border-gray-600">
           {qrCode.qrCodeUrl
             ? (
                 <Image
@@ -115,22 +115,24 @@ export const QRCodeListItem = ({
                 />
               )
             : (
-                <div className="flex size-full flex-col items-center justify-center">
-                  <QRPattern seed={Number.parseInt(qrCode.id)} />
-                  <div className="mt-1 text-center">
-                    <div className="text-xs text-amber-600 dark:text-amber-400" title="QR code URL was updated when the name changed. Click regenerate to create a new QR code with the updated URL.">
-                      Needs regeneration
+                <>
+                  <QRPattern seed={Number.parseInt(qrCode.id)} className="size-full" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-red-600 dark:text-red-400" title="Click regenerate to create a new QR code with the updated URL.">
+                        Needs regeneration
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEditQRCode(qrCode)}
+                        className="mt-1 h-5 text-xs"
+                      >
+                        Regenerate
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onEditQRCode(qrCode)}
-                      className="mt-1 h-5 text-xs"
-                    >
-                      Regenerate
-                    </Button>
                   </div>
-                </div>
+                </>
               )}
         </div>
 

@@ -2,7 +2,6 @@
 
 import type { UseQrCodeGeneratorReturn } from '@/hooks/useQrCodeGenerator';
 import { Check, Copy, Download, Eye, Pencil, Save, Share2 } from 'lucide-react';
-import Image from 'next/image';
 import { QrCodeSamples } from '@/components/design-editor/QrCodeSamples';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,59 +115,39 @@ export function QrCodePreviewCard({
                   className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-lg"
                   style={{ width: qrSize, height: qrSize }}
                 >
-                  {qrCodeUrl && !isEditMode
-                    ? (
-                        <div
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            position: 'relative',
-                          }}
-                        >
-                          <Image
-                            src={qrCodeUrl}
-                            alt="Saved QR Code"
-                            width={qrSize}
-                            height={qrSize}
-                            className="size-full object-contain"
-                            priority
-                          />
-                          <div className="absolute -top-2 right-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                            Saved QR
-                          </div>
-                          <Button
-                            onClick={editQrCode}
-                            className="absolute bottom-2 right-2 size-8 rounded-full bg-blue-500 p-1 hover:bg-blue-600"
-                            title="Edit QR Code"
-                          >
-                            <Pencil className="size-4 text-white" />
-                          </Button>
+                  {qrPreviewDisplay && (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                      }}
+                    >
+                      {qrPreviewDisplay}
+                      {qrCodeUrl && !isEditMode && (
+                        <div className="absolute -top-2 right-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                          Saved QR
                         </div>
-                      )
-                    : (
-                        qrPreviewDisplay && (
-                          <div
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              position: 'relative',
-                            }}
-                          >
-                            {qrPreviewDisplay}
-                            {isEditMode && (
-                              <div className="absolute -top-2 right-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                                Edit Mode
-                              </div>
-                            )}
-                          </div>
-                        )
                       )}
+                      {isEditMode && (
+                        <div className="absolute -top-2 right-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          Edit Mode
+                        </div>
+                      )}
+                      {qrCodeUrl && !isEditMode && (
+                        <Button
+                          onClick={editQrCode}
+                          className="absolute bottom-2 right-2 size-8 rounded-full bg-blue-500 p-1 hover:bg-blue-600"
+                          title="Edit QR Code"
+                        >
+                          <Pencil className="size-4 text-white" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -194,7 +173,7 @@ export function QrCodePreviewCard({
                   <Input
                     value={qrUrl}
                     readOnly
-                    className="flex-1 font-mono text-sm"
+                    className=" w-full  flex-1 font-mono text-sm"
                   />
                   <Button
                     variant="outline"
