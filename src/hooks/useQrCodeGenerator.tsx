@@ -59,7 +59,6 @@ export type UseQrCodeGeneratorReturn = {
   qrCodeSvgData: string | null; // Added SVG data
   editQrCode: () => void;
   isEditMode: boolean;
-  forceSaveMetadata: () => Promise<void>;
   getCurrentQrSettings: () => {
     qrSize: number;
     qrColor: string;
@@ -474,35 +473,6 @@ export const useQrCodeGenerator = (
     toast.info('Logo removed.');
   }, []);
 
-  // Manual function to force save metadata (can be called from UI components)
-  const forceSaveMetadata = useCallback(async () => {
-    if (!designId) {
-      return;
-    }
-
-    console.log('Force saving QR metadata...');
-    try {
-      const currentSettings = latestQrSettingsRef.current;
-      const metadata = {
-        ...currentSettings,
-        lastModified: new Date().toISOString(),
-        version: '1.0',
-      };
-
-      console.log('Force saving metadata:', metadata);
-
-      await designService.updateDesign(designId, {
-        design_qr_metadata: metadata,
-      });
-
-      console.log('QR metadata force saved successfully');
-      toast.success('Settings saved');
-    } catch (error) {
-      console.error('Error force saving QR metadata:', error);
-      toast.error('Failed to save settings');
-    }
-  }, [designId]);
-
   const copyToClipboard = useCallback(async () => {
     if (!qrUrl) {
       return;
@@ -896,7 +866,6 @@ export const useQrCodeGenerator = (
     qrCodeSvgData,
     editQrCode,
     isEditMode,
-    forceSaveMetadata,
     getCurrentQrSettings,
   };
 };
