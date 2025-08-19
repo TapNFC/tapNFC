@@ -169,7 +169,7 @@ export function QrStylingCard({
                     setLogoSize(value[0]);
                   }
                 }}
-                max={qrSize / 2}
+                max={qrSize / 3}
                 step={1}
                 className="mt-2"
                 disabled={isSaving || isGenerating}
