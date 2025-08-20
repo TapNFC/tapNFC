@@ -14,8 +14,8 @@ import {
 import { nanoid } from 'nanoid';
 import Papa from 'papaparse';
 import { useCallback, useState } from 'react';
-
 import { useDropzone } from 'react-dropzone';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useCustomers } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
 
 type CSVUploadDialogProps = {
@@ -35,55 +36,170 @@ type CSVUploadDialogProps = {
 };
 
 const requiredFields = ['name', 'email'];
-const optionalFields = ['phone', 'website', 'brandColor', 'linkedin', 'twitter', 'instagram'];
+const optionalFields = ['phone', 'website', 'brandColor', 'linkedin', 'twitter'];
+
+// LinkedIn URL validation - must be a valid LinkedIn URL
+const linkedinUrlSchema = z.string().refine(
+  (url) => {
+    if (!url) {
+      return true; // Optional field
+    }
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.includes('linkedin.com');
+    } catch {
+      return false;
+    }
+  },
+  'Must be a valid LinkedIn URL',
+).optional().or(z.literal(''));
+
+// Twitter URL validation - must be a valid Twitter/X URL
+const twitterUrlSchema = z.string().refine(
+  (url) => {
+    if (!url) {
+      return true; // Optional field
+    }
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.includes('twitter.com') || urlObj.hostname.includes('x.com');
+    } catch {
+      return false;
+    }
+  },
+  'Must be a valid Twitter/X URL',
+).optional().or(z.literal(''));
+
+// Enhanced CSV validation schema
+const enhancedCsvCustomerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  brandColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format (use #RRGGBB)').optional(),
+  linkedin: linkedinUrlSchema,
+  twitter: twitterUrlSchema,
+});
+
+type ValidationError = {
+  type: 'missing_column' | 'row_validation' | 'parsing';
+  message: string;
+  row?: number;
+  column?: string;
+};
 
 export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialogProps) {
+  const { customers: existingCustomers } = useCustomers();
   const [uploadedData, setUploadedData] = useState<CSVCustomer[]>([]);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [errors, setErrors] = useState<ValidationError[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [step, setStep] = useState<'upload' | 'preview' | 'success'>('upload');
+  const [step, setStep] = useState<'upload' | 'preview' | 'duplicate_check' | 'success'>('upload');
+  const [duplicateCustomers, setDuplicateCustomers] = useState<Array<{ csvData: CSVCustomer; existingCustomer: any; rowNumber: number }>>([]);
 
-  const validateCSVData = (data: any[]): { valid: CSVCustomer[]; errors: string[] } => {
+  const validateCSVData = (data: any[], headers: string[]): { valid: CSVCustomer[]; errors: ValidationError[] } => {
     const validData: CSVCustomer[] = [];
-    const validationErrors: string[] = [];
+    const validationErrors: ValidationError[] = [];
+    const emailSet = new Set<string>();
 
+    // Step 1: Check required columns first
+    const missingRequiredColumns = requiredFields.filter(field => !headers.includes(field));
+
+    if (missingRequiredColumns.length > 0) {
+      missingRequiredColumns.forEach((column) => {
+        validationErrors.push({
+          type: 'missing_column',
+          message: `Missing required column: ${column}`,
+          column,
+        });
+      });
+      return { valid: [], errors: validationErrors };
+    }
+
+    // Step 2: Row-level validation (only if required columns exist)
     data.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because index starts at 0 and we skip header
 
-      // Check required fields
-      for (const field of requiredFields) {
-        if (!row[field] || row[field].trim() === '') {
-          validationErrors.push(`Row ${rowNumber}: Missing required field '${field}'`);
+      try {
+        // Check for missing required fields first
+        if (!row.name || row.name.trim() === '') {
+          validationErrors.push({
+            type: 'row_validation',
+            message: `Row ${rowNumber}: Name is missing`,
+            row: rowNumber,
+            column: 'name',
+          });
           return;
         }
+
+        if (!row.email || row.email.trim() === '') {
+          validationErrors.push({
+            type: 'row_validation',
+            message: `Row ${rowNumber}: Email is missing`,
+            row: rowNumber,
+            column: 'email',
+          });
+          return;
+        }
+
+        // Check for duplicate emails
+        const email = row.email.trim().toLowerCase();
+        if (emailSet.has(email)) {
+          validationErrors.push({
+            type: 'row_validation',
+            message: `Row ${rowNumber}: Duplicate email address "${row.email.trim()}"`,
+            row: rowNumber,
+            column: 'email',
+          });
+          return;
+        }
+        emailSet.add(email);
+
+        // Validate the row data using Zod schema
+        const validatedData = enhancedCsvCustomerSchema.parse(row);
+
+        // Create customer object with validated data
+        const customer: CSVCustomer = {
+          name: validatedData.name.trim(),
+          email: validatedData.email.trim(),
+          phone: validatedData.phone?.trim() || undefined,
+          website: validatedData.website?.trim() || undefined,
+          brandColor: validatedData.brandColor?.trim() || '#3B82F6',
+          linkedin: validatedData.linkedin?.trim() || undefined,
+          twitter: validatedData.twitter?.trim() || undefined,
+        };
+
+        validData.push(customer);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          // Handle Zod validation errors
+          error.errors.forEach((zodError) => {
+            const field = zodError.path[0] as string;
+            let message = '';
+
+            if (field === 'email' && zodError.message.includes('Invalid email')) {
+              message = `Row ${rowNumber}: Email is invalid`;
+            } else if (field === 'name') {
+              message = `Row ${rowNumber}: Name is invalid`;
+            } else {
+              message = `Row ${rowNumber}: ${zodError.message}`;
+            }
+
+            validationErrors.push({
+              type: 'row_validation',
+              message,
+              row: rowNumber,
+              column: field,
+            });
+          });
+        } else {
+          // Handle other validation errors
+          validationErrors.push({
+            type: 'row_validation',
+            message: `Row ${rowNumber}: Validation failed`,
+            row: rowNumber,
+          });
+        }
       }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
-      if (!emailRegex.test(row.email)) {
-        validationErrors.push(`Row ${rowNumber}: Invalid email format`);
-        return;
-      }
-
-      // Validate brand color format (if provided)
-      if (row.brandColor && !row.brandColor.match(/^#[0-9A-F]{6}$/i)) {
-        validationErrors.push(`Row ${rowNumber}: Invalid brand color format (should be #RRGGBB)`);
-        return;
-      }
-
-      // Create customer object
-      const customer: CSVCustomer = {
-        name: row.name.trim(),
-        email: row.email.trim(),
-        phone: row.phone?.trim() || undefined,
-        website: row.website?.trim() || undefined,
-        brandColor: row.brandColor?.trim() || '#3B82F6',
-        linkedin: row.linkedin?.trim() || undefined,
-        twitter: row.twitter?.trim() || undefined,
-        instagram: row.instagram?.trim() || undefined,
-      };
-
-      validData.push(customer);
     });
 
     return { valid: validData, errors: validationErrors };
@@ -101,8 +217,36 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      dynamicTyping: false,
+      transform: value => value.trim(),
       complete: (results) => {
-        const { valid, errors: validationErrors } = validateCSVData(results.data);
+        if (results.errors && results.errors.length > 0) {
+          // Handle CSV parsing errors
+          const parsingErrors: ValidationError[] = results.errors.map((error) => {
+            let message = error.message;
+
+            // Provide more helpful error messages
+            if (error.message.includes('Too many fields')) {
+              message = `Row ${error.row}: Too many columns detected. Please ensure all rows have the same number of columns as the header row.`;
+            } else if (error.message.includes('Too few fields')) {
+              message = `Row ${error.row}: Too few columns detected. Please ensure all rows have the same number of columns as the header row.`;
+            } else if (error.message.includes('Quoted field')) {
+              message = `Row ${error.row}: Issue with quoted field. Please check for unescaped quotes in your data.`;
+            }
+
+            return {
+              type: 'parsing',
+              message: `CSV parsing error: ${message}`,
+              row: error.row,
+            };
+          });
+          setErrors(parsingErrors);
+          setIsProcessing(false);
+          return;
+        }
+
+        const headers = Object.keys(results.data[0] || {});
+        const { valid, errors: validationErrors } = validateCSVData(results.data, headers);
 
         if (validationErrors.length > 0) {
           setErrors(validationErrors);
@@ -115,7 +259,10 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
         setIsProcessing(false);
       },
       error: (error) => {
-        setErrors([`Failed to parse CSV: ${error.message}`]);
+        setErrors([{
+          type: 'parsing',
+          message: `Failed to parse CSV: ${error.message}`,
+        }]);
         setIsProcessing(false);
       },
     });
@@ -133,10 +280,10 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
   const downloadTemplate = () => {
     const headers = requiredFields.concat(optionalFields).join(',');
     const sampleData = [
-      'Innovate Inc.,contact@innovate.com,+15551234567,https://innovate.com,#4A90E2,https://linkedin.com/in/innovate,https://x.com/innovate,@innovate_global',
-      'Quantum Solutions,qs@example.com,+15559876543,https://quantum.dev,#50E3C2,https://linkedin.com/in/quantum,,@quantum_sols',
-      'Stellar Goods,hello@stellar.co,,https://stellar.co,#E24A90,https://linkedin.com/in/stellargoods,https://x.com/stellargoods,',
-      'Apex Digital,support@apexdigital.net,+15552345678,https://apexdigital.net,#F5A623,,https://x.com/apexdigital,',
+      'Innovate Inc.,contact@innovate.com,+15551234567,https://innovate.com,#4A90E2,https://linkedin.com/in/innovate,https://x.com/innovate',
+      'Quantum Solutions,qs@example.com,+15559876543,https://quantum.dev,#50E3C2,https://linkedin.com/in/quantum,,',
+      'Stellar Goods,hello@stellar.co,,https://stellar.co,#E24A90,https://linkedin.com/in/stellargoods,https://x.com/stellargoods',
+      'Apex Digital,support@apexdigital.net,+15552345678,https://apexdigital.net,#F5A623,,https://x.com/apexdigital',
       'Synergy Labs,info@synergylabs.io,,https://synergylabs.io,#9013FE,https://linkedin.com/in/synergylabs,,',
     ];
     const csvContent = [headers, ...sampleData].join('\n');
@@ -155,15 +302,53 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
     setUploadedData([]);
     setErrors([]);
     setIsProcessing(false);
+    setDuplicateCustomers([]);
+  };
+
+  const checkExistingCustomers = async (customers: CSVCustomer[]): Promise<Array<{ csvData: CSVCustomer; existingCustomer: any; rowNumber: number }>> => {
+    const duplicates: Array<{ csvData: CSVCustomer; existingCustomer: any; rowNumber: number }> = [];
+
+    try {
+      // Use existing customers from the hook to check for duplicates
+      customers.forEach((customer, index) => {
+        const existing = existingCustomers.find(ex => ex.email.toLowerCase() === customer.email.toLowerCase());
+        if (existing) {
+          duplicates.push({
+            csvData: customer,
+            existingCustomer: existing,
+            rowNumber: index + 1,
+          });
+        }
+      });
+
+      return duplicates;
+    } catch (error) {
+      console.error('Error checking existing customers:', error);
+      return [];
+    }
   };
 
   const handleUpload = async () => {
     setIsProcessing(true);
     try {
+      // First check for existing customers in database
+      const existingDuplicates = await checkExistingCustomers(uploadedData);
+
+      if (existingDuplicates.length > 0) {
+        setDuplicateCustomers(existingDuplicates);
+        setStep('duplicate_check');
+        setIsProcessing(false);
+        return;
+      }
+
+      // No duplicates, proceed with upload
       await onUpload(uploadedData);
       setStep('success');
     } catch {
-      setErrors(['An unexpected error occurred during upload. Please try again.']);
+      setErrors([{
+        type: 'parsing',
+        message: 'An unexpected error occurred during upload. Please try again.',
+      }]);
       setStep('upload'); // Go back to upload step to show the error
     } finally {
       setIsProcessing(false);
@@ -183,7 +368,7 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
+      <DialogContent className="max-h-[95vh] max-w-6xl overflow-hidden p-0">
         <div className="flex">
           {/* Sidebar */}
           <div className="hidden w-1/3 flex-col space-y-4 border-r bg-slate-50 p-6 dark:bg-slate-800/50 md:flex">
@@ -239,6 +424,24 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                 <div
                   className={cn(
                     'flex size-8 items-center justify-center rounded-full',
+                    step === 'duplicate_check'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                  )}
+                >
+                  3
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold">Resolve Conflicts</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Handle duplicates
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div
+                  className={cn(
+                    'flex size-8 items-center justify-center rounded-full',
                     step === 'success'
                       ? 'bg-green-600 text-white'
                       : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
@@ -279,7 +482,7 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
             </Card>
           </div>
           {/* Main Content */}
-          <div className="flex h-[80vh] flex-1 flex-col p-6">
+          <div className="flex h-[85vh] flex-1 flex-col p-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -304,6 +507,9 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                             </Badge>
                           ))}
                         </div>
+                        <p className="mt-2 text-xs text-green-600 dark:text-green-400">
+                          These columns must be present in your CSV
+                        </p>
                       </Card>
                       <Card className="p-4">
                         <h3 className="mb-2 text-base font-semibold text-blue-700 dark:text-blue-400">
@@ -361,8 +567,15 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                               Validation Errors
                             </h3>
                             <ul className="max-h-24 space-y-1 overflow-y-auto text-sm text-red-700 dark:text-red-300">
-                              {errors.map(error => (
-                                <li key={nanoid()}>{error}</li>
+                              {errors.map((error, index) => (
+                                <li key={index} className="flex items-start space-x-2">
+                                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                                    {error.type === 'missing_column' && '📋'}
+                                    {error.type === 'row_validation' && '⚠️'}
+                                    {error.type === 'parsing' && '❌'}
+                                  </span>
+                                  <span>{error.message}</span>
+                                </li>
                               ))}
                             </ul>
                           </div>
@@ -373,8 +586,9 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                 )}
 
                 {step === 'preview' && (
-                  <div className="flex h-full flex-col space-y-4">
-                    <div className="flex items-center justify-between">
+                  <div className="flex h-full flex-col">
+                    {/* Header Section */}
+                    <div className="mb-4 flex items-center justify-between">
                       <h3 className="text-lg font-medium">
                         Preview (
                         {uploadedData.length}
@@ -383,56 +597,85 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                       </h3>
                     </div>
 
-                    <div className="grow overflow-hidden rounded-lg border">
-                      <div className="h-full overflow-y-auto">
-                        <table className="w-full text-sm">
-                          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
-                            <tr>
-                              <th className="p-3 text-left font-medium">
-                                Name
-                              </th>
-                              <th className="p-3 text-left font-medium">
-                                Email
-                              </th>
-                              <th className="p-3 text-left font-medium">
-                                Website
-                              </th>
-                              <th className="p-3 text-left font-medium">
-                                Brand Color
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {uploadedData.map(customer => (
-                              <tr
-                                key={nanoid()}
-                                className="border-t dark:border-slate-700"
-                              >
-                                <td className="p-3">{customer.name}</td>
-                                <td className="p-3">{customer.email}</td>
-                                <td className="p-3">
-                                  {customer.website || '-'}
-                                </td>
-                                <td className="p-3">
-                                  <div className="flex items-center space-x-2">
-                                    <div
-                                      className="size-4 rounded border dark:border-slate-600"
-                                      style={{
-                                        backgroundColor: customer.brandColor,
-                                      }}
-                                    />
-                                    <span className="font-mono text-xs">
-                                      {customer.brandColor}
-                                    </span>
-                                  </div>
-                                </td>
+                    {/* Table Section - Scrollable */}
+                    <div className="mb-4 min-h-0 flex-1">
+                      <div className="h-full overflow-hidden rounded-lg border">
+                        <div className="h-full max-w-3xl overflow-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                          <table className="w-full min-w-max text-sm">
+                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
+                              <tr>
+                                <th className="whitespace-nowrap p-3 text-left font-medium text-slate-600 dark:text-slate-400">
+                                  #
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Name
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Email
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Phone
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Website
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Brand Color
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  LinkedIn
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Twitter
+                                </th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {uploadedData.map((customer, index) => (
+                                <tr
+                                  key={nanoid()}
+                                  className="border-t dark:border-slate-700"
+                                >
+                                  <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-slate-500 dark:text-slate-400">
+                                    {index + 1}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">{customer.name}</td>
+                                  <td className="whitespace-nowrap p-3">{customer.email}</td>
+                                  <td className="whitespace-nowrap p-3">
+                                    {customer.phone || '-'}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    {customer.website || '-'}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    <div className="flex items-center space-x-2">
+                                      <div
+                                        className="size-4 rounded border dark:border-slate-600"
+                                        style={{
+                                          backgroundColor: customer.brandColor,
+                                        }}
+                                      />
+                                      <span className="font-mono text-xs">
+                                        {customer.brandColor}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    {customer.linkedin || '-'}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    {customer.twitter || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex justify-end space-x-2">
+
+                    {/* Buttons Section - Fixed at bottom */}
+                    <div className="flex justify-end space-x-2 border-t pt-4">
                       <Button
                         variant="outline"
                         onClick={() => setStep('upload')}
@@ -454,6 +697,158 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                           ? 'Uploading...'
                           : `Import ${uploadedData.length} Customers`}
                       </Button>
+                    </div>
+                  </div>
+                )}
+
+                {step === 'duplicate_check' && (
+                  <div className="flex h-full flex-col">
+                    {/* Header */}
+                    <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+                      <div>
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                          Resolve Duplicate Conflicts
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          {duplicateCustomers.length}
+                          {' '}
+                          customer
+                          {duplicateCustomers.length !== 1 ? 's' : ''}
+                          {' '}
+                          already exist in your database
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="bg-orange-100 text-sm text-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
+                        {duplicateCustomers.length}
+                        {' '}
+                        Conflicts
+                      </Badge>
+                    </div>
+
+                    {/* Duplicate Customers Table */}
+                    <div className="mb-4 min-h-0 flex-1">
+                      <div className="h-full overflow-hidden rounded-lg border">
+                        <div className="size-full overflow-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                          <table className="w-full min-w-max text-sm">
+                            <thead className="sticky top-0 border-b border-orange-200 bg-orange-50 dark:border-orange-700 dark:bg-orange-900/20">
+                              <tr>
+                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                  #
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                  CSV Data
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                  Existing Customer
+                                </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-orange-200 dark:divide-orange-700">
+                              {duplicateCustomers.map((duplicate, index) => (
+                                <tr key={index} className="hover:bg-orange-50 dark:hover:bg-orange-900/10">
+                                  <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-orange-600 dark:text-orange-400">
+                                    {duplicate.rowNumber}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    <div className="space-y-1">
+                                      <div className="font-medium text-slate-900 dark:text-slate-100">
+                                        {duplicate.csvData.name}
+                                      </div>
+                                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                                        {duplicate.csvData.email}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    <div className="space-y-1">
+                                      <div className="font-medium text-slate-900 dark:text-slate-100">
+                                        {duplicate.existingCustomer.name}
+                                      </div>
+                                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                                        {duplicate.existingCustomer.email}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                      onClick={() => {
+                                        // Remove from duplicates and remove from upload data
+                                        setDuplicateCustomers(prev => prev.filter((_, i) => i !== index));
+                                        setUploadedData(prev => prev.filter(customer => customer.email !== duplicate.csvData.email));
+                                      }}
+                                    >
+                                      Remove from Import
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-700">
+                      <div className="text-sm text-slate-600 dark:text-slate-400">
+                        {duplicateCustomers.length === 0 ? 'All conflicts resolved' : `${duplicateCustomers.length} conflict${duplicateCustomers.length !== 1 ? 's' : ''} remaining`}
+                      </div>
+                      <div className="flex space-x-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => setStep('preview')}
+                          disabled={isProcessing}
+                        >
+                          Back to Preview
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            if (duplicateCustomers.length === 0) {
+                              // All conflicts resolved, proceed with upload
+                              try {
+                                setIsProcessing(true);
+                                await onUpload(uploadedData);
+                                setStep('success');
+                              } catch {
+                                setErrors([{
+                                  type: 'parsing',
+                                  message: 'An unexpected error occurred during upload. Please try again.',
+                                }]);
+                                setStep('preview');
+                              } finally {
+                                setIsProcessing(false);
+                              }
+                            }
+                          }}
+                          disabled={isProcessing || duplicateCustomers.length > 0}
+                          className="bg-orange-600 text-white hover:bg-orange-700"
+                        >
+                          {isProcessing
+                            ? (
+                                <>
+                                  <Loader2 className="mr-2 size-4 animate-spin" />
+                                  Uploading...
+                                </>
+                              )
+                            : (
+                                <>
+                                  <Upload className="mr-2 size-4" />
+                                  Import
+                                  {' '}
+                                  {uploadedData.length}
+                                  {' '}
+                                  Customer
+                                  {uploadedData.length !== 1 ? 's' : ''}
+                                </>
+                              )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
