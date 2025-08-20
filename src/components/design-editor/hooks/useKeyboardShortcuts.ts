@@ -249,6 +249,7 @@ export function useKeyboardShortcuts({
           onUndo();
           console.warn('Undo triggered via keyboard shortcut');
         }
+        return;
       }
 
       if ((isCtrl && event.code === 'KeyY') || (isCtrl && isShift && event.code === 'KeyZ')) {
