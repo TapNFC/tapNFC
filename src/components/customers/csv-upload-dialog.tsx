@@ -36,7 +36,7 @@ type CSVUploadDialogProps = {
 };
 
 const requiredFields = ['name', 'email'];
-const optionalFields = ['phone', 'website', 'brandColor', 'linkedin', 'twitter'];
+const optionalFields = ['phone', 'website', 'brandColor', 'linkedin', 'twitter', 'instagram'];
 
 // LinkedIn URL validation - must be a valid LinkedIn URL
 const linkedinUrlSchema = z.string().refine(
@@ -74,11 +74,12 @@ const twitterUrlSchema = z.string().refine(
 const enhancedCsvCustomerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^[0-9+\-\s()]*$/, 'Phone number cannot contain letters').optional(),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
   brandColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format (use #RRGGBB)').optional(),
   linkedin: linkedinUrlSchema,
   twitter: twitterUrlSchema,
+  instagram: z.string().optional(),
 });
 
 type ValidationError = {
@@ -119,56 +120,66 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
     data.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because index starts at 0 and we skip header
 
-      try {
-        // Check for missing required fields first
-        if (!row.name || row.name.trim() === '') {
-          validationErrors.push({
-            type: 'row_validation',
-            message: `Row ${rowNumber}: Name is missing`,
-            row: rowNumber,
-            column: 'name',
-          });
-          return;
-        }
+      let rowHasErrors = false;
+      const rowErrors: ValidationError[] = [];
 
-        if (!row.email || row.email.trim() === '') {
-          validationErrors.push({
-            type: 'row_validation',
-            message: `Row ${rowNumber}: Email is missing`,
-            row: rowNumber,
-            column: 'email',
-          });
-          return;
-        }
+      // Check for missing required fields first
+      if (!row.name || row.name.trim() === '') {
+        rowErrors.push({
+          type: 'row_validation',
+          message: `Row ${rowNumber}: Name is missing`,
+          row: rowNumber,
+          column: 'name',
+        });
+        rowHasErrors = true;
+      }
 
-        // Check for duplicate emails
+      if (!row.email || row.email.trim() === '') {
+        rowErrors.push({
+          type: 'row_validation',
+          message: `Row ${rowNumber}: Email is missing`,
+          row: rowNumber,
+          column: 'email',
+        });
+        rowHasErrors = true;
+      }
+
+      // Check for duplicate emails (only if email exists)
+      if (row.email && row.email.trim()) {
         const email = row.email.trim().toLowerCase();
         if (emailSet.has(email)) {
-          validationErrors.push({
+          rowErrors.push({
             type: 'row_validation',
             message: `Row ${rowNumber}: Duplicate email address "${row.email.trim()}"`,
             row: rowNumber,
             column: 'email',
           });
-          return;
+          rowHasErrors = true;
+        } else {
+          emailSet.add(email);
         }
-        emailSet.add(email);
+      }
 
-        // Validate the row data using Zod schema
+      // Always validate the row data using Zod schema to catch ALL field errors
+      try {
         const validatedData = enhancedCsvCustomerSchema.parse(row);
 
-        // Create customer object with validated data
-        const customer: CSVCustomer = {
-          name: validatedData.name.trim(),
-          email: validatedData.email.trim(),
-          phone: validatedData.phone?.trim() || undefined,
-          website: validatedData.website?.trim() || undefined,
-          brandColor: validatedData.brandColor?.trim() || '#3B82F6',
-          linkedin: validatedData.linkedin?.trim() || undefined,
-          twitter: validatedData.twitter?.trim() || undefined,
-        };
+        // Only create customer object if no critical errors (missing name/email)
+        if (!rowHasErrors) {
+          // Create customer object with validated data
+          const customer: CSVCustomer = {
+            name: validatedData.name.trim(),
+            email: validatedData.email.trim(),
+            phone: validatedData.phone?.trim() || undefined,
+            website: validatedData.website?.trim() || undefined,
+            brandColor: validatedData.brandColor?.trim() || '#3B82F6',
+            linkedin: validatedData.linkedin?.trim() || undefined,
+            twitter: validatedData.twitter?.trim() || undefined,
+            instagram: validatedData.instagram?.trim() || undefined,
+          };
 
-        validData.push(customer);
+          validData.push(customer);
+        }
       } catch (error) {
         if (error instanceof z.ZodError) {
           // Handle Zod validation errors
@@ -184,22 +195,27 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
               message = `Row ${rowNumber}: ${zodError.message}`;
             }
 
-            validationErrors.push({
+            rowErrors.push({
               type: 'row_validation',
               message,
               row: rowNumber,
               column: field,
             });
           });
+          rowHasErrors = true;
         } else {
           // Handle other validation errors
-          validationErrors.push({
+          rowErrors.push({
             type: 'row_validation',
             message: `Row ${rowNumber}: Validation failed`,
             row: rowNumber,
           });
+          rowHasErrors = true;
         }
       }
+
+      // Add all row errors to validation errors
+      validationErrors.push(...rowErrors);
     });
 
     return { valid: validData, errors: validationErrors };
@@ -628,6 +644,9 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                                 <th className="whitespace-nowrap p-3 text-left font-medium">
                                   Twitter
                                 </th>
+                                <th className="whitespace-nowrap p-3 text-left font-medium">
+                                  Instagram
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -665,6 +684,9 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
                                   </td>
                                   <td className="whitespace-nowrap p-3">
                                     {customer.twitter || '-'}
+                                  </td>
+                                  <td className="whitespace-nowrap p-3">
+                                    {customer.instagram || '-'}
                                   </td>
                                 </tr>
                               ))}
