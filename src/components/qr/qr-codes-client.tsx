@@ -25,7 +25,7 @@ type ElegantQRCodesProps = {
 type TabType = 'all' | 'active' | 'archive';
 
 export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQRCodeForDelete, setSelectedQRCodeForDelete] = useState<QRCode | null>(null);

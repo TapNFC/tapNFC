@@ -185,6 +185,49 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     }
   }, [isCanvasReady, canvas, designId]);
 
+  // Zoom constants
+  const ZOOM_STEP = 1.2;
+  const MAX_ZOOM = 3;
+  const MIN_ZOOM = 0.3;
+
+  // Ref to the canvas inner div element
+  const canvasInnerRef = useRef<HTMLDivElement>(null);
+
+  // Zoom functions
+  const handleZoomIn = () => {
+    if (!canvas) {
+      return;
+    }
+    if (canvasInnerRef.current) {
+      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
+      const newScale = Math.min(currentScale * ZOOM_STEP, MAX_ZOOM);
+      canvasInnerRef.current.dataset.zoom = newScale.toString();
+      canvasInnerRef.current.style.transform = `scale(${newScale})`;
+    }
+  };
+
+  const handleZoomReset = () => {
+    if (!canvas) {
+      return;
+    }
+    if (canvasInnerRef.current) {
+      canvasInnerRef.current.dataset.zoom = '1';
+      canvasInnerRef.current.style.transform = 'scale(1)';
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (!canvas) {
+      return;
+    }
+    if (canvasInnerRef.current) {
+      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
+      const newScale = Math.max(currentScale / ZOOM_STEP, MIN_ZOOM);
+      canvasInnerRef.current.dataset.zoom = newScale.toString();
+      canvasInnerRef.current.style.transform = `scale(${newScale})`;
+    }
+  };
+
   // Update the useEffect for double-click handling
   useEffect(() => {
     if (!canvas || !fabric) {
@@ -281,6 +324,10 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
               fabricError={fabricError}
               canvas={canvas}
               fabric={fabric}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onZoomReset={handleZoomReset}
+              canvasInnerRef={canvasInnerRef}
             />
           </div>
         </div>
