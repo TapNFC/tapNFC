@@ -2,19 +2,19 @@ import type { LocalePrefixMode } from 'next-intl/routing';
 
 const localePrefix: LocalePrefixMode = 'as-needed';
 
-// App configuration variables - adjust according to your project
+// App configuration variables for QR Profile Management System
 export const AppConfig = {
   // App info
-  name: 'Next.js Boilerplate',
-  title: 'Next.js Boilerplate - Production Ready Template',
-  description: 'A modern Next.js boilerplate with App Router, TypeScript, Tailwind CSS, and more.',
-  url: process.env.NEXT_PUBLIC_APP_URL || 'https://nextjs-boilerplate.vercel.app',
+  name: 'QR Profile Management',
+  title: 'QR Profile Management - Digital Profile & QR Code Management Platform',
+  description: 'A modern platform to create, customize, manage, and track QR codes for digital profiles, campaigns, and customer engagement. Built with Next.js 15, React 19, TypeScript, and Tailwind CSS.',
+  url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.tapnfc.co',
 
   // SEO defaults
   titleSeparator: ' | ',
   locale: 'en_US',
-  author: 'Haris Ahmed',
-  twitterHandle: '@harisahmed',
+  author: 'Code Huddle',
+  twitterHandle: '@codehuddle',
 
   // Internationalization settings
   locales: ['en'],
@@ -25,29 +25,43 @@ export const AppConfig = {
   defaultTheme: 'system', // 'light', 'dark', or 'system'
 
   // Contact information
-  contactEmail: 'hello@example.com',
+  contactEmail: 'info@codehuddle.com',
 
   // Social media
   social: {
-    github: 'https://github.com/yourusername/nextjs-boilerplate',
-    twitter: 'https://twitter.com/yourusername',
-    linkedin: 'https://linkedin.com/in/yourusername',
+    github: 'https://github.com/code-huddle/qr-profile-management',
+    twitter: 'https://twitter.com/code-huddle',
+    linkedin: 'https://linkedin.com/company/code-huddle',
   },
 
   // Analytics
   googleAnalyticsId: process.env.NEXT_PUBLIC_GA_ID,
-
-  // API endpoints - centralize API URLs here
-  api: {
-    base: process.env.NEXT_PUBLIC_API_URL,
-    auth: '/v1/auth',
-    users: '/v1/users',
-  },
 
   // Feature flags
   features: {
     darkMode: true,
     auth: true,
     analytics: true,
+    qrCodeGeneration: true,
+    designEditor: true,
+    customerManagement: true,
+    csvImport: true,
+    realTimePreview: true,
+    autoSave: true,
+    undoRedo: true,
+    templates: true,
+    publicSharing: true,
+    scanTracking: true,
+    fileUpload: true,
+    internationalization: true,
   },
+
+  // QR Code specific settings
+  qrCode: {
+    defaultSize: 256,
+    supportedFormats: ['PNG', 'SVG', 'JPEG'],
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  },
+
 };
