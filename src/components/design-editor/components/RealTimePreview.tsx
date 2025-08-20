@@ -814,7 +814,7 @@ export function RealTimePreview({
     >
       <div className={`${isFullscreen ? 'relative flex flex-col' : 'rounded-lg border border-gray-200 bg-white shadow-lg'}`}>
         {/* Preview Header */}
-        <div className={`${isFullscreen ? 'absolute inset-x-4 top-4' : ''} flex items-center justify-between border-b border-gray-200 bg-white p-3 ${isFullscreen ? 'rounded-lg shadow-lg' : 'rounded-t-lg'}`}>
+        <div className="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-white p-3">
           <div className="flex items-center gap-2">
             <Eye className="size-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Live Preview</span>
@@ -836,20 +836,22 @@ export function RealTimePreview({
                     <Maximize2 className="size-4" />
                   )}
             </Button>
-            <Button
-              onClick={handleHidePreview}
-              variant="ghost"
-              size="sm"
-              className="size-8 p-0"
-            >
-              <EyeOff className="size-4" />
-            </Button>
+            {!isFullscreen && (
+              <Button
+                onClick={handleHidePreview}
+                variant="ghost"
+                size="sm"
+                className="size-8 p-0"
+              >
+                <EyeOff className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Preview Content */}
         <div
-          className={`${isFullscreen ? 'flex flex-1 items-center justify-center p-4' : 'p-4'}`}
+          className={`${isFullscreen ? 'flex flex-1 items-center justify-center' : 'p-4'}`}
           style={!isFullscreen ? { width: `${displayDimensions.width + 20}px`, height: `${displayDimensions.height + 10}px`, overflow: 'hidden' } : {}}
         >
           <div
@@ -860,7 +862,7 @@ export function RealTimePreview({
               height: `${height}px`, // Use original canvas height
               ...effectiveBackgroundStyle,
               overflow: 'hidden',
-              transform: `scale(${getPreviewScale})`,
+              transform: `scale(${isFullscreen ? 1 : getPreviewScale})`,
               transformOrigin: 'top left',
               cursor: 'pointer', // Add pointer cursor to indicate interactivity
             }}
@@ -886,7 +888,7 @@ export function RealTimePreview({
         </div>
 
         {/* Preview Info */}
-        <div className={`${isFullscreen ? 'absolute inset-x-4 bottom-4' : ''} bg-gray-50 p-2 text-xs text-gray-500 ${isFullscreen ? 'rounded-lg shadow-lg' : 'rounded-b-lg'}`}>
+        <div className="rounded-b-lg bg-gray-50 p-2 text-xs text-gray-500">
           <div className="flex items-center justify-between">
             <span>
               {width}

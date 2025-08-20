@@ -77,6 +77,19 @@ const TEXT_ALIGNMENTS = [
 ] as const;
 
 export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
+  // Load Google Fonts for consistent cross-platform behavior
+  useEffect(() => {
+    const loadGoogleFonts = () => {
+      // Load exactly the fonts listed in FONT_FAMILIES from Google Fonts CDN
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Arial&family=Georgia&family=Times+New+Roman&family=Courier+New&family=Verdana&family=Helvetica&family=Impact&family=Comic+Sans+MS&family=Trebuchet+MS&family=Lucida+Console&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Ubuntu:wght@400;700&family=Edwardian+Script+ITC&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    };
+
+    loadGoogleFonts();
+  }, []);
+
   // Text properties
   const [fontFamily, setFontFamily] = useState('Inter');
   const [fontSize, setFontSize] = useState(16);
