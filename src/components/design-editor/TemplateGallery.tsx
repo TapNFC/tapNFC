@@ -29,7 +29,6 @@ export function TemplateGallery({ canvas }: TemplateGalleryProps) {
       }
 
       try {
-        toast.loading('Loading template...');
         await new Promise<void>((resolve) => {
           canvas.loadFromJSON(template.canvas_data, () => {
             canvas.renderAll();
