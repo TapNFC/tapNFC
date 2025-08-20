@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 type CanvasContainerProps = {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -10,6 +10,7 @@ type CanvasContainerProps = {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  canvasInnerRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 export function CanvasContainer({
@@ -22,15 +23,19 @@ export function CanvasContainer({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  canvasInnerRef,
 }: CanvasContainerProps) {
   const [zoomLevel, setZoomLevel] = useState(100);
+  const localCanvasInnerRef = useRef<HTMLDivElement>(null);
+
+  // Use the passed ref if provided, otherwise use local ref
+  const finalCanvasInnerRef = canvasInnerRef || localCanvasInnerRef;
 
   // Update zoom level display when zoom changes
   useEffect(() => {
     const updateZoomDisplay = () => {
-      const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
-      if (canvasInnerDiv) {
-        const currentScale = Number.parseFloat(canvasInnerDiv.dataset.zoom || '1');
+      if (finalCanvasInnerRef.current) {
+        const currentScale = Number.parseFloat(finalCanvasInnerRef.current.dataset.zoom || '1');
         const zoomPercentage = Math.round(currentScale * 100);
         setZoomLevel(zoomPercentage);
       }
@@ -41,13 +46,12 @@ export function CanvasContainer({
 
     // Set up a mutation observer to watch for zoom changes
     const observer = new MutationObserver(updateZoomDisplay);
-    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]');
-    if (canvasInnerDiv) {
-      observer.observe(canvasInnerDiv, { attributes: true, attributeFilter: ['style'] });
+    if (finalCanvasInnerRef.current) {
+      observer.observe(finalCanvasInnerRef.current, { attributes: true, attributeFilter: ['style'] });
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [finalCanvasInnerRef]);
 
   return (
     <div
@@ -98,7 +102,7 @@ export function CanvasContainer({
           </button>
         </div>
       )}
-      <div className="relative flex max-h-full max-w-full items-center justify-center">
+      <div ref={finalCanvasInnerRef} className="relative flex max-h-full max-w-full items-center justify-center">
 
         {/* Keyboard Shortcuts Help */}
         <div className="pointer-events-none absolute bottom-4 right-4 z-10 rounded bg-black/80 p-3 text-xs text-white opacity-0 transition-opacity hover:pointer-events-auto hover:opacity-100">

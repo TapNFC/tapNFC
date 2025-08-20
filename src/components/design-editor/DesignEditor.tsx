@@ -185,17 +185,24 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     }
   }, [isCanvasReady, canvas, designId]);
 
+  // Zoom constants
+  const ZOOM_STEP = 1.2;
+  const MAX_ZOOM = 3;
+  const MIN_ZOOM = 0.3;
+
+  // Ref to the canvas inner div element
+  const canvasInnerRef = useRef<HTMLDivElement>(null);
+
   // Zoom functions
   const handleZoomIn = () => {
     if (!canvas) {
       return;
     }
-    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
-    if (canvasInnerDiv) {
-      const currentScale = Number.parseFloat(canvasInnerDiv.dataset.zoom || '1');
-      const newScale = Math.min(currentScale * 1.2, 3);
-      canvasInnerDiv.dataset.zoom = newScale.toString();
-      canvasInnerDiv.style.transform = `scale(${newScale})`;
+    if (canvasInnerRef.current) {
+      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
+      const newScale = Math.min(currentScale * ZOOM_STEP, MAX_ZOOM);
+      canvasInnerRef.current.dataset.zoom = newScale.toString();
+      canvasInnerRef.current.style.transform = `scale(${newScale})`;
     }
   };
 
@@ -203,10 +210,9 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     if (!canvas) {
       return;
     }
-    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
-    if (canvasInnerDiv) {
-      canvasInnerDiv.dataset.zoom = '1';
-      canvasInnerDiv.style.transform = 'scale(1)';
+    if (canvasInnerRef.current) {
+      canvasInnerRef.current.dataset.zoom = '1';
+      canvasInnerRef.current.style.transform = 'scale(1)';
     }
   };
 
@@ -214,12 +220,11 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     if (!canvas) {
       return;
     }
-    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
-    if (canvasInnerDiv) {
-      const currentScale = Number.parseFloat(canvasInnerDiv.dataset.zoom || '1');
-      const newScale = Math.max(currentScale / 1.2, 0.3);
-      canvasInnerDiv.dataset.zoom = newScale.toString();
-      canvasInnerDiv.style.transform = `scale(${newScale})`;
+    if (canvasInnerRef.current) {
+      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
+      const newScale = Math.max(currentScale / ZOOM_STEP, MIN_ZOOM);
+      canvasInnerRef.current.dataset.zoom = newScale.toString();
+      canvasInnerRef.current.style.transform = `scale(${newScale})`;
     }
   };
 
@@ -322,6 +327,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
               onZoomIn={handleZoomIn}
               onZoomOut={handleZoomOut}
               onZoomReset={handleZoomReset}
+              canvasInnerRef={canvasInnerRef}
             />
           </div>
         </div>
