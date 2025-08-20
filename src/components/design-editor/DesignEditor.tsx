@@ -185,6 +185,44 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     }
   }, [isCanvasReady, canvas, designId]);
 
+  // Zoom functions
+  const handleZoomIn = () => {
+    if (!canvas) {
+      return;
+    }
+    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
+    if (canvasInnerDiv) {
+      const currentScale = Number.parseFloat(canvasInnerDiv.dataset.zoom || '1');
+      const newScale = Math.min(currentScale * 1.2, 3);
+      canvasInnerDiv.dataset.zoom = newScale.toString();
+      canvasInnerDiv.style.transform = `scale(${newScale})`;
+    }
+  };
+
+  const handleZoomReset = () => {
+    if (!canvas) {
+      return;
+    }
+    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
+    if (canvasInnerDiv) {
+      canvasInnerDiv.dataset.zoom = '1';
+      canvasInnerDiv.style.transform = 'scale(1)';
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (!canvas) {
+      return;
+    }
+    const canvasInnerDiv = document.querySelector('div[class*="relative flex max-h-full max-w-full items-center justify-center"]') as HTMLElement;
+    if (canvasInnerDiv) {
+      const currentScale = Number.parseFloat(canvasInnerDiv.dataset.zoom || '1');
+      const newScale = Math.max(currentScale / 1.2, 0.3);
+      canvasInnerDiv.dataset.zoom = newScale.toString();
+      canvasInnerDiv.style.transform = `scale(${newScale})`;
+    }
+  };
+
   // Update the useEffect for double-click handling
   useEffect(() => {
     if (!canvas || !fabric) {
@@ -281,6 +319,9 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
               fabricError={fabricError}
               canvas={canvas}
               fabric={fabric}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onZoomReset={handleZoomReset}
             />
           </div>
         </div>
