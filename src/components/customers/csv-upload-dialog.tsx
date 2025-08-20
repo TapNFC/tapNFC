@@ -234,7 +234,7 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false,
-      transform: value => value.trim(),
+      transform: value => value?.trim?.() || '',
       complete: (results) => {
         if (results.errors && results.errors.length > 0) {
           // Handle CSV parsing errors
@@ -296,11 +296,11 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
   const downloadTemplate = () => {
     const headers = requiredFields.concat(optionalFields).join(',');
     const sampleData = [
-      'Innovate Inc.,contact@innovate.com,+15551234567,https://innovate.com,#4A90E2,https://linkedin.com/in/innovate,https://x.com/innovate',
-      'Quantum Solutions,qs@example.com,+15559876543,https://quantum.dev,#50E3C2,https://linkedin.com/in/quantum,,',
-      'Stellar Goods,hello@stellar.co,,https://stellar.co,#E24A90,https://linkedin.com/in/stellargoods,https://x.com/stellargoods',
-      'Apex Digital,support@apexdigital.net,+15552345678,https://apexdigital.net,#F5A623,,https://x.com/apexdigital',
-      'Synergy Labs,info@synergylabs.io,,https://synergylabs.io,#9013FE,https://linkedin.com/in/synergylabs,,',
+      'Innovate Inc.,contact@innovate.com,+15551234567,https://innovate.com,#4A90E2,https://linkedin.com/in/innovate,https://x.com/innovate,innovate_inc',
+      'Quantum Solutions,qs@example.com,+15559876543,https://quantum.dev,#50E3C2,https://linkedin.com/in/quantum,,quantum_solutions',
+      'Stellar Goods,hello@stellar.co,,https://stellar.co,#E24A90,https://linkedin.com/in/stellargoods,https://x.com/stellargoods,stellar_goods',
+      'Apex Digital,support@apexdigital.net,+15552345678,https://apexdigital.net,#F5A623,,https://x.com/apexdigital,apex_digital',
+      'Synergy Labs,info@synergylabs.io,,https://synergylabs.io,#9013FE,https://linkedin.com/in/synergylabs,,synergy_labs',
     ];
     const csvContent = [headers, ...sampleData].join('\n');
 
@@ -347,7 +347,7 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
   const handleUpload = async () => {
     setIsProcessing(true);
     try {
-      // First check for existing customers in database
+      // Always check for existing customers in database first
       const existingDuplicates = await checkExistingCustomers(uploadedData);
 
       if (existingDuplicates.length > 0) {
@@ -357,15 +357,16 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
         return;
       }
 
-      // No duplicates, proceed with upload
-      await onUpload(uploadedData);
-      setStep('success');
+      // No duplicates found, but still go to duplicate check step to confirm
+      // This ensures the user sees the conflict resolution UI even when no conflicts exist
+      setStep('duplicate_check');
+      setIsProcessing(false);
     } catch {
       setErrors([{
         type: 'parsing',
-        message: 'An unexpected error occurred during upload. Please try again.',
+        message: 'An unexpected error occurred during duplicate check. Please try again.',
       }]);
-      setStep('upload'); // Go back to upload step to show the error
+      setStep('preview'); // Go back to preview step to show the error
     } finally {
       setIsProcessing(false);
     }
@@ -383,535 +384,656 @@ export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[95vh] max-w-6xl overflow-hidden p-0">
-        <div className="flex">
-          {/* Sidebar */}
-          <div className="hidden w-1/3 flex-col space-y-4 border-r bg-slate-50 p-6 dark:bg-slate-800/50 md:flex">
-            <DialogHeader className="text-left">
-              <DialogTitle className="flex items-center space-x-2">
-                <Upload className="size-5" />
-                <span>Bulk Upload Customers</span>
-              </DialogTitle>
-              <DialogDescription>
-                Follow the steps to upload customer profiles via CSV file.
-              </DialogDescription>
-            </DialogHeader>
+    <>
+      <style jsx>
+        {`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+          transition: background-color 0.2s ease;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-corner {
+          background: transparent;
+        }
+        
+        /* Firefox */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
+        }
+        
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+          }
+          
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+          }
+          
+          .custom-scrollbar {
+            scrollbar-color: #475569 transparent;
+          }
+        }
+      `}
+      </style>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-h-[95vh] max-w-6xl overflow-hidden p-0">
+          <div className="flex">
+            {/* Sidebar */}
+            <div className="hidden w-1/3 flex-col space-y-4 border-r bg-slate-50 p-6 dark:bg-slate-800/50 md:flex">
+              <DialogHeader className="text-left">
+                <DialogTitle className="flex items-center space-x-2">
+                  <Upload className="size-5" />
+                  <span>Bulk Upload Customers</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Follow the steps to upload customer profiles via CSV file.
+                </DialogDescription>
+              </DialogHeader>
 
-            {/* Stepper */}
-            <div className="space-y-6 pt-4">
-              <div className="flex items-center space-x-3">
-                <div
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-full',
-                    step === 'upload'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-                  )}
-                >
-                  1
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">Upload File</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Select your CSV file
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-full',
-                    step === 'preview'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-                  )}
-                >
-                  2
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">Preview Data</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Review and confirm
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-full',
-                    step === 'duplicate_check'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-                  )}
-                >
-                  3
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">Resolve Conflicts</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Handle duplicates
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-full',
-                    step === 'success'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-                  )}
-                >
-                  <CheckCircle className="size-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">Success</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Upload completed
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="grow" />
-            <Card className="border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
-              <div className="flex items-start space-x-3">
-                <FileText className="size-5 shrink-0 text-blue-600" />
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-blue-900 dark:text-blue-100">
-                    CSV Template
-                  </h3>
-                  <p className="mb-3 text-sm text-blue-700 dark:text-blue-300">
-                    Use our template to ensure your data is formatted correctly.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full bg-white dark:bg-blue-950"
-                    onClick={downloadTemplate}
+              {/* Stepper */}
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={cn(
+                      'flex size-8 items-center justify-center rounded-full',
+                      step === 'upload'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    )}
                   >
-                    <Download className="mr-2 size-4" />
-                    Download Template
-                  </Button>
+                    1
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">Upload File</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Select your CSV file
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={cn(
+                      'flex size-8 items-center justify-center rounded-full',
+                      step === 'preview'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    )}
+                  >
+                    2
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">Preview Data</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Review and confirm
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={cn(
+                      'flex size-8 items-center justify-center rounded-full',
+                      step === 'duplicate_check'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    )}
+                  >
+                    3
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">Resolve Conflicts</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Handle duplicates
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={cn(
+                      'flex size-8 items-center justify-center rounded-full',
+                      step === 'success'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    )}
+                  >
+                    <CheckCircle className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">Success</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Upload completed
+                    </p>
+                  </div>
                 </div>
               </div>
-            </Card>
-          </div>
-          {/* Main Content */}
-          <div className="flex h-[85vh] flex-1 flex-col p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="flex h-full flex-col"
-              >
-                {step === 'upload' && (
-                  <div className="flex h-full flex-col justify-center space-y-6">
-                    {/* Required Fields Info */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <Card className="p-4">
-                        <h3 className="mb-2 text-base font-semibold text-green-700 dark:text-green-400">
-                          Required Fields
-                        </h3>
-                        <div className="space-y-1">
-                          {requiredFields.map(field => (
-                            <Badge key={field} variant="secondary" className="mr-1">
-                              {field}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p className="mt-2 text-xs text-green-600 dark:text-green-400">
-                          These columns must be present in your CSV
-                        </p>
-                      </Card>
-                      <Card className="p-4">
-                        <h3 className="mb-2 text-base font-semibold text-blue-700 dark:text-blue-400">
-                          Optional Fields
-                        </h3>
-                        <div className="space-y-1">
-                          {optionalFields.map(field => (
-                            <Badge key={field} variant="outline" className="mr-1">
-                              {field}
-                            </Badge>
-                          ))}
-                        </div>
-                      </Card>
-                    </div>
-
-                    {/* Upload Area */}
-                    <div
-                      {...getRootProps()}
-                      className={cn(
-                        'flex flex-grow cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-                        isDragActive
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                          : 'border-slate-300 hover:border-blue-400 dark:border-slate-600',
-                        isProcessing && 'pointer-events-none opacity-50',
-                      )}
+              <div className="grow" />
+              <Card className="border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
+                <div className="flex items-start space-x-3">
+                  <FileText className="size-5 shrink-0 text-blue-600" />
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-blue-900 dark:text-blue-100">
+                      CSV Template
+                    </h3>
+                    <p className="mb-3 text-sm text-blue-700 dark:text-blue-300">
+                      Use our template to ensure your data is formatted correctly.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-white dark:bg-blue-950"
+                      onClick={downloadTemplate}
                     >
-                      <input {...getInputProps()} />
-                      <div className="space-y-4">
-                        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700/50">
-                          <Upload className="size-8 text-slate-500 dark:text-slate-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-medium">
-                            {isDragActive
-                              ? 'Drop your CSV file here'
-                              : 'Upload CSV File'}
+                      <Download className="mr-2 size-4" />
+                      Download Template
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+            {/* Main Content */}
+            <div className="flex h-[85vh] flex-1 flex-col p-6">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex h-full flex-col"
+                >
+                  {step === 'upload' && (
+                    <div className="flex h-full flex-col justify-center space-y-6">
+                      {/* Required Fields Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <Card className="p-4">
+                          <h3 className="mb-2 text-base font-semibold text-green-700 dark:text-green-400">
+                            Required Fields
                           </h3>
-                          <p className="text-slate-600 dark:text-slate-400">
-                            Drag and drop or click to browse
+                          <div className="space-y-1">
+                            {requiredFields.map(field => (
+                              <Badge key={field} variant="secondary" className="mr-1">
+                                {field}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-green-600 dark:text-green-400">
+                            These columns must be present in your CSV
                           </p>
-                          <p className="mt-2 text-sm text-slate-500">
-                            Supports: .csv files only
-                          </p>
-                        </div>
+                        </Card>
+                        <Card className="p-4">
+                          <h3 className="mb-2 text-base font-semibold text-blue-700 dark:text-blue-400">
+                            Optional Fields
+                          </h3>
+                          <div className="space-y-1">
+                            {optionalFields.map(field => (
+                              <Badge key={field} variant="outline" className="mr-1">
+                                {field}
+                              </Badge>
+                            ))}
+                          </div>
+                        </Card>
                       </div>
-                    </div>
 
-                    {/* Errors */}
-                    {errors.length > 0 && (
-                      <Card className="border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/20">
-                        <div className="flex items-start space-x-3">
-                          <AlertCircle className="mt-0.5 size-5 text-red-600" />
-                          <div className="flex-1">
-                            <h3 className="mb-2 text-base font-semibold text-red-900 dark:text-red-100">
-                              Validation Errors
+                      {/* Upload Area */}
+                      <div
+                        {...getRootProps()}
+                        className={cn(
+                          'flex flex-grow cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+                          isDragActive
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                            : 'border-slate-300 hover:border-blue-400 dark:border-slate-600',
+                          isProcessing && 'pointer-events-none opacity-50',
+                        )}
+                      >
+                        <input {...getInputProps()} />
+                        <div className="space-y-4">
+                          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700/50">
+                            <Upload className="size-8 text-slate-500 dark:text-slate-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium">
+                              {isDragActive
+                                ? 'Drop your CSV file here'
+                                : 'Upload CSV File'}
                             </h3>
-                            <ul className="max-h-24 space-y-1 overflow-y-auto text-sm text-red-700 dark:text-red-300">
-                              {errors.map((error, index) => (
-                                <li key={index} className="flex items-start space-x-2">
-                                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
-                                    {error.type === 'missing_column' && '📋'}
-                                    {error.type === 'row_validation' && '⚠️'}
-                                    {error.type === 'parsing' && '❌'}
-                                  </span>
-                                  <span>{error.message}</span>
-                                </li>
-                              ))}
-                            </ul>
+                            <p className="text-slate-600 dark:text-slate-400">
+                              Drag and drop or click to browse
+                            </p>
+                            <p className="mt-2 text-sm text-slate-500">
+                              Supports: .csv files only
+                            </p>
                           </div>
                         </div>
-                      </Card>
-                    )}
-                  </div>
-                )}
-
-                {step === 'preview' && (
-                  <div className="flex h-full flex-col">
-                    {/* Header Section */}
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-lg font-medium">
-                        Preview (
-                        {uploadedData.length}
-                        {' '}
-                        customers)
-                      </h3>
-                    </div>
-
-                    {/* Table Section - Scrollable */}
-                    <div className="mb-4 min-h-0 flex-1">
-                      <div className="h-full overflow-hidden rounded-lg border">
-                        <div className="h-full max-w-3xl overflow-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                          <table className="w-full min-w-max text-sm">
-                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
-                              <tr>
-                                <th className="whitespace-nowrap p-3 text-left font-medium text-slate-600 dark:text-slate-400">
-                                  #
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Name
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Email
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Phone
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Website
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Brand Color
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  LinkedIn
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Twitter
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium">
-                                  Instagram
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {uploadedData.map((customer, index) => (
-                                <tr
-                                  key={nanoid()}
-                                  className="border-t dark:border-slate-700"
-                                >
-                                  <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-slate-500 dark:text-slate-400">
-                                    {index + 1}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">{customer.name}</td>
-                                  <td className="whitespace-nowrap p-3">{customer.email}</td>
-                                  <td className="whitespace-nowrap p-3">
-                                    {customer.phone || '-'}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    {customer.website || '-'}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    <div className="flex items-center space-x-2">
-                                      <div
-                                        className="size-4 rounded border dark:border-slate-600"
-                                        style={{
-                                          backgroundColor: customer.brandColor,
-                                        }}
-                                      />
-                                      <span className="font-mono text-xs">
-                                        {customer.brandColor}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    {customer.linkedin || '-'}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    {customer.twitter || '-'}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    {customer.instagram || '-'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
                       </div>
-                    </div>
 
-                    {/* Buttons Section - Fixed at bottom */}
-                    <div className="flex justify-end space-x-2 border-t pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setStep('upload')}
-                        disabled={isProcessing}
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={handleUpload}
-                        disabled={isProcessing}
-                        className="w-48"
-                      >
-                        {isProcessing
-                          ? (
-                              <Loader2 className="mr-2 size-4 animate-spin" />
-                            )
-                          : null}
-                        {isProcessing
-                          ? 'Uploading...'
-                          : `Import ${uploadedData.length} Customers`}
-                      </Button>
+                      {/* Errors */}
+                      {errors.length > 0 && (
+                        <Card className="border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/20">
+                          <div className="flex items-start space-x-3">
+                            <AlertCircle className="mt-0.5 size-5 text-red-600" />
+                            <div className="flex-1">
+                              <h3 className="mb-2 text-base font-semibold text-red-900 dark:text-red-100">
+                                Validation Errors
+                              </h3>
+                              <ul className="max-h-24 space-y-1 overflow-y-auto text-sm text-red-700 dark:text-red-300">
+                                {errors.map((error, index) => (
+                                  <li key={index} className="flex items-start space-x-2">
+                                    <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                                      {error.type === 'missing_column' && '📋'}
+                                      {error.type === 'row_validation' && '⚠️'}
+                                      {error.type === 'parsing' && '❌'}
+                                    </span>
+                                    <span>{error.message}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </Card>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {step === 'duplicate_check' && (
-                  <div className="flex h-full flex-col">
-                    {/* Header */}
-                    <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
-                      <div>
-                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                          Resolve Duplicate Conflicts
+                  {step === 'preview' && (
+                    <div className="flex h-full flex-col">
+                      {/* Header Section */}
+                      <div className="mb-4 flex items-center justify-between">
+                        <h3 className="text-lg font-medium">
+                          Preview (
+                          {uploadedData.length}
+                          {' '}
+                          customers)
                         </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {duplicateCustomers.length}
-                          {' '}
-                          customer
-                          {duplicateCustomers.length !== 1 ? 's' : ''}
-                          {' '}
-                          already exist in your database
-                        </p>
                       </div>
-                      <Badge variant="secondary" className="bg-orange-100 text-sm text-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
-                        {duplicateCustomers.length}
-                        {' '}
-                        Conflicts
-                      </Badge>
-                    </div>
 
-                    {/* Duplicate Customers Table */}
-                    <div className="mb-4 min-h-0 flex-1">
-                      <div className="h-full overflow-hidden rounded-lg border">
-                        <div className="size-full overflow-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                          <table className="w-full min-w-max text-sm">
-                            <thead className="sticky top-0 border-b border-orange-200 bg-orange-50 dark:border-orange-700 dark:bg-orange-900/20">
-                              <tr>
-                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
-                                  #
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
-                                  CSV Data
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
-                                  Existing Customer
-                                </th>
-                                <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
-                                  Action
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-orange-200 dark:divide-orange-700">
-                              {duplicateCustomers.map((duplicate, index) => (
-                                <tr key={index} className="hover:bg-orange-50 dark:hover:bg-orange-900/10">
-                                  <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-orange-600 dark:text-orange-400">
-                                    {duplicate.rowNumber}
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    <div className="space-y-1">
-                                      <div className="font-medium text-slate-900 dark:text-slate-100">
-                                        {duplicate.csvData.name}
-                                      </div>
-                                      <div className="text-sm text-slate-600 dark:text-slate-400">
-                                        {duplicate.csvData.email}
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    <div className="space-y-1">
-                                      <div className="font-medium text-slate-900 dark:text-slate-100">
-                                        {duplicate.existingCustomer.name}
-                                      </div>
-                                      <div className="text-sm text-slate-600 dark:text-slate-400">
-                                        {duplicate.existingCustomer.email}
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="whitespace-nowrap p-3">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                                      onClick={() => {
-                                        // Remove from duplicates and remove from upload data
-                                        setDuplicateCustomers(prev => prev.filter((_, i) => i !== index));
-                                        setUploadedData(prev => prev.filter(customer => customer.email !== duplicate.csvData.email));
-                                      }}
-                                    >
-                                      Remove from Import
-                                    </Button>
-                                  </td>
+                      {/* Table Section - Scrollable */}
+                      <div className="mb-4 min-h-0 flex-1">
+                        <div className="h-full overflow-hidden rounded-lg border">
+                          <div className="custom-scrollbar h-full max-w-3xl overflow-auto">
+                            <table className="w-full min-w-max text-sm">
+                              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
+                                <tr>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium text-slate-600 dark:text-slate-400">
+                                    #
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Name
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Email
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Phone
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Website
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Brand Color
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    LinkedIn
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Twitter
+                                  </th>
+                                  <th className="whitespace-nowrap p-3 text-left font-medium">
+                                    Instagram
+                                  </th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {uploadedData.map((customer, index) => (
+                                  <tr
+                                    key={nanoid()}
+                                    className="border-t dark:border-slate-700"
+                                  >
+                                    <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-slate-500 dark:text-slate-400">
+                                      {index + 1}
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">{customer.name}</td>
+                                    <td className="whitespace-nowrap p-3">{customer.email}</td>
+                                    <td className="whitespace-nowrap p-3">
+                                      {customer.phone || '-'}
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">
+                                      {customer.website || '-'}
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">
+                                      <div className="flex items-center space-x-2">
+                                        <div
+                                          className="size-4 rounded border dark:border-slate-600"
+                                          style={{
+                                            backgroundColor: customer.brandColor,
+                                          }}
+                                        />
+                                        <span className="font-mono text-xs">
+                                          {customer.brandColor}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">
+                                      {customer.linkedin || '-'}
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">
+                                      {customer.twitter || '-'}
+                                    </td>
+                                    <td className="whitespace-nowrap p-3">
+                                      {customer.instagram || '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-700">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">
-                        {duplicateCustomers.length === 0 ? 'All conflicts resolved' : `${duplicateCustomers.length} conflict${duplicateCustomers.length !== 1 ? 's' : ''} remaining`}
-                      </div>
-                      <div className="flex space-x-3">
+                      {/* Buttons Section - Fixed at bottom */}
+                      <div className="flex justify-end space-x-2 border-t pt-4">
                         <Button
                           variant="outline"
-                          onClick={() => setStep('preview')}
+                          onClick={() => setStep('upload')}
                           disabled={isProcessing}
                         >
-                          Back to Preview
+                          Back
                         </Button>
                         <Button
-                          onClick={async () => {
-                            if (duplicateCustomers.length === 0) {
-                              // All conflicts resolved, proceed with upload
-                              try {
-                                setIsProcessing(true);
-                                await onUpload(uploadedData);
-                                setStep('success');
-                              } catch {
-                                setErrors([{
-                                  type: 'parsing',
-                                  message: 'An unexpected error occurred during upload. Please try again.',
-                                }]);
-                                setStep('preview');
-                              } finally {
-                                setIsProcessing(false);
-                              }
-                            }
-                          }}
-                          disabled={isProcessing || duplicateCustomers.length > 0}
-                          className="bg-orange-600 text-white hover:bg-orange-700"
+                          onClick={handleUpload}
+                          disabled={isProcessing}
+                          className="w-48"
                         >
                           {isProcessing
                             ? (
-                                <>
-                                  <Loader2 className="mr-2 size-4 animate-spin" />
-                                  Uploading...
-                                </>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
                               )
-                            : (
-                                <>
-                                  <Upload className="mr-2 size-4" />
-                                  Import
-                                  {' '}
-                                  {uploadedData.length}
-                                  {' '}
-                                  Customer
-                                  {uploadedData.length !== 1 ? 's' : ''}
-                                </>
-                              )}
+                            : null}
+                          {isProcessing
+                            ? 'Uploading...'
+                            : `Import ${uploadedData.length} Customers`}
                         </Button>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {step === 'success' && (
-                  <div className="flex h-full flex-col items-center justify-center text-center">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{
-                        delay: 0.1,
-                        type: 'spring',
-                        stiffness: 400,
-                        damping: 20,
-                      }}
-                      className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
-                    >
-                      <CheckCircle className="size-8 text-green-600" />
-                    </motion.div>
-                    <h3 className="mb-2 text-xl font-semibold">
-                      Upload Successful!
-                    </h3>
-                    <p className="mb-6 text-slate-600 dark:text-slate-400">
-                      {uploadedData.length}
-                      {' '}
-                      customers have been added to your
-                      list.
-                    </p>
-                    <Button
-                      onClick={() => handleClose(false)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Done
-                    </Button>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                  {step === 'duplicate_check' && (
+                    <div className="flex h-full flex-col">
+                      {/* Header */}
+                      <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+                        <div>
+                          <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                            {duplicateCustomers.length > 0
+                              ? (
+                                  'Resolve Duplicate Conflicts'
+                                )
+                              : (
+                                  'Ready to Import'
+                                )}
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {duplicateCustomers.length > 0
+                              ? (
+                                  <>
+                                    {duplicateCustomers.length}
+                                    {' '}
+                                    customer
+                                    {duplicateCustomers.length !== 1 ? 's' : ''}
+                                    {' '}
+                                    already exist in your database
+                                  </>
+                                )
+                              : (
+                                  'No conflicts found. Your data is ready to import.'
+                                )}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={duplicateCustomers.length > 0 ? 'secondary' : 'default'}
+                          className={
+                            duplicateCustomers.length > 0
+                              ? 'bg-orange-100 text-sm text-orange-800 dark:bg-orange-900/20 dark:text-orange-200'
+                              : 'bg-green-100 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                          }
+                        >
+                          {duplicateCustomers.length > 0
+                            ? `${duplicateCustomers.length} Conflicts`
+                            : 'No Conflicts'}
+                        </Badge>
+                      </div>
+
+                      {/* Duplicate Customers Table or Success Message */}
+                      <div className="mb-4 min-h-0 flex-1">
+                        {duplicateCustomers.length > 0
+                          ? (
+                              <div className="h-full overflow-hidden rounded-lg border">
+                                <div className="custom-scrollbar size-full overflow-auto">
+                                  <table className="w-full min-w-max text-sm">
+                                    <thead className="sticky top-0 border-b border-orange-200 bg-orange-50 dark:border-orange-700 dark:bg-orange-900/20">
+                                      <tr>
+                                        <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                          #
+                                        </th>
+                                        <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                          CSV Data
+                                        </th>
+                                        <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                          Existing Customer
+                                        </th>
+                                        <th className="whitespace-nowrap p-3 text-left font-medium text-orange-800 dark:text-orange-200">
+                                          Action
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-orange-200 dark:divide-orange-700">
+                                      {duplicateCustomers.map((duplicate, index) => (
+                                        <tr key={index} className="hover:bg-orange-50 dark:hover:bg-orange-900/10">
+                                          <td className="whitespace-nowrap p-3 text-center font-mono text-sm text-orange-600 dark:text-orange-400">
+                                            {duplicate.rowNumber}
+                                          </td>
+                                          <td className="whitespace-nowrap p-3">
+                                            <div className="space-y-1">
+                                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                                {duplicate.csvData.name}
+                                              </div>
+                                              <div className="text-sm text-slate-600 dark:text-slate-400">
+                                                {duplicate.csvData.email}
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="whitespace-nowrap p-3">
+                                            <div className="space-y-1">
+                                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                                {duplicate.existingCustomer.name}
+                                              </div>
+                                              <div className="text-sm text-slate-600 dark:text-slate-400">
+                                                {duplicate.existingCustomer.email}
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="whitespace-nowrap p-3">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                              onClick={() => {
+                                                // Remove from duplicates and remove from upload data
+                                                setDuplicateCustomers(prev => prev.filter((_, i) => i !== index));
+                                                setUploadedData(prev => prev.filter(customer => customer.email !== duplicate.csvData.email));
+                                              }}
+                                            >
+                                              Remove from Import
+                                            </Button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )
+                          : uploadedData.length === 0
+                            ? (
+                                <div className="flex h-full items-center justify-center">
+                                  <div className="text-center">
+                                    <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                                      <AlertCircle className="size-8 text-yellow-600" />
+                                    </div>
+                                    <h3 className="mb-2 text-lg font-semibold text-yellow-700 dark:text-yellow-400">
+                                      No Customers to Import
+                                    </h3>
+                                    <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+                                      All customers were duplicates and have been removed from the import list.
+                                    </p>
+                                    <Button
+                                      onClick={() => setStep('upload')}
+                                      className="bg-yellow-600 text-white hover:bg-yellow-700"
+                                    >
+                                      Upload New File
+                                    </Button>
+                                  </div>
+                                </div>
+                              )
+                            : (
+                                <div className="flex h-full items-center justify-center">
+                                  <div className="text-center">
+                                    <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                                      <CheckCircle className="size-8 text-green-600" />
+                                    </div>
+                                    <h3 className="mb-2 text-lg font-semibold text-green-700 dark:text-green-400">
+                                      No Conflicts Found!
+                                    </h3>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                      All
+                                      {' '}
+                                      {uploadedData.length}
+                                      {' '}
+                                      customers are ready to import.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-700">
+                        <div className="text-sm text-slate-600 dark:text-slate-400">
+                          {duplicateCustomers.length === 0
+                            ? uploadedData.length === 0
+                              ? 'No customers to import'
+                              : 'All conflicts resolved'
+                            : `${duplicateCustomers.length} conflict${duplicateCustomers.length !== 1 ? 's' : ''} remaining`}
+                        </div>
+                        <div className="flex space-x-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setStep('preview')}
+                            disabled={isProcessing}
+                          >
+                            Back to Preview
+                          </Button>
+                          {uploadedData.length > 0 && (
+                            <Button
+                              onClick={async () => {
+                                if (duplicateCustomers.length === 0) {
+                                // All conflicts resolved, proceed with upload
+                                  try {
+                                    setIsProcessing(true);
+                                    await onUpload(uploadedData);
+                                    setStep('success');
+                                  } catch {
+                                    setErrors([{
+                                      type: 'parsing',
+                                      message: 'An unexpected error occurred during upload. Please try again.',
+                                    }]);
+                                    setStep('preview');
+                                  } finally {
+                                    setIsProcessing(false);
+                                  }
+                                }
+                              }}
+                              disabled={isProcessing || duplicateCustomers.length > 0}
+                              className="bg-orange-600 text-white hover:bg-orange-700"
+                            >
+                              {isProcessing
+                                ? (
+                                    <>
+                                      <Loader2 className="mr-2 size-4 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  )
+                                : (
+                                    <>
+                                      <Upload className="mr-2 size-4" />
+                                      Import
+                                      {' '}
+                                      {uploadedData.length}
+                                      {' '}
+                                      Customer
+                                      {uploadedData.length !== 1 ? 's' : ''}
+                                    </>
+                                  )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 'success' && (
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          delay: 0.1,
+                          type: 'spring',
+                          stiffness: 400,
+                          damping: 20,
+                        }}
+                        className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+                      >
+                        <CheckCircle className="size-8 text-green-600" />
+                      </motion.div>
+                      <h3 className="mb-2 text-xl font-semibold">
+                        Upload Successful!
+                      </h3>
+                      <p className="mb-6 text-slate-600 dark:text-slate-400">
+                        {uploadedData.length}
+                        {' '}
+                        customers have been added to your
+                        list.
+                      </p>
+                      <Button
+                        onClick={() => handleClose(false)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
