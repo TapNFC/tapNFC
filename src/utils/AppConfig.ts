@@ -56,12 +56,4 @@ export const AppConfig = {
     internationalization: true,
   },
 
-  // QR Code specific settings
-  qrCode: {
-    defaultSize: 256,
-    supportedFormats: ['PNG', 'SVG', 'JPEG'],
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
-  },
-
 };
