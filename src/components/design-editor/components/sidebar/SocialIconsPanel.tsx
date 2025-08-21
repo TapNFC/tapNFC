@@ -39,6 +39,141 @@ const socialIcons = [
     name: 'Social',
     path: '/assets/images/social-icons/social.png',
   },
+  {
+    id: 'messenger',
+    name: 'Messenger',
+    path: '/assets/images/social-icons/messenger.svg',
+  },
+  {
+    id: 'x',
+    name: 'X (Twitter)',
+    path: '/assets/images/social-icons/x.png',
+  },
+  {
+    id: 'snapchat',
+    name: 'Snapchat',
+    path: '/assets/images/social-icons/snapchat.png',
+  },
+  {
+    id: 'linkedin',
+    name: 'LinkedIn',
+    path: '/assets/images/social-icons/linkedin.png',
+  },
+  {
+    id: 'pinterest',
+    name: 'Pinterest',
+    path: '/assets/images/social-icons/pinterest.png',
+  },
+  {
+    id: 'spotify',
+    name: 'Spotify',
+    path: '/assets/images/social-icons/spotify.png',
+  },
+  {
+    id: 'soundcloud',
+    name: 'Soundcloud',
+    path: '/assets/images/social-icons/soundcloud.png',
+  },
+  {
+    id: 'apple',
+    name: 'Apple',
+    path: '/assets/images/social-icons/apple.svg',
+  },
+  {
+    id: 'paypal',
+    name: 'Paypal',
+    path: '/assets/images/social-icons/paypal.png',
+  },
+  {
+    id: 'venmo',
+    name: 'Venmo',
+    path: '/assets/images/social-icons/venmo.png',
+  },
+  {
+    id: 'telegram',
+    name: 'Telegram',
+    path: '/assets/images/social-icons/telegram.svg',
+  },
+  {
+    id: 'discord',
+    name: 'Discord',
+    path: '/assets/images/social-icons/discord.png',
+  },
+  {
+    id: 'reddit',
+    name: 'Reddit',
+    path: '/assets/images/social-icons/reddit.png',
+  },
+  {
+    id: 'apple-music',
+    name: 'Apple Music',
+    path: '/assets/images/social-icons/apple-music.png',
+  },
+  {
+    id: 'we-chat',
+    name: 'We Chat',
+    path: '/assets/images/social-icons/wechat.svg',
+  },
+  {
+    id: 'google',
+    name: 'Google',
+    path: '/assets/images/social-icons/google.png',
+  },
+  {
+    id: 'trustpilot',
+    name: 'Trustpilot',
+    path: '/assets/images/social-icons/trustpilot.png',
+  },
+  {
+    id: 'yelp',
+    name: 'Yelp',
+    path: '/assets/images/social-icons/yelp.png',
+  },
+  {
+    id: 'tripadvisor',
+    name: 'Tripadvisor',
+    path: '/assets/images/social-icons/tripadvisor.png',
+  },
+  {
+    id: 'wifi',
+    name: 'Wifi',
+    path: '/assets/images/social-icons/wifi.png',
+  },
+  {
+    id: 'bluetooth',
+    name: 'Bluetooth',
+    path: '/assets/images/social-icons/bluetooth.png',
+  },
+  {
+    id: 'email',
+    name: 'Email',
+    path: '/assets/images/social-icons/email.png',
+  },
+  {
+    id: 'home',
+    name: 'Home',
+    path: '/assets/images/social-icons/home.png',
+  },
+  {
+    id: 'car',
+    name: 'Car',
+    path: '/assets/images/social-icons/car.png',
+  },
+  {
+    id: 'zelle',
+    name: 'Zelle',
+    path: '/assets/images/social-icons/zelle.png',
+  },
+  {
+    id: 'cash-app',
+    name: 'Cash App',
+    path: '/assets/images/social-icons/cash-app.png',
+  },
+  {
+    id: 'google-maps',
+    name: 'Google Maps',
+    path: '/assets/images/social-icons/google-maps.png',
+  },
 ];
 
 export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
