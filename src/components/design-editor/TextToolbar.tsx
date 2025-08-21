@@ -38,14 +38,36 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useFontStore } from '@/stores/fontStore';
 
 type TextToolbarProps = {
   canvas: any;
   selectedObject?: any;
 };
 
-// Font families are now managed by the font store
+// Memoize font families array outside component to prevent recreation
+const FONT_FAMILIES = [
+  'Arial',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+  'Helvetica',
+  'Impact',
+  'Comic Sans MS',
+  'Trebuchet MS',
+  'Lucida Console',
+  'Inter',
+  'Roboto',
+  'Open Sans',
+  'Lato',
+  'Montserrat',
+  'Poppins',
+  'Source Sans Pro',
+  'Oswald',
+  'Raleway',
+  'Ubuntu',
+  'Edwardian Script ITC',
+] as const;
 
 // Memoize text alignment options
 const TEXT_ALIGNMENTS = [
@@ -55,28 +77,21 @@ const TEXT_ALIGNMENTS = [
 ] as const;
 
 export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
-  // Use font store
-  const { fonts, selectedFont, setSelectedFont } = useFontStore();
-
-  // Load custom fonts
+  // Load Google Fonts for consistent cross-platform behavior
   useEffect(() => {
-    const loadCustomFonts = () => {
-      // Load all custom fonts
-      fonts.forEach((font) => {
-        if (font.file) {
-          const link = document.createElement('link');
-          link.href = font.file;
-          link.rel = 'stylesheet';
-          document.head.appendChild(link);
-        }
-      });
+    const loadGoogleFonts = () => {
+      // Load exactly the fonts listed in FONT_FAMILIES from Google Fonts CDN
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Arial&family=Georgia&family=Times+New+Roman&family=Courier+New&family=Verdana&family=Helvetica&family=Impact&family=Comic+Sans+MS&family=Trebuchet+MS&family=Lucida+Console&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Ubuntu:wght@400;700&family=Edwardian+Script+ITC&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
     };
 
-    loadCustomFonts();
-  }, [fonts]);
+    loadGoogleFonts();
+  }, []);
 
   // Text properties
-  const [fontFamily, setFontFamily] = useState(selectedFont);
+  const [fontFamily, setFontFamily] = useState('Inter');
   const [fontSize, setFontSize] = useState(16);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
@@ -171,12 +186,8 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
 
   const handleFontFamilyChange = useCallback((value: string) => {
     setFontFamily(value);
-    setSelectedFont(value);
-    const font = fonts.find(f => f.id === value);
-    if (font) {
-      updateTextProperty('fontFamily', font.family);
-    }
-  }, [updateTextProperty, setSelectedFont, fonts]);
+    updateTextProperty('fontFamily', value);
+  }, [updateTextProperty]);
 
   const handleFontSizeChange = useCallback((value: string) => {
     const size = Number.parseInt(value);
@@ -299,9 +310,9 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {fonts.map(font => (
-              <SelectItem key={font.id} value={font.id} style={{ fontFamily: font.family }}>
-                {font.name}
+            {FONT_FAMILIES.map(font => (
+              <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                {font}
               </SelectItem>
             ))}
           </SelectContent>
