@@ -140,9 +140,14 @@ const socialIcons = [
     path: '/assets/images/social-icons/wifi.png',
   },
   {
-    id: 'bluetooth',
-    name: 'Bluetooth',
-    path: '/assets/images/social-icons/bluetooth.png',
+    id: 'apple-phone',
+    name: 'Phone',
+    path: '/assets/images/social-icons/apple-phone.png',
+  },
+  {
+    id: 'apple-email',
+    name: 'Phone',
+    path: '/assets/images/social-icons/apple-email.png',
   },
   {
     id: 'email',
