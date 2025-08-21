@@ -260,9 +260,23 @@ export function SocialIconEditPopup({
     ),
   );
 
+  // Calculate offset based on icon type
+  let iconOffset = 0;
+  if (isPdfEnabledIcon) {
+    // Check if PDF already has an uploaded file
+    const hasUploadedPdf = url && (url.includes('.pdf') || url.includes('file-storage/files/'));
+    iconOffset = hasUploadedPdf ? 90 : 140; // 140 + 90 if PDF is uploaded
+  } else if (isPhoneIcon) {
+    iconOffset = 15; // Phone icons need minimal offset
+  } else if (isEmailIcon) {
+    iconOffset = 30; // Email icons need moderate offset
+  } else {
+    iconOffset = 30; // Social icons default offset
+  }
+
   const calculatedTop = Math.max(
     padding,
-    position.y - popupHeight - 20, // Position above with 20px gap
+    position.y - popupHeight + iconOffset,
   );
 
   return (
