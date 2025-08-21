@@ -146,7 +146,7 @@ const socialIcons = [
   },
   {
     id: 'apple-email',
-    name: 'Phone',
+    name: 'Email',
     path: '/assets/images/social-icons/apple-email.png',
   },
   {
