@@ -3,12 +3,10 @@
 import {
   ChevronDown,
   Grid3x3,
-  LayoutDashboard,
   LogOut,
-  Menu,
   Settings,
+  Sparkles,
   User,
-  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -29,9 +27,7 @@ import { createClient } from '@/utils/supabase/client';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
-import { EditableDesignName } from './components/toolbar/EditableDesignName';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
-import { StatusIndicator } from './components/toolbar/StatusIndicator';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
 
 type DesignToolbarProps = {
@@ -61,8 +57,8 @@ export function DesignToolbar({
   setShowSaveDialog,
   showLoadDialog = false,
   setShowLoadDialog,
-  onToggleSidebar,
-  sidebarCollapsed = false,
+  onToggleSidebar: _onToggleSidebar,
+  sidebarCollapsed: _sidebarCollapsed = false,
   hasUnsavedChanges = false,
   lastSaved = null,
   onUndo,
@@ -372,34 +368,26 @@ export function DesignToolbar({
 
         {/* Left Section - Sidebar Toggle, File Menu and Actions */}
         <div className="relative z-10 flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleSidebar}
-            className="group rounded-lg p-2 text-gray-600 backdrop-blur-sm transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-          >
-            {sidebarCollapsed
-              ? (
-                  <Menu className="size-5 transition-transform duration-200 group-hover:scale-110" />
-                )
-              : (
-                  <X className="size-5 transition-transform duration-200 group-hover:scale-110" />
-                )}
-          </Button>
-
-          <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
-
-          {/* Dashboard Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard')}
-            className="group rounded-lg p-2 text-gray-600 backdrop-blur-sm transition-all duration-200 hover:bg-white/60 hover:text-blue-600"
-            title="Go to Dashboard"
-          >
-            <LayoutDashboard className="size-5 transition-transform duration-200 group-hover:scale-110" />
-            Dashboard
-          </Button>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
+              title="Go to Dashboard"
+            >
+              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
+                <Sparkles className="size-5 text-white" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                  QR Studio
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Professional
+                </p>
+              </div>
+            </button>
+          </div>
 
           <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
@@ -434,10 +422,7 @@ export function DesignToolbar({
 
         {/* Center Section - Status */}
         <div className="relative z-10 flex items-center gap-4">
-          <EditableDesignName designId={designId} initialName={designName} />
-          <StatusIndicator
-            currentTemplateName={undefined}
-          />
+          <h2 className="text-lg font-medium text-gray-700">{designName}</h2>
         </div>
 
         {/* Right Section - QR Code Generation and User */}

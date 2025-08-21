@@ -103,19 +103,26 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
       <div className="relative flex h-16 items-center px-6">
         {/* Left Section - Logo (only on design pages) */}
         {isDesignPage && (
-          <div className="flex items-center space-x-3">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
-              <Sparkles className="size-5 text-white" />
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
+            title="Go to Dashboard"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
+                <Sparkles className="size-5 text-white" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                  QR Studio
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Professional
+                </p>
+              </div>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                QR Studio
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Professional
-              </p>
-            </div>
-          </div>
+          </button>
         )}
 
         {/* Center Section - Navigation (only on design pages) */}

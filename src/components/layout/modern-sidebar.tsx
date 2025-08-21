@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -92,6 +92,8 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
+  const router = useRouter();
+
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -122,25 +124,32 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
         <div className="flex items-center justify-between border-b border-slate-200/60 p-6 dark:border-slate-700/60">
           <AnimatePresence mode="wait">
             {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center space-x-3"
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
+                title="Go to Dashboard"
               >
-                <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
-                  <Sparkles className="size-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                    QR Studio
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Professional
-                  </p>
-                </div>
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center space-x-3"
+                >
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
+                    <Sparkles className="size-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                      QR Studio
+                    </h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Professional
+                    </p>
+                  </div>
+                </motion.div>
+              </button>
             )}
           </AnimatePresence>
 
