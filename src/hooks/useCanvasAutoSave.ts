@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
+import { normalizeTextObjects } from '@/utils/textUtils';
 
 // Define the return type for the hook
 type UseCanvasAutoSaveReturn = {
@@ -244,6 +245,9 @@ export function useCanvasAutoSave({
         if (design && design.canvas_data) {
           // Load the entire canvas state from the saved JSON
           canvas.loadFromJSON(design.canvas_data, () => {
+            // Normalize text objects to ensure they don't have scaling issues
+            normalizeTextObjects(canvas);
+
             canvas.renderAll();
 
             // Initialize history with current state

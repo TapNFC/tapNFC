@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { designService } from '@/services/designService';
+import { normalizeTextObjects } from '@/utils/textUtils';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
 
 type UseDesignLoaderProps = {
@@ -71,6 +72,9 @@ export function useDesignLoader({
 
             canvas.loadFromJSON?.(canvasDataToLoad, () => {
               try {
+                // Normalize text objects to ensure they don't have scaling issues
+                normalizeTextObjects(canvas);
+
                 canvas.renderAll?.();
                 setIsDesignLoaded(true);
                 console.warn('Design loaded successfully from Supabase');

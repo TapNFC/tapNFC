@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
+import { isTextObject, normalizeTextObjects } from '@/utils/textUtils';
 import { CanvasContainer } from './components/CanvasContainer';
 import {
   MemoizedLinkEditPopup,
@@ -153,11 +154,52 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         }
       };
 
+      // Special handler for text object scaling to update fontSize
+      const handleTextScaling = (e: any) => {
+        const target = e.target;
+        if (target && isTextObject(target)) {
+          // Calculate new font size based on scaling
+          const originalFontSize = target.fontSize || 16;
+          const scaleX = target.scaleX || 1;
+          const scaleY = target.scaleY || 1;
+
+          // Use the larger scale to determine font size change
+          const scaleFactor = Math.max(scaleX, scaleY);
+          const newFontSize = Math.round(originalFontSize * scaleFactor);
+
+          // Update the font size property
+          target.set('fontSize', newFontSize);
+
+          // Reset scaling to 1 to maintain proper text rendering
+          target.set({
+            scaleX: 1,
+            scaleY: 1,
+          });
+
+          // Update the canvas
+          canvas.renderAll();
+
+          // Trigger selection update to refresh TextToolbar
+          if (canvas.getActiveObject() === target) {
+            canvas.fire('selection:updated', { target });
+          }
+        }
+      };
+
+      // Normalize existing text objects that might have scaling applied
+      const normalizeExistingTextObjects = () => {
+        normalizeTextObjects(canvas);
+        canvas.renderAll();
+      };
+
+      // Normalize existing text objects when canvas is ready
+      normalizeExistingTextObjects();
+
       canvas.on('object:added', handleCanvasChange);
       canvas.on('object:removed', handleCanvasChange);
       canvas.on('object:modified', handleCanvasChange);
       canvas.on('object:moving', handleCanvasChange);
-      canvas.on('object:scaling', handleCanvasChange);
+      canvas.on('object:scaling', handleTextScaling); // Use text-specific handler
       canvas.on('object:rotating', handleCanvasChange);
       canvas.on('canvas:background:changed', handleCanvasChange);
 
@@ -166,7 +208,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         canvas.off('object:removed', handleCanvasChange);
         canvas.off('object:modified', handleCanvasChange);
         canvas.off('object:moving', handleCanvasChange);
-        canvas.off('object:scaling', handleCanvasChange);
+        canvas.off('object:scaling', handleTextScaling); // Remove text-specific handler
         canvas.off('object:rotating', handleCanvasChange);
         canvas.off('canvas:background:changed', handleCanvasChange);
       };

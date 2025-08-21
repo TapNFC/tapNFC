@@ -434,7 +434,7 @@ export function designDataToHtml(designData: any, options: CanvasToHtmlOptions):
           transform: rotate(${angle}deg);
           color: ${obj.fill || '#000000'};
           font-family: ${obj.fontFamily || '-apple-system, BlinkMacSystemFont, Segoe UI'}, sans-serif;
-          font-size: ${fontSize * scaleX}px;
+          font-size: ${fontSize}px;
           font-weight: ${obj.fontWeight || 'normal'};
           font-style: ${obj.fontStyle || 'normal'};
           text-align: ${obj.textAlign || 'left'};
