@@ -3,7 +3,6 @@
 import { Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { handlePhoneClick } from '@/utils/phoneUtils';
 
@@ -74,6 +73,103 @@ export function RealTimePreview({
 
     return { backgroundColor: '#ffffff' }; // Fallback to white if format is unexpected
   }, [backgroundColor]);
+
+  // Handle element clicks with proper URL formatting and handling
+  const handleElementClick = useCallback((elementData: any) => {
+    const formatUrl = (url: string, urlType?: string) => {
+      if (!url) {
+        return '';
+      }
+
+      // If urlType is specified, handle accordingly
+      if (urlType) {
+        switch (urlType) {
+          case 'email':
+            // If it already has mailto:, use as is, otherwise add it
+            return url.startsWith('mailto:') ? url : `mailto:${url}`;
+          case 'phone':
+            // If it already has tel:, use as is, otherwise add it
+            return url.startsWith('tel:') ? url : `tel:${url}`;
+          case 'pdf':
+            // For PDFs, return the URL as is (should be a direct link to the file)
+            return url;
+          case 'url':
+          default:
+            // For URLs, add https:// if not present
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              return `https://${url}`;
+            }
+            return url;
+        }
+      }
+
+      // Fallback: detect type from URL format
+      if (url.startsWith('mailto:')) {
+        return url;
+      } else if (url.startsWith('tel:')) {
+        return url;
+      } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
+        // Detect PDF files
+        return url;
+      } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return `https://${url}`;
+      }
+
+      return url;
+    };
+
+    // Check if this is an Apple Phone or Apple Email icon
+    const isPhoneIcon = elementData.name === 'Apple Phone';
+    const isEmailIcon = elementData.name === 'Apple Email';
+
+    if (elementData.buttonData?.action) {
+      const { type, value } = elementData.buttonData.action;
+      if (type === 'url' && value) {
+        const formattedUrl = formatUrl(value);
+        if (formattedUrl.startsWith('tel:')) {
+          handlePhoneClick(formattedUrl, 'copy');
+        } else {
+          window.open(formattedUrl, '_blank');
+        }
+      }
+    } else if (elementData.linkData?.url) {
+      const formattedUrl = formatUrl(elementData.linkData.url);
+      if (formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
+    } else if (elementData.socialData?.url) {
+      const formattedUrl = formatUrl(elementData.socialData.url);
+      if (formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
+    } else if (elementData.url) {
+      // Handle Apple Phone icons with handlePhoneClick
+      if (isPhoneIcon) {
+        const formattedUrl = formatUrl(elementData.url, 'phone');
+        handlePhoneClick(formattedUrl, 'copy');
+        return;
+      }
+
+      // Handle Apple Email icons with mailto: prefix
+      if (isEmailIcon) {
+        const formattedUrl = formatUrl(elementData.url, 'email');
+        window.open(formattedUrl, '_blank');
+        return;
+      }
+
+      // Handle other cases based on urlType
+      const formattedUrl = formatUrl(elementData.url, elementData.urlType);
+      if (elementData.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
+    }
+  }, []);
 
   // Memoize the heavy renderElements function to prevent recreation on every render
   const renderCanvasObjects = useMemo(() => {
@@ -458,6 +554,14 @@ export function RealTimePreview({
           return (
             <div
               key={`canvas-social-icon-${obj.id || index}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleElementClick(obj);
+                }
+              }}
               style={{
                 position: 'absolute',
                 left: `${actualLeft}px`,
@@ -488,6 +592,7 @@ export function RealTimePreview({
                 e.currentTarget.style.transform = `rotate(${angle}deg) scale(1)`;
                 e.currentTarget.style.boxShadow = 'none';
               }}
+              onClick={() => handleElementClick(obj)}
             >
               <Image
                 src={obj.src || ''}
@@ -520,6 +625,55 @@ export function RealTimePreview({
           imageTop = top - (height / 2);
         } else if (obj.originY === 'bottom') {
           imageTop = top - height;
+        }
+
+        // If image has a URL (social icon), make it interactive
+        if (obj.url || obj.URL) {
+          return (
+            <button
+              key={`canvas-image-${obj.id || index}`}
+              type="button"
+              onClick={() => handleElementClick(obj)}
+              style={{
+                position: 'absolute',
+                left: `${imageLeft}px`,
+                top: `${imageTop}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                transform: `rotate(${angle}deg)`,
+                transformOrigin: obj.originX === 'center' && obj.originY === 'center'
+                  ? 'center center'
+                  : 'left top',
+                opacity: obj.opacity !== undefined ? obj.opacity : 1,
+                zIndex: index + 1,
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
+              <Image
+                src={obj.src || ''}
+                alt="Design element"
+                width={width}
+                height={height}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover',
+                  boxSizing: 'border-box',
+                  pointerEvents: 'none',
+                }}
+              />
+            </button>
+          );
         }
 
         return (
@@ -663,100 +817,6 @@ export function RealTimePreview({
     });
   }, [canvasState]);
 
-  const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasState?.objects || !Array.isArray(canvasState.objects)) {
-      return;
-    }
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / getPreviewScale;
-    const y = (e.clientY - rect.top) / getPreviewScale;
-
-    // Check if we clicked on an interactive element
-    for (const obj of canvasState.objects) {
-      if (!obj || !obj.left || !obj.top || !obj.width || !obj.height) {
-        continue;
-      }
-
-      const objLeft = obj.left;
-      const objTop = obj.top;
-      const objWidth = (obj.width || 0) * (obj.scaleX || 1);
-      const objHeight = (obj.height || 0) * (obj.scaleY || 1);
-
-      // Simple hit testing (can be improved with rotation support)
-      if (x >= objLeft && x <= objLeft + objWidth && y >= objTop && y <= objTop + objHeight) {
-        // Handle social icons - check both url and URL properties to be safe
-        if (obj.elementType === 'socialIcon') {
-          const url = obj.url || obj.URL;
-          if (!url) {
-            toast.error('This social icon has no URL configured.');
-            return;
-          }
-
-          // Create a temporary anchor element to use native browser navigation
-          const tempLink = document.createElement('a');
-          tempLink.href = url;
-          tempLink.target = '_blank';
-          tempLink.rel = 'noopener noreferrer';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          document.body.removeChild(tempLink);
-          return;
-        } else if (obj.type === 'image' && (obj.url || obj.URL)) {
-          // Create a temporary anchor element to use native browser navigation
-          const tempLink = document.createElement('a');
-          tempLink.href = obj.url || obj.URL;
-          tempLink.target = obj.linkData?.target || '_blank';
-          tempLink.rel = 'noopener noreferrer';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          document.body.removeChild(tempLink);
-          return;
-        }
-
-        // Handle links
-        if (obj.elementType === 'link' && obj.linkData?.url) {
-          // Create a temporary anchor element to use native browser navigation
-          const tempLink = document.createElement('a');
-          tempLink.href = obj.linkData.url;
-          tempLink.target = obj.linkData.target || '_blank';
-          tempLink.rel = 'noopener noreferrer';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          document.body.removeChild(tempLink);
-          return;
-        }
-
-        // Handle buttons
-        if (obj.elementType === 'button' && obj.buttonData?.action?.type === 'url' && obj.buttonData?.action?.value) {
-          // Create a temporary anchor element to use native browser navigation
-          const tempLink = document.createElement('a');
-          tempLink.href = obj.buttonData.action.value;
-          tempLink.target = '_blank';
-          tempLink.rel = 'noopener noreferrer';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          document.body.removeChild(tempLink);
-          return;
-        }
-      }
-    }
-  }, [canvasState, getPreviewScale]);
-
-  // Handle keyboard events for accessibility
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      // Simulate click for keyboard users
-      const clickEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      });
-      e.currentTarget.dispatchEvent(clickEvent);
-    }
-  }, []);
-
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen && previewRef.current) {
@@ -871,13 +931,7 @@ export function RealTimePreview({
               overflow: 'hidden',
               transform: `scale(${isFullscreen ? 1 : getPreviewScale})`,
               transformOrigin: 'top left',
-              cursor: 'pointer', // Add pointer cursor to indicate interactivity
             }}
-            onClick={handlePreviewClick}
-            onKeyDown={handleKeyDown}
-            role="button"
-            tabIndex={0}
-            aria-label="Interactive design preview"
           >
             {Array.isArray(renderCanvasObjects) && renderCanvasObjects.length > 0
               ? (

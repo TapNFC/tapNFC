@@ -6,11 +6,11 @@ export const emailValidation = z
   .min(1, 'Email is required')
   .email('Please enter a valid email address');
 
-// Phone number validation schema - only digits, minimum 7 characters
+// Phone number validation schema - allows + at beginning, then digits, minimum 7 characters
 export const phoneValidation = z
   .string()
   .min(1, 'Phone number is required')
-  .regex(/^\d+$/, 'Phone number must contain only digits')
+  .regex(/^\+?\d+$/, 'Phone number must contain only digits with optional + at beginning')
   .min(7, 'Phone number must be at least 7 digits');
 
 // URL validation schema - not empty

@@ -631,8 +631,32 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           e.e.preventDefault();
           e.e.stopPropagation();
 
-          // Open the URL in a new tab using the improved approach
-          toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
+          // Check if this is a PDF-enabled icon (wifi or home)
+          const isPdfEnabledIcon = this.name === 'WiFi' || this.name === 'Home';
+
+          // Check if this is a phone icon (Apple Phone)
+          const isPhoneIcon = this.name === 'Apple Phone';
+
+          // Check if this is an email icon (Apple Email)
+          const isEmailIcon = this.name === 'Apple Email';
+
+          if (isPdfEnabledIcon && (this.url.includes('.pdf') || this.url.includes('file-storage/files/'))) {
+            // For PDF files, open in new tab
+            toast.success(`Opening PDF: ${this.name || 'document'}`);
+          } else if (isPhoneIcon && this.url) {
+            // For phone numbers, initiate call
+            toast.success(`Calling: ${this.url}`);
+            window.location.href = `tel:${this.url}`;
+            return;
+          } else if (isEmailIcon && this.url) {
+            // For email addresses, open email client
+            toast.success(`Opening email: ${this.url}`);
+            window.location.href = `mailto:${this.url}`;
+            return;
+          } else {
+            // For regular URLs, show the social media message
+            toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
+          }
 
           // Create a temporary anchor element to use native browser navigation
           const tempLink = document.createElement('a');
