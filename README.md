@@ -1,6 +1,6 @@
 # QR Profile Management System
 
-A modern, production-ready platform to create, customize, manage, and track QR codes for digital profiles, campaigns, and customer engagement. Built with Next.js App Router, React Server Components, Supabase, and a polished UX for creators and teams.
+A modern, production-ready platform to create, customize, manage, and track QR codes for digital profiles, campaigns, and customer engagement. Built with Next.js App Router, React Server Components, Supabase, and a polished UX for creators and teams
 
 <div align="center">
 

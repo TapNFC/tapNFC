@@ -62,12 +62,53 @@ const FONT_FAMILIES = [
   'Lato',
   'Montserrat',
   'Poppins',
-  'Source Sans Pro',
-  'Oswald',
-  'Raleway',
-  'Ubuntu',
   'Edwardian Script ITC',
+  'Pinyon Script',
 ] as const;
+
+// Helper function to normalize and match font family names
+const normalizeFontFamily = (fontFamily: string): string => {
+  if (!fontFamily) {
+    return 'Inter';
+  }
+
+  // Remove quotes and normalize spaces
+  const normalized = fontFamily.replace(/['"]/g, '').trim();
+
+  // Try exact match first
+  const exactMatch = FONT_FAMILIES.find(font => font === normalized);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  // Try case-insensitive match
+  const caseInsensitiveMatch = FONT_FAMILIES.find(font =>
+    font.toLowerCase() === normalized.toLowerCase(),
+  );
+  if (caseInsensitiveMatch) {
+    return caseInsensitiveMatch;
+  }
+
+  // Try match ignoring spaces
+  const noSpacesMatch = FONT_FAMILIES.find(font =>
+    font.toLowerCase().replace(/\s+/g, '') === normalized.toLowerCase().replace(/\s+/g, ''),
+  );
+  if (noSpacesMatch) {
+    return noSpacesMatch;
+  }
+
+  // Try partial match for common variations
+  const partialMatch = FONT_FAMILIES.find(font =>
+    font.toLowerCase().includes(normalized.toLowerCase())
+    || normalized.toLowerCase().includes(font.toLowerCase()),
+  );
+  if (partialMatch) {
+    return partialMatch;
+  }
+
+  // Fallback to default
+  return 'Inter';
+};
 
 // Memoize text alignment options
 const TEXT_ALIGNMENTS = [
@@ -77,19 +118,6 @@ const TEXT_ALIGNMENTS = [
 ] as const;
 
 export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
-  // Load Google Fonts for consistent cross-platform behavior
-  useEffect(() => {
-    const loadGoogleFonts = () => {
-      // Load exactly the fonts listed in FONT_FAMILIES from Google Fonts CDN
-      const link = document.createElement('link');
-      link.href = 'https://fonts.googleapis.com/css2?family=Arial&family=Georgia&family=Times+New+Roman&family=Courier+New&family=Verdana&family=Helvetica&family=Impact&family=Comic+Sans+MS&family=Trebuchet+MS&family=Lucida+Console&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Ubuntu:wght@400;700&family=Edwardian+Script+ITC&display=swap';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-    };
-
-    loadGoogleFonts();
-  }, []);
-
   // Text properties
   const [fontFamily, setFontFamily] = useState('Inter');
   const [fontSize, setFontSize] = useState(16);
@@ -120,11 +148,28 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   // Update properties based on selected object
   useEffect(() => {
     if (selectedObject) {
+      // Debug logging to help identify selection issues
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Object selected:', selectedObject.type, selectedObject);
+      }
+
       // Update state based on selected object properties
       const updateState = () => {
         // Handle text objects
         if (selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox') {
+          // Extract and normalize font family
           const newFontFamily = selectedObject.fontFamily || 'Inter';
+
+          // Normalize font family name to match our FONT_FAMILIES array
+          const normalizedFontFamily = normalizeFontFamily(newFontFamily);
+
+          // Debug logging to help identify font family issues
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Selected object font family:', selectedObject.fontFamily);
+            console.warn('Normalized font family:', normalizedFontFamily);
+            console.warn('Available font families:', FONT_FAMILIES);
+          }
+
           const newFontSize = selectedObject.fontSize || 16;
           const newIsBold = selectedObject.fontWeight === 'bold';
           const newIsItalic = selectedObject.fontStyle === 'italic';
@@ -133,7 +178,7 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
           const newTextAlign = selectedObject.textAlign || 'left';
           const newTextColor = selectedObject.fill || '#000000';
 
-          setFontFamily(newFontFamily);
+          setFontFamily(normalizedFontFamily);
           setFontSize(newFontSize);
           setIsBold(newIsBold);
           setIsItalic(newIsItalic);
@@ -187,7 +232,13 @@ export function TextToolbar({ canvas, selectedObject }: TextToolbarProps) {
   const handleFontFamilyChange = useCallback((value: string) => {
     setFontFamily(value);
     updateTextProperty('fontFamily', value);
-  }, [updateTextProperty]);
+
+    // Debug logging to help identify font family change issues
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Font family changed to:', value);
+      console.warn('Selected object:', selectedObject);
+    }
+  }, [updateTextProperty, selectedObject]);
 
   const handleFontSizeChange = useCallback((value: string) => {
     const size = Number.parseInt(value);
