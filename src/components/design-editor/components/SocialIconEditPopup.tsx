@@ -1,16 +1,21 @@
+/* eslint-disable style/indent */
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { Check, FileText, Mail, Phone, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { fileStorageService } from '@/services/fileStorageService';
+import { emailValidation, phoneValidation } from '@/validations/TextUrlValidation';
 
 type SocialIconEditPopupProps = {
   isVisible: boolean;
   iconObject: any;
   position: { x: number; y: number };
-  onUpdateIcon: (updates: { url?: string; name?: string }) => void;
+  designId: string;
+  onUpdateIcon: (updates: { url?: string }) => void;
   onClose: () => void;
 };
 
@@ -18,31 +23,35 @@ export function SocialIconEditPopup({
   isVisible,
   iconObject,
   position,
+  designId,
   onUpdateIcon,
   onClose,
 }: SocialIconEditPopupProps) {
   const [url, setUrl] = useState('');
-  const [name, setName] = useState('');
+  const [error, setError] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if this is a PDF-enabled icon (wifi or home)
+  const isPdfEnabledIcon = iconObject?.name === 'WiFi' || iconObject?.name === 'Home';
+
+  // Check if this is a phone icon (Apple Phone)
+  const isPhoneIcon = iconObject?.name === 'Apple Phone';
+
+  // Check if this is an email icon (Apple Email)
+  const isEmailIcon = iconObject?.name === 'Apple Email';
 
   // Initialize form values when the popup becomes visible or iconObject changes
   useEffect(() => {
     if (isVisible && iconObject) {
       const newUrl = iconObject.url || '';
-      const newName = iconObject.name || '';
 
       setUrl(newUrl);
-      setName(newName);
-
-      // Focus the name input when popup opens
-      const timeoutId = setTimeout(() => {
-        if (nameInputRef.current) {
-          nameInputRef.current.focus();
-        }
-      }, 100);
-
-      return () => clearTimeout(timeoutId);
+      setError('');
+      setSelectedFile(null);
     }
 
     return undefined;
@@ -104,9 +113,123 @@ export function SocialIconEditPopup({
     };
   }, [isVisible]);
 
-  const handleSave = () => {
-    onUpdateIcon({ url: url.trim(), name: name.trim() });
-    onClose();
+  const validateInput = (value: string, type: 'phone' | 'email') => {
+    try {
+      if (type === 'phone') {
+        phoneValidation.parse(value);
+      } else if (type === 'email') {
+        emailValidation.parse(value);
+      }
+      setError('');
+      return true;
+    } catch (error: any) {
+      if (error.errors && error.errors[0]) {
+        setError(error.errors[0].message);
+      } else {
+        setError(`Invalid ${type}`);
+      }
+      return false;
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type for PDF
+      if (file.type !== 'application/pdf') {
+        setError('Please select a valid PDF file');
+        setSelectedFile(null);
+        return;
+      }
+
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB');
+        setSelectedFile(null);
+        return;
+      }
+
+      setSelectedFile(file);
+      setError('');
+      setUrl(file.name); // Show filename in the input
+    }
+  };
+
+  const handleDeletePdf = async () => {
+    try {
+      if (!url || !designId) {
+        setError('No PDF to delete');
+        return;
+      }
+
+      setIsDeleting(true);
+      setError('');
+
+      // Delete the file from Supabase storage
+      await fileStorageService.deleteFile(url);
+
+      // Clear the URL
+      onUpdateIcon({ url: '' });
+
+      // Clear local state
+      setUrl('');
+      setSelectedFile(null);
+
+      toast.success('PDF deleted successfully');
+    } catch (error: any) {
+      setError(error.message || 'Failed to delete PDF');
+      toast.error('Failed to delete PDF');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (isPdfEnabledIcon) {
+        // For PDF-enabled icons, handle PDF upload
+        if (!selectedFile && !url) {
+          setError('Please select a PDF file or enter a PDF URL');
+          return;
+        }
+
+        if (selectedFile) {
+          if (!designId) {
+            setError('Design ID not found. Please try refreshing the page.');
+            return;
+          }
+
+          setIsUploading(true);
+          setError('');
+
+          // Upload the PDF file
+          const publicUrl = await fileStorageService.uploadPdfFile(selectedFile, designId);
+
+          // Update the URL with the public URL from Supabase
+          setUrl(publicUrl);
+          setSelectedFile(null);
+
+          toast.success('PDF uploaded successfully!');
+
+          // Save the public URL
+          onUpdateIcon({ url: publicUrl });
+          onClose();
+        } else if (url) {
+          // User entered a PDF URL manually
+          onUpdateIcon({ url: url.trim() });
+          onClose();
+        }
+      } else {
+        // For regular social icons, use the existing name + URL functionality
+        onUpdateIcon({ url: url.trim() });
+        onClose();
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to upload PDF');
+      toast.error('Failed to upload PDF');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -124,8 +247,8 @@ export function SocialIconEditPopup({
   }
 
   // Calculate popup position with proper boundary checking
-  const popupWidth = 280;
-  const popupHeight = 200;
+  const popupWidth = 320;
+  const popupHeight = isPdfEnabledIcon ? 320 : 200; // Increased height for PDF upload
   const padding = 16;
 
   // Position above the element with proper boundary checking
@@ -137,15 +260,29 @@ export function SocialIconEditPopup({
     ),
   );
 
+  // Calculate offset based on icon type
+  let iconOffset = 0;
+  if (isPdfEnabledIcon) {
+    // Check if PDF already has an uploaded file
+    const hasUploadedPdf = url && (url.includes('.pdf') || url.includes('file-storage/files/'));
+    iconOffset = hasUploadedPdf ? 90 : 140; // 140 + 90 if PDF is uploaded
+  } else if (isPhoneIcon) {
+    iconOffset = 15; // Phone icons need minimal offset
+  } else if (isEmailIcon) {
+    iconOffset = 30; // Email icons need moderate offset
+  } else {
+    iconOffset = 30; // Social icons default offset
+  }
+
   const calculatedTop = Math.max(
     padding,
-    position.y - popupHeight - 20, // Position above with 20px gap
+    position.y - popupHeight + iconOffset,
   );
 
   return (
     <div
       ref={popupRef}
-      className="w-70 fixed z-50 rounded-xl border border-white/30 bg-white/95 p-4 shadow-2xl shadow-blue-500/20 backdrop-blur-xl"
+      className="fixed z-50 w-80 rounded-xl border border-white/30 bg-white/95 p-4 shadow-2xl shadow-blue-500/20 backdrop-blur-xl"
       style={{
         left: calculatedLeft,
         top: calculatedTop,
@@ -156,12 +293,33 @@ export function SocialIconEditPopup({
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-purple-100 p-1.5">
-            <svg className="size-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2H3a1 1 0 110-2h4z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6" />
-            </svg>
+            {isPdfEnabledIcon
+              ? (
+                  <FileText className="size-4 text-purple-600" />
+                )
+              : isPhoneIcon
+                ? (
+                    <Phone className="size-4 text-purple-600" />
+                  )
+                : isEmailIcon
+                  ? (
+                      <Mail className="size-4 text-purple-600" />
+                    )
+                  : (
+                      <svg className="size-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2H3a1 1 0 110-2h4z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6" />
+                      </svg>
+                    )}
           </div>
-          <span className="text-sm font-semibold text-gray-900">Edit Social Icon</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-900">
+              {isPdfEnabledIcon ? 'Edit PDF Icon' : isPhoneIcon ? 'Edit Phone Icon' : isEmailIcon ? 'Edit Email Icon' : 'Edit Social Icon'}
+            </span>
+            <span className="text-xs text-gray-500">
+              {iconObject?.name || (isPdfEnabledIcon ? 'PDF Icon' : isPhoneIcon ? 'Phone Icon' : isEmailIcon ? 'Email Icon' : 'Social Icon')}
+            </span>
+          </div>
         </div>
         <Button
           variant="ghost"
@@ -175,36 +333,166 @@ export function SocialIconEditPopup({
 
       {/* Form */}
       <div className="space-y-3">
-        <div>
-          <Label htmlFor="social-icon-name" className="mb-1 block text-xs font-medium text-gray-700">
-            Display Name
-          </Label>
-          <Input
-            ref={nameInputRef}
-            id="social-icon-name"
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="e.g., Follow us on Twitter"
-            className="h-8 text-sm"
-          />
-        </div>
 
-        <div>
-          <Label htmlFor="social-icon-url" className="mb-1 block text-xs font-medium text-gray-700">
-            URL
-          </Label>
-          <Input
-            id="social-icon-url"
-            type="url"
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="https://twitter.com/yourusername"
-            className="h-8 text-sm"
-          />
-        </div>
+        {isPdfEnabledIcon
+          ? (
+            // PDF upload interface for wifi and home icons
+              <div className="space-y-3">
+                {/* Check if PDF already exists */}
+                {url && (url.includes('.pdf') || url.includes('file-storage/files/'))
+                  ? (
+                      <div className="space-y-3">
+                        <Label className="mb-1 block text-xs font-medium text-gray-700">
+                          Current PDF File
+                        </Label>
+                        <div className="flex items-center gap-2 rounded-lg border bg-gray-50 p-2">
+                          <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => window.open(url, '_blank')}
+                              className="block w-full truncate text-left text-sm text-blue-600 hover:text-blue-800"
+                              title="Click to open PDF"
+                            >
+                              {url.split('/').pop() || 'PDF File'}
+                            </button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDeletePdf}
+                            disabled={isDeleting}
+                            className="size-6 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Click the filename to open, or use the X button to delete
+                        </p>
+                      </div>
+                    )
+                  : (
+                      <div className="space-y-3">
+                        <Label className="mb-1 block text-xs font-medium text-gray-700">
+                          Upload PDF File
+                        </Label>
+                        <div className="flex gap-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,application/pdf"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-8 flex-1"
+                            disabled={isUploading}
+                          >
+                            <Upload className="mr-1 size-3" />
+                            {selectedFile ? 'Change File' : 'Select PDF'}
+                          </Button>
+                        </div>
+                        {selectedFile && (
+                          <p className="mt-1 text-xs text-gray-600">
+                            Selected:
+                            {' '}
+                            {selectedFile.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
+              </div>
+            )
+          : isPhoneIcon
+            ? (
+              // Phone input for Apple Phone icon
+                <div>
+                  <Label htmlFor="social-icon-phone" className="mb-1 block text-xs font-medium text-gray-700">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="social-icon-phone"
+                    type="tel"
+                    value={url}
+                    onChange={(e) => {
+                      // Allow digits and + symbol, but only one + at the beginning
+                      let value = e.target.value;
+                      if (value.startsWith('+')) {
+                        // If starts with +, allow digits after it
+                        const afterPlus = value.substring(1).replace(/\D/g, '');
+                        value = `+${afterPlus}`;
+                      } else {
+                        // If no +, only allow digits
+                        value = value.replace(/\D/g, '');
+                      }
+                      setUrl(value);
+                      if (value) {
+                        validateInput(value, 'phone');
+                      } else {
+                        setError('');
+                      }
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="+1234567890"
+                    className="h-8 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter phone number
+                  </p>
+                </div>
+              )
+              : isEmailIcon
+              ? (
+              // Email input for Apple Email icon
+                <div>
+                  <Label htmlFor="social-icon-email" className="mb-1 block text-xs font-medium text-gray-700">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="social-icon-email"
+                    type="email"
+                    value={url}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setUrl(value);
+                      if (value) {
+                        validateInput(value, 'email');
+                      } else {
+                        setError('');
+                      }
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="example@email.com"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )
+              : (
+              // Regular URL input for other social icons
+                <div>
+                  <Label htmlFor="social-icon-url" className="mb-1 block text-xs font-medium text-gray-700">
+                    URL
+                  </Label>
+                  <Input
+                    id="social-icon-url"
+                    type="url"
+                    value={url}
+                    onChange={e => setUrl(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="https://twitter.com/yourusername"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+
+        {error && (
+          <p className="mt-1 text-xs text-red-500">{error}</p>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
@@ -212,6 +500,7 @@ export function SocialIconEditPopup({
             onClick={handleSave}
             size="sm"
             className="h-8 flex-1 bg-purple-600 text-white hover:bg-purple-700"
+            disabled={!!error || (!url.trim() && !selectedFile && !isPdfEnabledIcon && !isPhoneIcon && !isEmailIcon) || isUploading}
           >
             <Check className="mr-1 size-3" />
             Save

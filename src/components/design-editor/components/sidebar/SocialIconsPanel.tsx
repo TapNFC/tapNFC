@@ -136,23 +136,18 @@ const socialIcons = [
   },
   {
     id: 'wifi',
-    name: 'Wifi',
+    name: 'WiFi',
     path: '/assets/images/social-icons/wifi.png',
   },
   {
     id: 'apple-phone',
-    name: 'Phone',
+    name: 'Apple Phone',
     path: '/assets/images/social-icons/apple-phone.png',
   },
   {
     id: 'apple-email',
-    name: 'Email',
+    name: 'Apple Email',
     path: '/assets/images/social-icons/apple-email.png',
-  },
-  {
-    id: 'email',
-    name: 'Email',
-    path: '/assets/images/social-icons/email.png',
   },
   {
     id: 'home',

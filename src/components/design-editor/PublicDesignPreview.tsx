@@ -758,6 +758,10 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                   e.preventDefault();
                   const url = obj.url || obj.URL;
                   if (url) {
+                    // Check if this is an Apple Phone or Apple Email icon
+                    const isPhoneIcon = obj.name === 'Apple Phone';
+                    const isEmailIcon = obj.name === 'Apple Email';
+
                     // Handle different URL types
                     const formatUrl = (url: string, urlType?: string) => {
                       if (!url) {
@@ -795,7 +799,21 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                       return url;
                     };
 
-                    // Handle phone numbers differently to avoid Safari tab issues
+                    // Handle Apple Phone icons with handlePhoneClick
+                    if (isPhoneIcon) {
+                      const formattedUrl = formatUrl(url, 'phone');
+                      handlePhoneClick(formattedUrl, 'copy');
+                      return;
+                    }
+
+                    // Handle Apple Email icons with mailto: prefix
+                    if (isEmailIcon) {
+                      const formattedUrl = formatUrl(url, 'email');
+                      window.open(formattedUrl, '_blank');
+                      return;
+                    }
+
+                    // Handle other cases based on urlType
                     const formattedUrl = formatUrl(url, obj.urlType);
                     if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
                       handlePhoneClick(formattedUrl, 'copy');
@@ -838,6 +856,10 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
               onClick={() => {
                 const url = obj.url || obj.URL;
                 if (url) {
+                  // Check if this is an Apple Phone or Apple Email icon
+                  const isPhoneIcon = obj.name === 'Apple Phone';
+                  const isEmailIcon = obj.name === 'Apple Email';
+
                   // Handle different URL types
                   const formatUrl = (url: string, urlType?: string) => {
                     if (!url) {
@@ -881,7 +903,21 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                     return url;
                   };
 
-                  // Handle phone numbers differently to avoid Safari tab issues
+                  // Handle Apple Phone icons with handlePhoneClick
+                  if (isPhoneIcon) {
+                    const formattedUrl = formatUrl(url, 'phone');
+                    handlePhoneClick(formattedUrl, 'copy');
+                    return;
+                  }
+
+                  // Handle Apple Email icons with mailto: prefix
+                  if (isEmailIcon) {
+                    const formattedUrl = formatUrl(url, 'email');
+                    window.open(formattedUrl, '_blank');
+                    return;
+                  }
+
+                  // Handle other cases based on urlType
                   const formattedUrl = formatUrl(url, obj.urlType);
                   if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
                     handlePhoneClick(formattedUrl, 'copy');

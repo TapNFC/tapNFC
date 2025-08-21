@@ -68,7 +68,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     handleUpdateSocialIcon,
     handleCloseSocialIconEdit,
     handleCloseContextualToolbar: handleCloseSocialIconContextualToolbar,
-  } = useSocialIconEditor({ canvas });
+  } = useSocialIconEditor({ canvas, designId });
 
   // Add the text URL editor hook
   const {
@@ -364,6 +364,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           isVisible={socialIconEditPopup.isVisible}
           iconObject={socialIconEditPopup.iconObject}
           position={socialIconEditPopup.position}
+          designId={designId}
           onUpdateIcon={handleUpdateSocialIcon}
           onClose={handleCloseSocialIconEdit}
         />

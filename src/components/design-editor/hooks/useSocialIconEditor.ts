@@ -14,6 +14,7 @@ type SocialIconEditPopupState = {
 
 type UseSocialIconEditorProps = {
   canvas: any;
+  designId: string;
 };
 
 type UseSocialIconEditorReturn = {
@@ -22,7 +23,7 @@ type UseSocialIconEditorReturn = {
   handleSocialIconSingleClick: (iconObject: any, event: any) => void;
   handleSocialIconDoubleClick: (iconObject: any, event: any) => void;
   handleActionsClick: () => void;
-  handleUpdateSocialIcon: (updates: { url?: string; name?: string }) => void;
+  handleUpdateSocialIcon: (updates: { url?: string }) => void;
   handleCloseSocialIconEdit: () => void;
   handleCloseContextualToolbar: () => void;
 };
@@ -134,7 +135,7 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     });
   }, [socialIconContextualToolbar]);
 
-  const handleUpdateSocialIcon = useCallback((updates: { url?: string; name?: string }) => {
+  const handleUpdateSocialIcon = useCallback((updates: { url?: string }) => {
     if (!socialIconEditPopup.iconObject || !canvas || !updates) {
       return;
     }
@@ -144,10 +145,6 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     // Update the icon's properties
     if (updates.url !== undefined) {
       iconObject.set?.({ url: updates.url });
-    }
-
-    if (updates.name !== undefined) {
-      iconObject.set?.({ name: updates.name });
     }
 
     canvas.renderAll?.();
