@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useTemplateStore } from '@/stores/templateStore';
+import { normalizeTextObjects } from '@/utils/textUtils';
 
 type UseKeyboardShortcutsOptions = {
   canvas: any;
@@ -222,6 +223,9 @@ export function useKeyboardShortcuts({
               try {
                 // Validate that loadedCanvas exists and has the required methods
                 if (loadedCanvas && typeof loadedCanvas.renderAll === 'function') {
+                  // Normalize text objects to ensure they don't have scaling issues
+                  normalizeTextObjects(loadedCanvas);
+
                   loadedCanvas.renderAll();
                 } else {
                   // Fallback to original canvas

@@ -8,6 +8,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { useDesigns } from '@/hooks/useDesigns';
+import { normalizeTextObjects } from '@/utils/textUtils';
 
 type TemplateGalleryProps = {
   canvas: any;
@@ -31,6 +32,9 @@ export function TemplateGallery({ canvas }: TemplateGalleryProps) {
       try {
         await new Promise<void>((resolve) => {
           canvas.loadFromJSON(template.canvas_data, () => {
+            // Normalize text objects to ensure they don't have scaling issues
+            normalizeTextObjects(canvas);
+
             canvas.renderAll();
             resolve();
           });

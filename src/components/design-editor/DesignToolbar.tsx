@@ -26,6 +26,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
+import { normalizeTextObjects } from '@/utils/textUtils';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { EditableDesignName } from './components/toolbar/EditableDesignName';
@@ -269,6 +270,9 @@ export function DesignToolbar({
 
       // Load the canvas data
       canvas.loadFromJSON(template.canvas_data.canvasJSON, () => {
+        // Normalize text objects to ensure they don't have scaling issues
+        normalizeTextObjects(canvas);
+
         canvas.renderAll();
         toast.success(`Template "${template.name}" loaded successfully`);
 
