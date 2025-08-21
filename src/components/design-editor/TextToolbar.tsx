@@ -62,7 +62,6 @@ const FONT_FAMILIES = [
   'Lato',
   'Montserrat',
   'Poppins',
-  'Edwardian Script ITC',
   'Pinyon Script',
 ] as const;
 
