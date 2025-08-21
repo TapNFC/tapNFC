@@ -6,6 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { handlePhoneClick } from '@/utils/phoneUtils';
 
 type PublicDesignPreviewProps = {
   designId?: string;
@@ -197,15 +198,35 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
     if (elementData.buttonData?.action) {
       const { type, value } = elementData.buttonData.action;
       if (type === 'url' && value) {
-        window.open(formatUrl(value), '_blank');
+        const formattedUrl = formatUrl(value);
+        if (formattedUrl.startsWith('tel:')) {
+          handlePhoneClick(formattedUrl, 'copy');
+        } else {
+          window.open(formattedUrl, '_blank');
+        }
       }
     } else if (elementData.linkData?.url) {
-      window.open(formatUrl(elementData.linkData.url), '_blank');
+      const formattedUrl = formatUrl(elementData.linkData.url);
+      if (formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
     } else if (elementData.socialData?.url) {
-      window.open(formatUrl(elementData.socialData.url), '_blank');
+      const formattedUrl = formatUrl(elementData.socialData.url);
+      if (formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
     } else if (elementData.url) {
       // Handle text elements with URLs
-      window.open(formatUrl(elementData.url, elementData.urlType), '_blank');
+      const formattedUrl = formatUrl(elementData.url, elementData.urlType);
+      if (elementData.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+        handlePhoneClick(formattedUrl, 'copy');
+      } else {
+        window.open(formattedUrl, '_blank');
+      }
     }
   };
 
@@ -468,7 +489,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
                     return url;
                   };
-                  window.open(formatUrl(obj.url, obj.urlType), '_blank');
+
+                  // Handle phone numbers differently to avoid Safari tab issues
+                  const formattedUrl = formatUrl(obj.url, obj.urlType);
+                  if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+                    handlePhoneClick(formattedUrl, 'copy');
+                  } else {
+                    window.open(formattedUrl, '_blank');
+                  }
                 }
               }}
               onMouseEnter={(e) => {
@@ -766,7 +794,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
                       return url;
                     };
-                    window.open(formatUrl(url, obj.urlType), '_blank');
+
+                    // Handle phone numbers differently to avoid Safari tab issues
+                    const formattedUrl = formatUrl(url, obj.urlType);
+                    if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+                      handlePhoneClick(formattedUrl, 'copy');
+                    } else {
+                      window.open(formattedUrl, '_blank');
+                    }
                   }
                 }
               }}
@@ -845,7 +880,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
                     return url;
                   };
-                  window.open(formatUrl(url, obj.urlType), '_blank');
+
+                  // Handle phone numbers differently to avoid Safari tab issues
+                  const formattedUrl = formatUrl(url, obj.urlType);
+                  if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+                    handlePhoneClick(formattedUrl, 'copy');
+                  } else {
+                    window.open(formattedUrl, '_blank');
+                  }
                 }
               }}
             >
@@ -931,7 +973,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
 
                     return url;
                   };
-                  window.open(formatUrl(url, obj.urlType), '_blank');
+
+                  // Handle phone numbers differently to avoid Safari tab issues
+                  const formattedUrl = formatUrl(url, obj.urlType);
+                  if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+                    handlePhoneClick(formattedUrl, 'copy');
+                  } else {
+                    window.open(formattedUrl, '_blank');
+                  }
                 }
               }}
               style={{

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { handlePhoneClick } from '@/utils/phoneUtils';
 
 // Define a type for Fabric-like gradient objects that might be passed
 type FabricGradient = {
@@ -191,7 +192,13 @@ export function RealTimePreview({
                   };
 
                   const formattedUrl = formatUrl(obj.url, obj.urlType);
-                  window.open(formattedUrl, '_blank');
+
+                  // Handle phone numbers differently to avoid Safari tab issues
+                  if (obj.urlType === 'phone' || formattedUrl.startsWith('tel:')) {
+                    handlePhoneClick(formattedUrl, 'copy');
+                  } else {
+                    window.open(formattedUrl, '_blank');
+                  }
                 }
               }}
               onMouseEnter={(e) => {
