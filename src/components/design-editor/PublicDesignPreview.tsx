@@ -1192,7 +1192,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       {/* Design Preview */}
-      <main className="flex flex-1 items-center justify-center bg-gray-900">
+      <main className="flex flex-1 items-center justify-center bg-black">
         <div className="relative flex flex-col items-center">
           {/* Canvas Container */}
           <div
