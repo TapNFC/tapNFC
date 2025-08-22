@@ -82,7 +82,7 @@ const socialIcons = [
   {
     id: 'paypal',
     name: 'Paypal',
-    path: '/assets/images/social-icons/paypal.png',
+    path: '/assets/images/social-icons/paypal.svg',
   },
   {
     id: 'venmo',

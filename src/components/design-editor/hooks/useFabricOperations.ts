@@ -30,7 +30,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       let textObject;
       switch (textType) {
         case 'add-text': // Heading
-          textObject = new fabric.Textbox('Heading Text', {
+          textObject = new fabric.Textbox('Heading', {
             left: 50,
             top: 50,
             fontSize: 48,
@@ -44,7 +44,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           });
           break;
         case 'add-subheading':
-          textObject = new fabric.Textbox('Subheading Text', {
+          textObject = new fabric.Textbox('Subheading', {
             left: 50,
             top: 120,
             fontSize: 32,
