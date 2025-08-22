@@ -111,6 +111,90 @@ function ModernOverviewCards() {
   const totalCustomersDisplay = useTransform(totalCustomersMotion, value => Math.round(value));
   const totalScansDisplay = useTransform(totalScansMotion, value => Math.round(value));
 
+  // Separate effect for immediate scan-batches call
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchScansImmediately = async () => {
+      try {
+        // Get QR codes first to fetch scans immediately
+        const qrDesignsAll = await designService.getUserQrCodes(true);
+        const qrDesigns = qrDesignsAll.filter(d => !(d.is_archived ?? false));
+
+        if (qrDesigns.length > 0 && isMounted) {
+          try {
+            const batchResponse = await fetch('/api/qr-codes/scans-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                qrCodeIds: qrDesigns.map(d => d.id),
+              }),
+            });
+
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              if (batchData.success && batchData.data) {
+                const totalScans = batchData.data.reduce((sum: number, item: any) => sum + item.scanCount, 0);
+                if (isMounted) {
+                  setStats(prev => ({ ...prev, totalScans }));
+                }
+              }
+            } else {
+              console.warn('Batch scan API failed, falling back to individual calls');
+              // Fallback to individual calls if batch fails
+              const scanResults = await Promise.all(
+                qrDesigns.map(async (d) => {
+                  try {
+                    const res = await fetch(`/api/qr-codes/${d.id}`);
+                    if (!res.ok) {
+                      return 0;
+                    }
+                    const data = await res.json();
+                    return typeof data?.scans === 'number' ? data.scans : 0;
+                  } catch {
+                    return 0;
+                  }
+                }),
+              );
+              const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
+              if (isMounted) {
+                setStats(prev => ({ ...prev, totalScans }));
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching batch scan data:', error);
+            // Fallback to individual calls on error
+            const scanResults = await Promise.all(
+              qrDesigns.map(async (d) => {
+                try {
+                  const res = await fetch(`/api/qr-codes/${d.id}`);
+                  if (!res.ok) {
+                    return 0;
+                  }
+                  const data = await res.json();
+                  return typeof data?.scans === 'number' ? data.scans : 0;
+                } catch {
+                  return 0;
+                }
+              }),
+            );
+            const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
+            if (isMounted) {
+              setStats(prev => ({ ...prev, totalScans }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in immediate scan fetch:', error);
+      }
+    };
+
+    fetchScansImmediately();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -146,67 +230,6 @@ function ModernOverviewCards() {
             totalCustomers: customers.length,
             totalDesigns,
           }));
-        }
-
-        // Compute total scans using batch API for better performance
-        let totalScans = 0;
-        if (qrDesigns.length > 0) {
-          try {
-            const batchResponse = await fetch('/api/qr-codes/scans-batch', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                qrCodeIds: qrDesigns.map(d => d.id),
-              }),
-            });
-
-            if (batchResponse.ok) {
-              const batchData = await batchResponse.json();
-              if (batchData.success && batchData.data) {
-                totalScans = batchData.data.reduce((sum: number, item: any) => sum + item.scanCount, 0);
-              }
-            } else {
-              console.warn('Batch scan API failed, falling back to individual calls');
-              // Fallback to individual calls if batch fails
-              const scanResults = await Promise.all(
-                qrDesigns.map(async (d) => {
-                  try {
-                    const res = await fetch(`/api/qr-codes/${d.id}`);
-                    if (!res.ok) {
-                      return 0;
-                    }
-                    const data = await res.json();
-                    return typeof data?.scans === 'number' ? data.scans : 0;
-                  } catch {
-                    return 0;
-                  }
-                }),
-              );
-              totalScans = scanResults.reduce((sum, n) => sum + n, 0);
-            }
-          } catch (error) {
-            console.error('Error fetching batch scan data:', error);
-            // Fallback to individual calls on error
-            const scanResults = await Promise.all(
-              qrDesigns.map(async (d) => {
-                try {
-                  const res = await fetch(`/api/qr-codes/${d.id}`);
-                  if (!res.ok) {
-                    return 0;
-                  }
-                  const data = await res.json();
-                  return typeof data?.scans === 'number' ? data.scans : 0;
-                } catch {
-                  return 0;
-                }
-              }),
-            );
-            totalScans = scanResults.reduce((sum, n) => sum + n, 0);
-          }
-        }
-
-        if (isMounted) {
-          setStats(prev => ({ ...prev, totalScans }));
         }
       } catch (e: any) {
         if (isMounted) {
