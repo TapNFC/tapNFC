@@ -4,12 +4,13 @@ import { DESIGN_EDITOR_CONFIG } from '../constants';
 type UseCanvasEventsProps = {
   canvas: any;
   incrementCanvasVersion: () => void;
+  isDesignLoaded?: boolean;
 };
 
-export function useCanvasEvents({ canvas, incrementCanvasVersion }: UseCanvasEventsProps) {
+export function useCanvasEvents({ canvas, incrementCanvasVersion, isDesignLoaded = true }: UseCanvasEventsProps) {
   // Force preview updates when canvas changes
   useEffect(() => {
-    if (!canvas) {
+    if (!canvas || !isDesignLoaded) {
       return;
     }
 
@@ -39,5 +40,5 @@ export function useCanvasEvents({ canvas, incrementCanvasVersion }: UseCanvasEve
         });
       }
     };
-  }, [canvas, incrementCanvasVersion]);
+  }, [canvas, incrementCanvasVersion, isDesignLoaded]);
 }
