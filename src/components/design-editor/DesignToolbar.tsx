@@ -79,9 +79,6 @@ export function DesignToolbar({
   const router = useRouter();
   const { toast: hookToast } = useToast();
 
-  // Safety check: prevent canvas operations before it's ready
-  const isCanvasReady = canvas && typeof canvas.getWidth === 'function' && typeof canvas.renderAll === 'function';
-
   // Fetch user data
   useEffect(() => {
     const getUser = async () => {
@@ -154,7 +151,7 @@ export function DesignToolbar({
   // Add this function to the DesignToolbar component to handle saving templates with Supabase
 
   const handleSaveTemplate = async (name: string, category?: string, description?: string) => {
-    if (!canvas || !isCanvasReady) {
+    if (!canvas) {
       toast.error('Canvas is not ready');
       return;
     }
@@ -231,7 +228,7 @@ export function DesignToolbar({
   };
 
   const handleLoadTemplate = async (templateId: string) => {
-    if (!canvas || !isCanvasReady) {
+    if (!canvas) {
       toast.error('Canvas is not ready');
       return;
     }
@@ -331,7 +328,7 @@ export function DesignToolbar({
   };
 
   const handleRotateLeft = () => {
-    if (!canvas || !isCanvasReady) {
+    if (!canvas) {
       return;
     }
     const activeObject = canvas.getActiveObject();
@@ -343,7 +340,7 @@ export function DesignToolbar({
   };
 
   const handleRotateRight = () => {
-    if (!canvas || !isCanvasReady) {
+    if (!canvas) {
       return;
     }
 

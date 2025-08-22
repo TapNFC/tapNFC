@@ -95,10 +95,7 @@ export function DesignCreationStepsDialog({
 
       if (newDesign) {
         toast.success('Design created successfully');
-        // Add a small delay to ensure database transaction is committed
-        setTimeout(() => {
-          onComplete(designId);
-        }, 500);
+        onComplete(designId);
       } else {
         toast.error('Failed to create design');
         setIsSubmitting(false);
@@ -117,7 +114,6 @@ export function DesignCreationStepsDialog({
           <DialogContent className="max-w-2xl overflow-hidden border-none bg-gradient-to-br from-white via-slate-50 to-blue-50 p-0 shadow-2xl">
             {/* Custom close button positioned correctly */}
             <button
-              type="button"
               onClick={() => onOpenChange(false)}
               className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
             >
