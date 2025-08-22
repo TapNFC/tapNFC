@@ -1,14 +1,14 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { animate, motion, useMotionValue, useTransform } from 'framer-motion';
 import { Eye, Palette, Plus, QrCode, Sparkles, TrendingUp, Users } from 'lucide-react';
-import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { ModernQuickActions } from '@/components/dashboard/modern-quick-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getCustomers } from '@/services/customerService';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
@@ -99,6 +99,18 @@ function ModernOverviewCards() {
     totalDesigns: 0,
   });
 
+  // Motion values for smooth count-up animation
+  const totalDesignsMotion = useMotionValue(0);
+  const totalQrCodesMotion = useMotionValue(0);
+  const totalCustomersMotion = useMotionValue(0);
+  const totalScansMotion = useMotionValue(0);
+
+  // Transform motion values to integers for display
+  const totalDesignsDisplay = useTransform(totalDesignsMotion, value => Math.round(value));
+  const totalQrCodesDisplay = useTransform(totalQrCodesMotion, value => Math.round(value));
+  const totalCustomersDisplay = useTransform(totalCustomersMotion, value => Math.round(value));
+  const totalScansDisplay = useTransform(totalScansMotion, value => Math.round(value));
+
   useEffect(() => {
     let isMounted = true;
 
@@ -136,22 +148,62 @@ function ModernOverviewCards() {
           }));
         }
 
-        // Compute total scans in parallel, update separately
-        const scanResults = await Promise.all(
-          qrDesigns.map(async (d) => {
-            try {
-              const res = await fetch(`/api/qr-codes/${d.id}`);
-              if (!res.ok) {
-                return 0;
+        // Compute total scans using batch API for better performance
+        let totalScans = 0;
+        if (qrDesigns.length > 0) {
+          try {
+            const batchResponse = await fetch('/api/qr-codes/scans-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                qrCodeIds: qrDesigns.map(d => d.id),
+              }),
+            });
+
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              if (batchData.success && batchData.data) {
+                totalScans = batchData.data.reduce((sum: number, item: any) => sum + item.scanCount, 0);
               }
-              const data = await res.json();
-              return typeof data?.scans === 'number' ? data.scans : 0;
-            } catch {
-              return 0;
+            } else {
+              console.warn('Batch scan API failed, falling back to individual calls');
+              // Fallback to individual calls if batch fails
+              const scanResults = await Promise.all(
+                qrDesigns.map(async (d) => {
+                  try {
+                    const res = await fetch(`/api/qr-codes/${d.id}`);
+                    if (!res.ok) {
+                      return 0;
+                    }
+                    const data = await res.json();
+                    return typeof data?.scans === 'number' ? data.scans : 0;
+                  } catch {
+                    return 0;
+                  }
+                }),
+              );
+              totalScans = scanResults.reduce((sum, n) => sum + n, 0);
             }
-          }),
-        );
-        const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
+          } catch (error) {
+            console.error('Error fetching batch scan data:', error);
+            // Fallback to individual calls on error
+            const scanResults = await Promise.all(
+              qrDesigns.map(async (d) => {
+                try {
+                  const res = await fetch(`/api/qr-codes/${d.id}`);
+                  if (!res.ok) {
+                    return 0;
+                  }
+                  const data = await res.json();
+                  return typeof data?.scans === 'number' ? data.scans : 0;
+                } catch {
+                  return 0;
+                }
+              }),
+            );
+            totalScans = scanResults.reduce((sum, n) => sum + n, 0);
+          }
+        }
 
         if (isMounted) {
           setStats(prev => ({ ...prev, totalScans }));
@@ -173,28 +225,41 @@ function ModernOverviewCards() {
     };
   }, []);
 
+  // Animate stats when they change
+  useEffect(() => {
+    if (!isLoading) {
+      // Animate each stat from 0 to its final value over 2 seconds
+      const duration = 2; // 2 seconds
+
+      animate(totalDesignsMotion, stats.totalDesigns, { duration });
+      animate(totalQrCodesMotion, stats.totalQrCodes, { duration });
+      animate(totalCustomersMotion, stats.totalCustomers, { duration });
+      animate(totalScansMotion, stats.totalScans, { duration });
+    }
+  }, [stats, isLoading, totalDesignsMotion, totalQrCodesMotion, totalCustomersMotion, totalScansMotion]);
+
   const items = [
     {
       title: 'Total Designs',
-      value: isLoading ? '—' : stats.totalDesigns.toLocaleString(),
+      value: isLoading ? null : totalDesignsDisplay,
       icon: <Palette className="size-6" />,
       gradient: 'from-indigo-500 to-indigo-600',
     },
     {
       title: 'Total QR Codes',
-      value: isLoading ? '—' : stats.totalQrCodes.toLocaleString(),
+      value: isLoading ? null : totalQrCodesDisplay,
       icon: <QrCode className="size-6" />,
       gradient: 'from-blue-500 to-blue-600',
     },
     {
       title: 'Total Customers',
-      value: isLoading ? '—' : stats.totalCustomers.toLocaleString(),
+      value: isLoading ? null : totalCustomersDisplay,
       icon: <Users className="size-6" />,
       gradient: 'from-emerald-500 to-emerald-600',
     },
     {
       title: 'Total Scans',
-      value: isLoading ? '—' : stats.totalScans.toLocaleString(),
+      value: isLoading ? null : totalScansDisplay,
       icon: <Eye className="size-6" />,
       gradient: 'from-orange-500 to-orange-600',
     },
@@ -207,12 +272,12 @@ function ModernOverviewCards() {
       transition={{ duration: 0.5, delay: 0.2 }}
       className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4"
     >
-      {items.map(item => (
+      {items.map((item, index) => (
         <motion.div
-          key={nanoid()}
+          key={item.title}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          transition={{ duration: 0.3, delay: 0.1 + index * 0.1 }}
           className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-lg shadow-slate-200/20 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-800/80 dark:shadow-slate-900/20"
         >
           <div className="mb-4 flex items-center justify-between">
@@ -223,12 +288,29 @@ function ModernOverviewCards() {
             </div>
           </div>
           <div>
-            <h3 className="mb-1 text-2xl font-bold text-slate-900 dark:text-white">
-              {item.value}
-            </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {item.title}
-            </p>
+            {isLoading
+              ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-20 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-500" />
+                    <Skeleton className="h-4 w-24 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-500" />
+                  </div>
+                )
+              : (
+                  <>
+                    <motion.h3
+                      key={`${item.title}-${item.value}`}
+                      initial={{ scale: 1 }}
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 0.3 }}
+                      className="mb-1 text-2xl font-bold text-slate-900 dark:text-white"
+                    >
+                      {item.value}
+                    </motion.h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {item.title}
+                    </p>
+                  </>
+                )}
             {!isLoading && error && (
               <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{error}</p>
             )}
