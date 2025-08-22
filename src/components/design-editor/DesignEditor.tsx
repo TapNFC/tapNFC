@@ -51,7 +51,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   } = useDesignEditorState();
 
   // Initialize canvas with custom hook
-  const { canvasRef, canvas, isCanvasReady, fabricError, fabric, guideControls } = useFabricCanvas({
+  const { canvasRef, canvas, isCanvasReady, fabricError, fabric, guideControls, isContextReady } = useFabricCanvas({
     containerRef,
     onSelectionCreated: setSelectedObject,
     onSelectionUpdated: setSelectedObject,
@@ -103,7 +103,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     canvas,
     designId,
     autoSaveInterval: DESIGN_EDITOR_CONFIG.AUTO_SAVE_INTERVAL,
-    enabled: isCanvasReady && isDesignLoaded, // Only enable auto-save after design is loaded
+    enabled: isCanvasReady && isContextReady && isDesignLoaded, // Only enable auto-save after design is loaded
   });
 
   // Extract canvas event management to custom hook
@@ -137,7 +137,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Update preview data when canvas changes
   useEffect(() => {
-    if (canvas && isCanvasReady && getPreviewDataRef.current) {
+    if (canvas && isCanvasReady && isContextReady && getPreviewDataRef.current) {
       const updatePreview = () => {
         const data = getPreviewDataRef.current();
         if (data) {
@@ -227,14 +227,14 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Track canvas readiness and initialize preview data
   useEffect(() => {
-    if (isCanvasReady && canvas && getPreviewDataRef.current) {
+    if (isCanvasReady && isContextReady && canvas && getPreviewDataRef.current) {
       // Canvas is ready for design, initialize preview data
       const initialData = getPreviewDataRef.current();
       if (initialData) {
         setPreviewData(initialData);
       }
     }
-  }, [isCanvasReady, canvas, designId]);
+  }, [isCanvasReady, isContextReady, canvas, designId]);
 
   // Zoom constants
   const ZOOM_STEP = 1.2;

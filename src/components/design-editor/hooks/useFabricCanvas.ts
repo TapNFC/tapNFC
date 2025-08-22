@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
+import { isCanvasSafe } from '../utils/canvasSafety';
 
 // Increase Node.js event listener limit to prevent memory leak warnings
 if (typeof process !== 'undefined' && process.setMaxListeners) {
@@ -49,12 +50,45 @@ export function useFabricCanvas({
   const [guideControls, setGuideControls] = useState<any>(null);
   const initializationRef = useRef(false);
   const canvasInitializedRef = useRef(false);
+  const contextReadyRef = useRef(false);
 
   // Memoize canvas configuration to prevent recreation
   const canvasConfig = useMemo(() => ({
     selection: true,
     preserveObjectStacking: true,
   }), []);
+
+  // Check if canvas context is truly ready
+  const isContextReady = useCallback((fabricCanvas: any) => {
+    return isCanvasSafe(fabricCanvas);
+  }, []);
+
+  // Wait for context to be ready with timeout
+  const waitForContext = useCallback((fabricCanvas: any, maxWaitTime = 2000): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+
+      const checkContext = () => {
+        if (isContextReady(fabricCanvas)) {
+          contextReadyRef.current = true;
+          resolve(true);
+          return;
+        }
+
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= maxWaitTime) {
+          console.warn('Canvas context not ready after timeout, proceeding anyway');
+          resolve(false);
+          return;
+        }
+
+        // Check again in 50ms
+        setTimeout(checkContext, 50);
+      };
+
+      checkContext();
+    });
+  }, [isContextReady]);
 
   // Alignment guide utilities
   const initializeAlignmentGuides = (canvas: any, fabric: any) => {
@@ -387,6 +421,15 @@ export function useFabricCanvas({
         alignmentGuidesEnabled: guides?.isEnabled?.() || false,
       });
 
+      // Wait for context to be truly ready before marking canvas as ready
+      const contextReady = await waitForContext(fabricCanvas);
+
+      if (contextReady) {
+        console.warn('Canvas context is ready');
+      } else {
+        console.warn('Canvas context readiness timeout, proceeding with caution');
+      }
+
       setCanvas(fabricCanvas);
       setIsCanvasReady(true);
       setFabricError(null);
@@ -400,6 +443,12 @@ export function useFabricCanvas({
             return; // Canvas has been disposed, don't try to resize
           }
           try {
+            // Check if canvas is safe to use before proceeding
+            if (!isCanvasSafe(fabricCanvas)) {
+              console.warn('Canvas not safe during resize, skipping');
+              return;
+            }
+
             // Preserve current canvas dimensions instead of recalculating to defaults
             const currentWidth = fabricCanvas.getWidth();
             const currentHeight = fabricCanvas.getHeight();
@@ -547,5 +596,7 @@ export function useFabricCanvas({
     fabricError,
     fabric,
     guideControls,
+    // Additional safety check for context readiness
+    isContextReady: contextReadyRef.current && isCanvasReady,
   };
 }
