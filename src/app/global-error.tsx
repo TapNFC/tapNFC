@@ -32,6 +32,34 @@ export default function GlobalError(props: {
     });
   }, [props.error]);
 
+  // Check if this is a canvas-related error
+  const isCanvasError = props.error.message?.includes('clearRect')
+    || props.error.message?.includes('Canvas')
+    || props.error.message?.includes('context');
+
+  const getErrorMessage = () => {
+    if (isCanvasError) {
+      return 'A canvas rendering error occurred. This usually happens when the design editor is initializing.';
+    }
+    return 'An unexpected error occurred while processing your request.';
+  };
+
+  const getTroubleshootingSteps = () => {
+    if (isCanvasError) {
+      return [
+        'Wait a moment for the design editor to fully load',
+        'Try refreshing the page',
+        'Clear browser cache and cookies',
+        'Check if you have hardware acceleration enabled in your browser',
+      ];
+    }
+    return [
+      'Try refreshing the page',
+      'Clear browser cache and cookies',
+      'Check your internet connection',
+    ];
+  };
+
   return (
     <html lang={routing.defaultLocale}>
       <body className="antialiased">
@@ -52,16 +80,17 @@ export default function GlobalError(props: {
                   </div>
 
                   <div className="mb-4">
-                    <Badge variant="secondary" className="bg-red-100 text-red-800">Error</Badge>
+                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                      {isCanvasError ? 'Canvas Error' : 'Error'}
+                    </Badge>
                   </div>
 
                   <h1 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Something went wrong
+                    {isCanvasError ? 'Design Editor Error' : 'Something went wrong'}
                   </h1>
 
                   <p className="mx-auto max-w-lg text-balance text-base text-slate-600 dark:text-slate-300">
-                    An unexpected error occurred while processing your request.
-                    Don't worry, this has been automatically logged for investigation.
+                    {getErrorMessage()}
                   </p>
                 </div>
 
@@ -73,18 +102,12 @@ export default function GlobalError(props: {
                   </div>
 
                   <ul className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                    <li className="flex items-center space-x-2">
-                      <span className="text-blue-500">•</span>
-                      <span>Try refreshing the page</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="text-blue-500">•</span>
-                      <span>Clear browser cache and cookies</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="text-blue-500">•</span>
-                      <span>Check your internet connection</span>
-                    </li>
+                    {getTroubleshootingSteps().map((step, index) => (
+                      <li key={index} className="flex items-center space-x-2">
+                        <span className="text-blue-500">•</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
@@ -126,6 +149,13 @@ export default function GlobalError(props: {
                     <p className="mb-2">
                       If this problem persists, please contact our support team.
                     </p>
+                    {isCanvasError && (
+                      <p className="text-xs text-slate-400">
+                        Error details:
+                        {' '}
+                        {props.error.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

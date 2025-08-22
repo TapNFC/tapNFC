@@ -952,11 +952,11 @@ export function RealTimePreview({
         <div className="rounded-b-lg bg-gray-50 p-2 text-xs text-gray-500">
           <div className="flex items-center justify-between">
             <span>
-              {width}
+              {Math.round(width)}
               {' '}
               ×
               {' '}
-              {height}
+              {Math.round(height)}
               px
             </span>
             <span>

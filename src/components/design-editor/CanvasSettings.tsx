@@ -163,8 +163,8 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
 
       // Save the new dimensions to the database
       const result = await designService.updateDesign(designId, {
-        width: canvasWidth as number,
-        height: canvasHeight as number,
+        width: Math.round(canvasWidth as number), // Round to integer to prevent database errors
+        height: Math.round(canvasHeight as number), // Round to integer to prevent database errors
         updated_at: new Date().toISOString(),
       });
 

@@ -69,8 +69,8 @@ export function useCanvasAutoSave({
         // --- UPDATE EXISTING DESIGN ---
         const result = await designService.updateDesign(designId, {
           canvas_data: canvasJSON, // Save the entire canvas JSON
-          width: canvas.getWidth?.() || 800, // Save canvas width at design level
-          height: canvas.getHeight?.() || 600, // Save canvas height at design level
+          width: Math.round(canvas.getWidth?.() || 800), // Save canvas width at design level, rounded to integer
+          height: Math.round(canvas.getHeight?.() || 600), // Save canvas height at design level, rounded to integer
           background_color: typeof canvas.backgroundColor === 'string' ? canvas.backgroundColor : '#ffffff', // Save background color at design level
           updated_at: new Date().toISOString(),
         });
@@ -94,8 +94,8 @@ export function useCanvasAutoSave({
           user_id: userId,
           name: `Design ${designId.slice(-8)}`,
           canvas_data: canvasJSON, // Save the entire canvas JSON
-          width: canvas.getWidth?.() || 800, // Save canvas width at design level
-          height: canvas.getHeight?.() || 600, // Save canvas height at design level
+          width: Math.round(canvas.getWidth?.() || 800), // Save canvas width at design level, rounded to integer
+          height: Math.round(canvas.getHeight?.() || 600), // Save canvas height at design level, rounded to integer
           background_color: typeof canvas.backgroundColor === 'string' ? canvas.backgroundColor : '#ffffff', // Save background color at design level
           is_template: false,
           is_public: true,

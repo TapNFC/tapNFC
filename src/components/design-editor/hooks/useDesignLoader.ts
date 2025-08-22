@@ -117,14 +117,14 @@ export function useDesignLoader({
 
     const loadExistingDesign = async () => {
       try {
-        // Ensure the canvas context is available before attempting to load or clear
-        if (!canvas.contextContainer) {
-          console.warn('Canvas contextContainer not ready, delaying loadExistingDesign.');
+        // Use the improved context readiness check from useFabricCanvas
+        if (!canvas?.isContextReady) {
+          console.warn('Canvas context not ready, delaying loadExistingDesign.');
           setTimeout(() => {
-            if (!isDesignLoaded && isCanvasReady && canvas && canvas.contextContainer) {
+            if (!isDesignLoaded && isCanvasReady && canvas?.isContextReady) {
               loadExistingDesign();
-            } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.contextContainer) {
-              console.error('Canvas contextContainer still not ready after delay. Aborting load.');
+            } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.isContextReady) {
+              console.error('Canvas context still not ready after delay. Aborting load.');
               setIsDesignLoaded(true);
             }
           }, DESIGN_EDITOR_CONFIG.CANVAS_CONTEXT_DELAY);
