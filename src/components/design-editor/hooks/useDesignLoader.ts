@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { normalizeTextObjects } from '@/utils/textUtils';
@@ -19,16 +19,12 @@ export function useDesignLoader({
   isDesignLoaded,
   setIsDesignLoaded,
 }: UseDesignLoaderProps) {
-  const retryCountRef = useRef(0);
-  const maxRetries = 3;
-  const retryDelay = 1000; // 1 second
-
   useEffect(() => {
     if (!canvas || !isCanvasReady || isDesignLoaded) {
       return;
     }
 
-    const loadFromSupabase = async (): Promise<boolean> => {
+    const loadFromSupabase = async () => {
       try {
         console.warn('Loading design from Supabase:', designId);
 
@@ -88,38 +84,35 @@ export function useDesignLoader({
                 setIsDesignLoaded(true);
               }
             });
-            return true;
+            return;
           } else {
             // No canvas data, just render with dimensions and background
             canvas.renderAll?.();
             setIsDesignLoaded(true);
             console.warn('Design loaded successfully (no canvas data)');
-            return true;
+            return;
           }
         }
 
-        // No existing design found in Supabase
+        // No existing design found in Supabase, create a new empty canvas
         console.warn('No existing design found in Supabase, starting with empty canvas');
-        return false;
+
+        // Initialize with default canvas settings
+        canvas.setDimensions?.({
+          width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
+          height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
+        });
+
+        canvas.setBackgroundColor?.(DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR, () => {
+          canvas.renderAll?.();
+        });
+
+        setIsDesignLoaded(true);
       } catch (error) {
         console.error('Error loading design from Supabase:', error);
-        return false;
+        toast.error('Error loading design');
+        setIsDesignLoaded(true);
       }
-    };
-
-    const initializeEmptyCanvas = () => {
-      // Initialize with default canvas settings
-      canvas.setDimensions?.({
-        width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
-        height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
-      });
-
-      canvas.setBackgroundColor?.(DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR, () => {
-        canvas.renderAll?.();
-      });
-
-      setIsDesignLoaded(true);
-      console.warn('Empty canvas initialized with default settings');
     };
 
     const loadExistingDesign = async () => {
@@ -127,51 +120,23 @@ export function useDesignLoader({
         // Ensure the canvas context is available before attempting to load or clear
         if (!canvas.contextContainer) {
           console.warn('Canvas contextContainer not ready, delaying loadExistingDesign.');
-          const contextTimeout = setTimeout(() => {
+          setTimeout(() => {
             if (!isDesignLoaded && isCanvasReady && canvas && canvas.contextContainer) {
               loadExistingDesign();
             } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.contextContainer) {
               console.error('Canvas contextContainer still not ready after delay. Aborting load.');
-              initializeEmptyCanvas();
+              setIsDesignLoaded(true);
             }
           }, DESIGN_EDITOR_CONFIG.CANVAS_CONTEXT_DELAY);
-
-          // Clean up timeout if component unmounts
-          return () => clearTimeout(contextTimeout);
+          return;
         }
 
-        // Try to load from Supabase
-        const designLoaded = await loadFromSupabase();
-
-        if (!designLoaded && retryCountRef.current < maxRetries) {
-          // Retry loading the design (useful for newly created designs)
-          retryCountRef.current++;
-          console.warn(`Design ${designId} not found, retrying... (${retryCountRef.current}/${maxRetries})`);
-          console.warn('This commonly happens with newly created designs that need time to be committed to the database.');
-
-          const retryTimeout = setTimeout(() => {
-            if (!isDesignLoaded) {
-              loadExistingDesign();
-            }
-          }, retryDelay);
-
-          // Clean up timeout if component unmounts
-          return () => clearTimeout(retryTimeout);
-        }
-
-        if (!designLoaded) {
-          // After max retries, initialize empty canvas
-          console.warn(`Design ${designId} not found after ${maxRetries} retries, initializing empty canvas`);
-          console.warn('This may indicate the design was deleted or there is a database issue.');
-          initializeEmptyCanvas();
-        }
-
-        return undefined;
+        // Load from Supabase
+        await loadFromSupabase();
       } catch (error) {
         console.error('Error loading existing design:', error);
         toast.error('Error loading design');
-        initializeEmptyCanvas();
-        return undefined;
+        setIsDesignLoaded(true);
       }
     };
 

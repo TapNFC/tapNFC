@@ -49,11 +49,6 @@ export const designService = {
       .single();
 
     if (error) {
-      // Handle the specific case where no rows are returned (newly created design)
-      if (error.code === 'PGRST116') {
-        console.warn(`Design ${id} not found yet (likely newly created):`, error.message);
-        return null;
-      }
       console.error(`Error fetching design ${id}:`, error);
       return null;
     }

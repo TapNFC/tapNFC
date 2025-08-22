@@ -107,7 +107,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   });
 
   // Extract canvas event management to custom hook
-  useCanvasEvents({ canvas, incrementCanvasVersion, isDesignLoaded });
+  useCanvasEvents({ canvas, incrementCanvasVersion });
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
@@ -120,7 +120,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     onRedo: redo,
     canUndo,
     canRedo,
-    isDesignLoaded,
   });
 
   // Get preview data for real-time preview - use state to trigger updates
@@ -136,7 +135,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Update preview data when canvas changes
   useEffect(() => {
-    if (canvas && isCanvasReady && isDesignLoaded) {
+    if (canvas && isCanvasReady) {
       const updatePreview = () => {
         const data = getPreviewDataRef.current();
         if (data) {
@@ -204,7 +203,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       canvas.on('object:rotating', handleCanvasChange);
       canvas.on('canvas:background:changed', handleCanvasChange);
 
-      // Cleanup function
       return () => {
         canvas.off('object:added', handleCanvasChange);
         canvas.off('object:removed', handleCanvasChange);
@@ -216,49 +214,28 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       };
     }
     return undefined;
-  }, [canvas, isCanvasReady, isDesignLoaded]); // Removed getPreviewData from dependencies
+  }, [canvas, isCanvasReady]); // Removed getPreviewData from dependencies
 
   // Track canvas readiness and initialize preview data
   useEffect(() => {
-    if (canvas && isCanvasReady && isDesignLoaded) {
-      const data = getPreviewDataRef.current();
-      if (data) {
-        setPreviewData(data);
+    if (isCanvasReady && canvas) {
+      // Canvas is ready for design, initialize preview data
+      const initialData = getPreviewDataRef.current();
+      if (initialData) {
+        setPreviewData(initialData);
       }
     }
-  }, [canvas, isCanvasReady, isDesignLoaded]);
+  }, [isCanvasReady, canvas, designId]);
 
-  // Add error boundary for Fabric.js operations
-  useEffect(() => {
-    if (canvas && isDesignLoaded) {
-      const handleCanvasError = (error: any) => {
-        console.error('Canvas error caught:', error);
-        // Prevent the error from crashing the component
-        if (error.target && error.target.dispose) {
-          try {
-            error.target.dispose();
-          } catch (disposeError) {
-            console.warn('Error disposing canvas object:', disposeError);
-          }
-        }
-      };
-
-      // Listen for any canvas errors
-      canvas.on('error', handleCanvasError);
-
-      return () => {
-        canvas.off('error', handleCanvasError);
-      };
-    }
-    return undefined;
-  }, [canvas, isDesignLoaded]);
-
-  // Zoom functionality
-  const canvasInnerRef = useRef<HTMLDivElement>(null);
+  // Zoom constants
   const ZOOM_STEP = 1.2;
-  const MIN_ZOOM = 0.1;
   const MAX_ZOOM = 3;
+  const MIN_ZOOM = 0.3;
 
+  // Ref to the canvas inner div element
+  const canvasInnerRef = useRef<HTMLDivElement>(null);
+
+  // Zoom functions
   const handleZoomIn = () => {
     if (!canvas) {
       return;
@@ -271,6 +248,16 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     }
   };
 
+  const handleZoomReset = () => {
+    if (!canvas) {
+      return;
+    }
+    if (canvasInnerRef.current) {
+      canvasInnerRef.current.dataset.zoom = '1';
+      canvasInnerRef.current.style.transform = 'scale(1)';
+    }
+  };
+
   const handleZoomOut = () => {
     if (!canvas) {
       return;
@@ -280,16 +267,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       const newScale = Math.max(currentScale / ZOOM_STEP, MIN_ZOOM);
       canvasInnerRef.current.dataset.zoom = newScale.toString();
       canvasInnerRef.current.style.transform = `scale(${newScale})`;
-    }
-  };
-
-  const handleZoomReset = () => {
-    if (!canvas) {
-      return;
-    }
-    if (canvasInnerRef.current) {
-      canvasInnerRef.current.dataset.zoom = '1';
-      canvasInnerRef.current.style.transform = 'scale(1)';
     }
   };
 
@@ -342,24 +319,6 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       }
     };
   }, [canvas, fabric, handleLinkDoubleClick]);
-
-  // Show loading state while design is being loaded
-  if (!isCanvasReady || !isDesignLoaded) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/80 to-indigo-100/90">
-        <div className="text-center">
-          <div className="mb-4 text-2xl font-semibold text-gray-700">Loading Design...</div>
-          <div className="text-gray-500">Please wait while we prepare your design editor</div>
-          {fabricError && (
-            <div className="mt-4 text-sm text-red-500">
-              Error:
-              {fabricError}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.MAIN}>
