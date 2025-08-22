@@ -130,12 +130,14 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Update the ref when getPreviewData changes
   useEffect(() => {
-    getPreviewDataRef.current = getPreviewData;
+    if (getPreviewData) {
+      getPreviewDataRef.current = getPreviewData;
+    }
   }, [getPreviewData]);
 
   // Update preview data when canvas changes
   useEffect(() => {
-    if (canvas && isCanvasReady) {
+    if (canvas && isCanvasReady && getPreviewDataRef.current) {
       const updatePreview = () => {
         const data = getPreviewDataRef.current();
         if (data) {
@@ -148,16 +150,18 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
       // Set up event listeners for canvas changes
       const handleCanvasChange = () => {
-        const data = getPreviewDataRef.current();
-        if (data) {
-          setPreviewData(data);
+        if (getPreviewDataRef.current) {
+          const data = getPreviewDataRef.current();
+          if (data) {
+            setPreviewData(data);
+          }
         }
       };
 
       // Special handler for text object scaling to update fontSize
       const handleTextScaling = (e: any) => {
-        const target = e.target;
-        if (target && isTextObject(target)) {
+        const target = e?.target;
+        if (target && isTextObject(target) && canvas) {
           // Calculate new font size based on scaling
           const originalFontSize = target.fontSize || 16;
           const scaleX = target.scaleX || 1;
@@ -180,7 +184,8 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           canvas.renderAll();
 
           // Trigger selection update to refresh TextToolbar
-          if (canvas.getActiveObject() === target) {
+          const activeObject = canvas.getActiveObject();
+          if (activeObject === target) {
             canvas.fire('selection:updated', { target });
           }
         }
@@ -188,8 +193,10 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
       // Normalize existing text objects that might have scaling applied
       const normalizeExistingTextObjects = () => {
-        normalizeTextObjects(canvas);
-        canvas.renderAll();
+        if (canvas) {
+          normalizeTextObjects(canvas);
+          canvas.renderAll();
+        }
       };
 
       // Normalize existing text objects when canvas is ready
@@ -204,13 +211,15 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       canvas.on('canvas:background:changed', handleCanvasChange);
 
       return () => {
-        canvas.off('object:added', handleCanvasChange);
-        canvas.off('object:removed', handleCanvasChange);
-        canvas.off('object:modified', handleCanvasChange);
-        canvas.off('object:moving', handleCanvasChange);
-        canvas.off('object:scaling', handleTextScaling); // Remove text-specific handler
-        canvas.off('object:rotating', handleCanvasChange);
-        canvas.off('canvas:background:changed', handleCanvasChange);
+        if (canvas) {
+          canvas.off('object:added', handleCanvasChange);
+          canvas.off('object:removed', handleCanvasChange);
+          canvas.off('object:modified', handleCanvasChange);
+          canvas.off('object:moving', handleCanvasChange);
+          canvas.off('object:scaling', handleTextScaling); // Remove text-specific handler
+          canvas.off('object:rotating', handleCanvasChange);
+          canvas.off('canvas:background:changed', handleCanvasChange);
+        }
       };
     }
     return undefined;
@@ -218,7 +227,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Track canvas readiness and initialize preview data
   useEffect(() => {
-    if (isCanvasReady && canvas) {
+    if (isCanvasReady && canvas && getPreviewDataRef.current) {
       // Canvas is ready for design, initialize preview data
       const initialData = getPreviewDataRef.current();
       if (initialData) {
@@ -237,37 +246,37 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
   // Zoom functions
   const handleZoomIn = () => {
-    if (!canvas) {
+    if (!canvas || !canvasInnerRef.current) {
       return;
     }
-    if (canvasInnerRef.current) {
-      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
-      const newScale = Math.min(currentScale * ZOOM_STEP, MAX_ZOOM);
+    const currentScale = Number.parseFloat(canvasInnerRef.current.dataset?.zoom || '1');
+    const newScale = Math.min(currentScale * ZOOM_STEP, MAX_ZOOM);
+    if (canvasInnerRef.current.dataset) {
       canvasInnerRef.current.dataset.zoom = newScale.toString();
-      canvasInnerRef.current.style.transform = `scale(${newScale})`;
     }
+    canvasInnerRef.current.style.transform = `scale(${newScale})`;
   };
 
   const handleZoomReset = () => {
-    if (!canvas) {
+    if (!canvas || !canvasInnerRef.current) {
       return;
     }
-    if (canvasInnerRef.current) {
+    if (canvasInnerRef.current.dataset) {
       canvasInnerRef.current.dataset.zoom = '1';
-      canvasInnerRef.current.style.transform = 'scale(1)';
     }
+    canvasInnerRef.current.style.transform = 'scale(1)';
   };
 
   const handleZoomOut = () => {
-    if (!canvas) {
+    if (!canvas || !canvasInnerRef.current) {
       return;
     }
-    if (canvasInnerRef.current) {
-      const currentScale = Number.parseFloat(canvasInnerRef.current.dataset.zoom || '1');
-      const newScale = Math.max(currentScale / ZOOM_STEP, MIN_ZOOM);
+    const currentScale = Number.parseFloat(canvasInnerRef.current.dataset?.zoom || '1');
+    const newScale = Math.max(currentScale / ZOOM_STEP, MIN_ZOOM);
+    if (canvasInnerRef.current.dataset) {
       canvasInnerRef.current.dataset.zoom = newScale.toString();
-      canvasInnerRef.current.style.transform = `scale(${newScale})`;
     }
+    canvasInnerRef.current.style.transform = `scale(${newScale})`;
   };
 
   // Update the useEffect for double-click handling
@@ -284,7 +293,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
 
     // Add our custom double-click handler
     canvas.on('mouse:dblclick', (options: any) => {
-      const target = options.target;
+      const target = options?.target;
       if (!target) {
         return;
       }
@@ -311,17 +320,24 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         canvas.off('mouse:dblclick');
 
         // Restore original event handlers if they existed
-        if (originalMouseDblClick.length > 0) {
+        if (originalMouseDblClick && originalMouseDblClick.length > 0) {
           originalMouseDblClick.forEach((handler: any) => {
-            canvas.on('mouse:dblclick', handler);
+            if (handler && canvas) {
+              canvas.on('mouse:dblclick', handler);
+            }
           });
         }
       }
     };
   }, [canvas, fabric, handleLinkDoubleClick]);
 
+  // Early return if required props are missing
+  if (!designId) {
+    return null;
+  }
+
   return (
-    <div className={DESIGN_EDITOR_CONFIG.BACKGROUND_CLASSES.MAIN}>
+    <div className={DESIGN_EDITOR_CONFIG?.BACKGROUND_CLASSES?.MAIN || ''}>
       {/* Full Width Header */}
       <DesignToolbar
         designId={designId}
@@ -376,32 +392,36 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       </div>
 
       {/* Link Edit Popup */}
-      <MemoizedLinkEditPopup
-        isVisible={linkEditPopup.isVisible}
-        linkObject={linkEditPopup.linkObject}
-        position={linkEditPopup.position}
-        onUpdateLink={handleUpdateLink}
-        onClose={handleCloseLinkEdit}
-      />
+      {linkEditPopup && (
+        <MemoizedLinkEditPopup
+          isVisible={linkEditPopup.isVisible}
+          linkObject={linkEditPopup.linkObject}
+          position={linkEditPopup.position}
+          onUpdateLink={handleUpdateLink}
+          onClose={handleCloseLinkEdit}
+        />
+      )}
 
       {/* Real-time Preview */}
       <MemoizedRealTimePreview
         canvasState={previewData?.canvasData || null}
-        width={previewData?.width || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH}
-        height={previewData?.height || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT}
-        backgroundColor={previewData?.backgroundColor || DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR}
+        width={previewData?.width || DESIGN_EDITOR_CONFIG?.DEFAULT_CANVAS?.WIDTH}
+        height={previewData?.height || DESIGN_EDITOR_CONFIG?.DEFAULT_CANVAS?.HEIGHT}
+        backgroundColor={previewData?.backgroundColor || DESIGN_EDITOR_CONFIG?.DEFAULT_CANVAS?.BACKGROUND_COLOR}
       />
 
       {/* Add the social icon contextual toolbar */}
-      <MemoizedSocialIconContextualToolbar
-        isVisible={socialIconContextualToolbar.isVisible}
-        position={socialIconContextualToolbar.position}
-        onActionsClick={handleActionsClick}
-        onClose={handleCloseSocialIconContextualToolbar}
-      />
+      {socialIconContextualToolbar && (
+        <MemoizedSocialIconContextualToolbar
+          isVisible={socialIconContextualToolbar.isVisible}
+          position={socialIconContextualToolbar.position}
+          onActionsClick={handleActionsClick}
+          onClose={handleCloseSocialIconContextualToolbar}
+        />
+      )}
 
       {/* Add the social icon edit popup */}
-      {socialIconEditPopup.isVisible && (
+      {socialIconEditPopup && socialIconEditPopup.isVisible && (
         <SocialIconEditPopup
           isVisible={socialIconEditPopup.isVisible}
           iconObject={socialIconEditPopup.iconObject}
@@ -413,15 +433,17 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       )}
 
       {/* Add the text contextual toolbar */}
-      <TextContextualToolbar
-        isVisible={contextualToolbar.isVisible}
-        position={contextualToolbar.position}
-        onLinkClick={handleLinkIconClick}
-        onClose={handleCloseTextContextualToolbar}
-      />
+      {contextualToolbar && (
+        <TextContextualToolbar
+          isVisible={contextualToolbar.isVisible}
+          position={contextualToolbar.position}
+          onLinkClick={handleLinkIconClick}
+          onClose={handleCloseTextContextualToolbar}
+        />
+      )}
 
       {/* Add the text URL edit popup */}
-      {textUrlEditPopup.isVisible && (
+      {textUrlEditPopup && textUrlEditPopup.isVisible && (
         <TextUrlEditPopup
           isVisible={textUrlEditPopup.isVisible}
           textObject={textUrlEditPopup.textObject}

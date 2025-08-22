@@ -87,7 +87,10 @@ export function DesignToolbar({
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
           setUser({
-            name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+            name: authUser.user_metadata?.full_name
+              || authUser.user_metadata?.name
+              || authUser.email?.split('@')[0]
+              || 'User',
             email: authUser.email || '',
             avatar: authUser.user_metadata?.avatar_url,
           });

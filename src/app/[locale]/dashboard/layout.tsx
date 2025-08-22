@@ -17,7 +17,10 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   }
 
   const headerUser = {
-    name: user.user_metadata?.name || user.email || 'User',
+    name: user.user_metadata?.full_name
+      || user.user_metadata?.name
+      || user.email?.split('@')[0]
+      || 'User',
     email: user.email!,
     avatar: user.user_metadata?.avatar_url,
   };
