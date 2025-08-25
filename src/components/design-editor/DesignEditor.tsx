@@ -24,6 +24,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLinkEditor } from './hooks/useLinkEditor';
 import { useSocialIconEditor } from './hooks/useSocialIconEditor';
 import { useTextUrlEditor } from './hooks/useTextUrlEditor';
+import { safeRenderAll } from './utils/canvasSafety';
 
 type DesignEditorProps = {
   designId: string;
@@ -181,7 +182,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           });
 
           // Update the canvas
-          canvas.renderAll();
+          safeRenderAll(canvas);
 
           // Trigger selection update to refresh TextToolbar
           const activeObject = canvas.getActiveObject();
@@ -195,7 +196,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       const normalizeExistingTextObjects = () => {
         if (canvas) {
           normalizeTextObjects(canvas);
-          canvas.renderAll();
+          safeRenderAll(canvas);
         }
       };
 

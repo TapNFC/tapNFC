@@ -87,6 +87,84 @@ export function safeClear(canvas: any): boolean {
 }
 
 /**
+ * Safely call canvas.loadFromJSON() with context validation
+ */
+export function safeLoadFromJSON(
+  canvas: any,
+  jsonData: any,
+  callback?: (loadedCanvas?: any, error?: any) => void,
+  reviver?: (property: string, value: any) => any,
+): boolean {
+  // Check if canvas and context are ready before attempting to load
+  if (!isCanvasContextReady(canvas)) {
+    console.error('Canvas context not ready for loadFromJSON operation');
+    if (callback) {
+      callback(undefined, new Error('Canvas context not ready'));
+    }
+    return false;
+  }
+
+  // Validate JSON data
+  if (!jsonData) {
+    console.error('Invalid JSON data provided to safeLoadFromJSON');
+    if (callback) {
+      callback(undefined, new Error('Invalid JSON data'));
+    }
+    return false;
+  }
+
+  // Ensure objects array exists
+  if (!jsonData.objects) {
+    console.warn('Canvas data is missing objects array, creating empty array');
+    jsonData.objects = [];
+  }
+
+  return safeCanvasOperation(
+    canvas,
+    () => {
+      try {
+        // Double-check context is still available before loading
+        if (!canvas.contextContainer || typeof canvas.contextContainer.clearRect !== 'function') {
+          throw new Error('Canvas context became unavailable before loading');
+        }
+
+        canvas.loadFromJSON(jsonData, (loadedCanvas?: any, error?: any) => {
+          if (error) {
+            console.error('Error in loadFromJSON callback:', error);
+            if (callback) {
+              callback(loadedCanvas, error);
+            }
+            return;
+          }
+
+          // Verify canvas context is still ready after loading
+          if (!canvas.contextContainer || typeof canvas.contextContainer.clearRect !== 'function') {
+            console.error('Canvas context became unavailable after loading');
+            if (callback) {
+              callback(loadedCanvas, new Error('Canvas context became unavailable after loading'));
+            }
+            return;
+          }
+
+          if (callback) {
+            callback(loadedCanvas, error);
+          }
+        }, reviver);
+
+        return true;
+      } catch (error) {
+        console.error('Error during safeLoadFromJSON:', error);
+        if (callback) {
+          callback(undefined, error);
+        }
+        return false;
+      }
+    },
+    false,
+  ) || false;
+}
+
+/**
  * Safely call canvas.setDimensions() with context validation
  */
 export function safeSetDimensions(canvas: any, dimensions: { width: number; height: number }): boolean {
