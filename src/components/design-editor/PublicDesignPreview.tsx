@@ -29,6 +29,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
   const [designData, setDesignData] = useState<Design | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
 
   const effectiveBackgroundStyle = useMemo(() => {
     const backgroundSource = designData?.canvas_data?.background;
@@ -150,6 +151,39 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       });
     }
   }, [initialData]);
+
+  // Calculate responsive scale based on viewport width
+  useEffect(() => {
+    const calculateScale = () => {
+      if (!designData) {
+        return;
+      }
+
+      const canvasWidth = designData.width || 800;
+      const canvasHeight = designData.height || 600;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Add padding for mobile devices
+      const padding = viewportWidth < 500 ? 20 : 40;
+      const maxWidth = viewportWidth - (padding * 2);
+      const maxHeight = viewportHeight - (padding * 2);
+
+      // Calculate scale to fit within viewport
+      const scaleX = maxWidth / canvasWidth;
+      const scaleY = maxHeight / canvasHeight;
+      const newScale = Math.min(scaleX, scaleY, 1); // Never scale up, only down
+
+      setScale(newScale);
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+
+    return () => {
+      window.removeEventListener('resize', calculateScale);
+    };
+  }, [designData]);
 
   // Handle interactive element clicks
   const handleElementClick = (elementData: any) => {
@@ -1192,28 +1226,37 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       {/* Design Preview */}
-      <main className="flex flex-1 items-center justify-center bg-black">
+      <main className="flex flex-1 items-center justify-center bg-black p-4 sm:p-8">
         <div className="relative flex flex-col items-center">
-          {/* Canvas Container */}
+          {/* Canvas Container with responsive scaling */}
           <div
-            ref={containerRef}
-            className="relative overflow-hidden  shadow-lg"
+            className="relative"
             style={{
-              width: `${canvasWidth}px`,
-              height: `${canvasHeight}px`,
-              ...effectiveBackgroundStyle,
+              transform: `scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.3s ease-in-out',
             }}
           >
-            {/* Render canvas objects using HTML elements */}
-            {renderCanvasObjects}
+            <div
+              ref={containerRef}
+              className="relative overflow-hidden shadow-lg"
+              style={{
+                width: `${canvasWidth}px`,
+                height: `${canvasHeight}px`,
+                ...effectiveBackgroundStyle,
+              }}
+            >
+              {/* Render canvas objects using HTML elements */}
+              {renderCanvasObjects}
 
-            {/* Interactive overlay elements */}
-            {canvasData.objects?.map((obj: any, index: number) => {
-              if (obj.elementType) {
-                return renderInteractiveElement(obj, index);
-              }
-              return null;
-            })}
+              {/* Interactive overlay elements */}
+              {canvasData.objects?.map((obj: any, index: number) => {
+                if (obj.elementType) {
+                  return renderInteractiveElement(obj, index);
+                }
+                return null;
+              })}
+            </div>
           </div>
         </div>
       </main>
