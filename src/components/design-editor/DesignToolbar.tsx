@@ -29,7 +29,7 @@ import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
-import { safeSetDimensions } from './utils/canvasSafety';
+import { safeRenderAll, safeSetBackgroundColor, safeSetDimensions } from './utils/canvasSafety';
 
 type DesignToolbarProps = {
   designId: string;
@@ -267,9 +267,10 @@ export function DesignToolbar({
 
       // Set background color
       if (template.canvas_data.backgroundColor) {
-        canvas.setBackgroundColor(template.canvas_data.backgroundColor, () => {
-          canvas.renderAll();
-        });
+        const success = safeSetBackgroundColor(canvas, template.canvas_data.backgroundColor);
+        if (!success) {
+          console.warn('Failed to set background color during template load - canvas not ready');
+        }
       }
 
       // Load the canvas data
@@ -277,7 +278,7 @@ export function DesignToolbar({
         // Normalize text objects to ensure they don't have scaling issues
         normalizeTextObjects(canvas);
 
-        canvas.renderAll();
+        safeRenderAll(canvas);
         toast.success(`Template "${template.name}" loaded successfully`);
 
         // Close the dialog

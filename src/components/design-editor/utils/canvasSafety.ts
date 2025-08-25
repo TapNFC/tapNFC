@@ -59,6 +59,12 @@ export function safeRenderAll(canvas: any): boolean {
   return safeCanvasOperation(
     canvas,
     () => {
+      // Additional check for context before rendering
+      if (!canvas.contextContainer || typeof canvas.contextContainer.clearRect !== 'function') {
+        console.warn('Canvas context not ready for rendering');
+        return false;
+      }
+
       canvas.renderAll();
       return true;
     },
@@ -105,6 +111,47 @@ export function safeSetDimensions(canvas: any, dimensions: { width: number; heig
       }
 
       canvas.setDimensions(dimensions);
+      return true;
+    },
+    false,
+  ) || false;
+}
+
+/**
+ * Safely call canvas.setBackgroundColor() with context validation
+ */
+export function safeSetBackgroundColor(canvas: any, color: string, callback?: () => void): boolean {
+  // Validate color parameter
+  if (!color || typeof color !== 'string') {
+    console.warn('Invalid color provided to safeSetBackgroundColor:', color);
+    return false;
+  }
+
+  return safeCanvasOperation(
+    canvas,
+    () => {
+      // Additional check to ensure canvas has the setBackgroundColor method
+      if (typeof canvas.setBackgroundColor !== 'function') {
+        console.warn('Canvas does not have setBackgroundColor method');
+        return false;
+      }
+
+      // Check if context is available before setting background
+      if (!canvas.contextContainer || typeof canvas.contextContainer.clearRect !== 'function') {
+        console.warn('Canvas context not ready for background color operation');
+        return false;
+      }
+
+      canvas.setBackgroundColor(color, () => {
+        // Only call renderAll if canvas is still safe
+        if (canvas.contextContainer && typeof canvas.renderAll === 'function') {
+          canvas.renderAll();
+        }
+        // Execute callback if provided
+        if (callback && typeof callback === 'function') {
+          callback();
+        }
+      });
       return true;
     },
     false,

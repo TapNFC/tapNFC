@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasContextReady, safeSetDimensions } from '../utils/canvasSafety';
+import { isCanvasContextReady, safeSetBackgroundColor, safeSetDimensions } from '../utils/canvasSafety';
 
 type UseDesignLoaderProps = {
   canvas: any;
@@ -62,16 +62,20 @@ export function useDesignLoader({
 
           // Set background color from top-level design properties (priority)
           if (design.background_color) {
-            canvas.setBackgroundColor?.(design.background_color, () => {
-              canvas.renderAll?.();
-            });
-            console.warn('Background color set from design record:', design.background_color);
+            const success = safeSetBackgroundColor(canvas, design.background_color);
+            if (success) {
+              console.warn('Background color set from design record:', design.background_color);
+            } else {
+              console.warn('Failed to set background color from design record - canvas not ready');
+            }
           } else if (design.canvas_data?.backgroundColor) {
             // Fallback to canvas_data background
-            canvas.setBackgroundColor?.(design.canvas_data.backgroundColor, () => {
-              canvas.renderAll?.();
-            });
-            console.warn('Background color set from canvas_data:', design.canvas_data.backgroundColor);
+            const success = safeSetBackgroundColor(canvas, design.canvas_data.backgroundColor);
+            if (success) {
+              console.warn('Background color set from canvas_data:', design.canvas_data.backgroundColor);
+            } else {
+              console.warn('Failed to set background color from canvas_data - canvas not ready');
+            }
           }
 
           if (design?.canvas_data?.canvasJSON) {
@@ -119,9 +123,10 @@ export function useDesignLoader({
           console.warn('Failed to set default canvas dimensions - canvas not ready');
         }
 
-        canvas.setBackgroundColor?.(DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR, () => {
-          canvas.renderAll?.();
-        });
+        const bgSuccess = safeSetBackgroundColor(canvas, DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR);
+        if (!bgSuccess) {
+          console.warn('Failed to set default background color - canvas not ready');
+        }
 
         setIsDesignLoaded(true);
       } catch (error) {
