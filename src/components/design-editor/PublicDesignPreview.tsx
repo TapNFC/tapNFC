@@ -164,8 +164,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
+      // Only apply scaling if viewport width is less than 500px
+      if (viewportWidth >= 500) {
+        setScale(1);
+        return;
+      }
+
       // Add padding for mobile devices
-      const padding = viewportWidth < 500 ? 20 : 40;
+      const padding = 20; // Fixed padding for small screens
       const maxWidth = viewportWidth - (padding * 2);
       const maxHeight = viewportHeight - (padding * 2);
 
@@ -1229,35 +1235,60 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
       <main className="flex flex-1 items-center justify-center bg-black p-4 sm:p-8">
         <div className="relative flex flex-col items-center">
           {/* Canvas Container with responsive scaling */}
-          <div
-            className="relative"
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.3s ease-in-out',
-            }}
-          >
-            <div
-              ref={containerRef}
-              className="relative overflow-hidden shadow-lg"
-              style={{
-                width: `${canvasWidth}px`,
-                height: `${canvasHeight}px`,
-                ...effectiveBackgroundStyle,
-              }}
-            >
-              {/* Render canvas objects using HTML elements */}
-              {renderCanvasObjects}
+          {scale < 1
+            ? (
+                <div
+                  className="relative"
+                  style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'center center',
+                    transition: 'transform 0.3s ease-in-out',
+                  }}
+                >
+                  <div
+                    ref={containerRef}
+                    className="relative overflow-hidden shadow-lg"
+                    style={{
+                      width: `${canvasWidth}px`,
+                      height: `${canvasHeight}px`,
+                      ...effectiveBackgroundStyle,
+                    }}
+                  >
+                    {/* Render canvas objects using HTML elements */}
+                    {renderCanvasObjects}
 
-              {/* Interactive overlay elements */}
-              {canvasData.objects?.map((obj: any, index: number) => {
-                if (obj.elementType) {
-                  return renderInteractiveElement(obj, index);
-                }
-                return null;
-              })}
-            </div>
-          </div>
+                    {/* Interactive overlay elements */}
+                    {canvasData.objects?.map((obj: any, index: number) => {
+                      if (obj.elementType) {
+                        return renderInteractiveElement(obj, index);
+                      }
+                      return null;
+                    })}
+                  </div>
+                </div>
+              )
+            : (
+                <div
+                  ref={containerRef}
+                  className="relative overflow-hidden shadow-lg"
+                  style={{
+                    width: `${canvasWidth}px`,
+                    height: `${canvasHeight}px`,
+                    ...effectiveBackgroundStyle,
+                  }}
+                >
+                  {/* Render canvas objects using HTML elements */}
+                  {renderCanvasObjects}
+
+                  {/* Interactive overlay elements */}
+                  {canvasData.objects?.map((obj: any, index: number) => {
+                    if (obj.elementType) {
+                      return renderInteractiveElement(obj, index);
+                    }
+                    return null;
+                  })}
+                </div>
+              )}
         </div>
       </main>
     </div>
