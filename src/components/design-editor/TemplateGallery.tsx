@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { useDesigns } from '@/hooks/useDesigns';
 import { normalizeTextObjects } from '@/utils/textUtils';
+import { safeRenderAll } from './utils/canvasSafety';
 
 type TemplateGalleryProps = {
   canvas: any;
@@ -35,7 +36,7 @@ export function TemplateGallery({ canvas }: TemplateGalleryProps) {
             // Normalize text objects to ensure they don't have scaling issues
             normalizeTextObjects(canvas);
 
-            canvas.renderAll();
+            safeRenderAll(canvas);
             resolve();
           });
         });
