@@ -1,6 +1,7 @@
 import type { Canvas, Gradient, Pattern } from 'fabric/fabric-impl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { isCanvasContextReady } from '@/components/design-editor/utils/canvasSafety';
 import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeTextObjects } from '@/utils/textUtils';
@@ -55,6 +56,12 @@ export function useCanvasAutoSave({
   // Function to save the canvas state to Supabase
   const saveCanvasState = useCallback(async (): Promise<boolean> => {
     if (!canvas || !designId) {
+      return false;
+    }
+
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in saveCanvasState, skipping save');
       return false;
     }
 
@@ -125,6 +132,12 @@ export function useCanvasAutoSave({
       return false;
     }
 
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in saveNow, skipping save');
+      return false;
+    }
+
     // Clear any pending auto-save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -178,6 +191,12 @@ export function useCanvasAutoSave({
       return null;
     }
 
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in getPreviewData, returning null');
+      return null;
+    }
+
     try {
       const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
 
@@ -200,6 +219,12 @@ export function useCanvasAutoSave({
       return;
     }
 
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in undo, skipping operation');
+      return;
+    }
+
     historyPositionRef.current -= 1;
     const previousState = historyRef.current[historyPositionRef.current];
 
@@ -219,6 +244,12 @@ export function useCanvasAutoSave({
       return;
     }
 
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in redo, skipping operation');
+      return;
+    }
+
     historyPositionRef.current += 1;
     const nextState = historyRef.current[historyPositionRef.current];
 
@@ -235,6 +266,12 @@ export function useCanvasAutoSave({
   // Load initial state when canvas is ready
   useEffect(() => {
     if (!canvas || !enabled) {
+      return;
+    }
+
+    // Add safety check to ensure canvas context is ready
+    if (!isCanvasContextReady(canvas)) {
+      console.warn('Canvas context not ready in useCanvasAutoSave, skipping initial state load');
       return;
     }
 

@@ -4,7 +4,7 @@ export const DESIGN_EDITOR_CONFIG = {
   AUTO_SAVE_INTERVAL: 2000, // milliseconds
 
   // Canvas loading delays
-  CANVAS_CONTEXT_DELAY: 150, // milliseconds
+  CANVAS_CONTEXT_DELAY: 500, // milliseconds - increased from 150ms to 500ms
 
   // Default canvas dimensions
   DEFAULT_CANVAS: {

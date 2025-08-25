@@ -66,6 +66,12 @@ export function canvasToHtml(canvas: any, options: CanvasToHtmlOptions): string 
       </html>
     `;
   } catch (error) {
+    // Handle tainted canvas error gracefully
+    if (error instanceof Error && error.message.includes('Tainted canvases may not be exported')) {
+      console.warn('Canvas contains external images, cannot export due to CORS restrictions. Using fallback HTML.');
+      return createDummyHtml(options);
+    }
+
     console.error('Error converting canvas to HTML:', error);
     return createDummyHtml(options);
   }

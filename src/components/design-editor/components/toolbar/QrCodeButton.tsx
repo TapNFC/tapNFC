@@ -46,13 +46,25 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
         canvasData.height = canvas.getHeight?.();
         canvasData.background = canvas.backgroundColor || '#ffffff';
 
-        // Generate preview image
-        const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
-        const previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+        // Try to generate preview image, but handle tainted canvas gracefully
+        let previewUrl: string | null = null;
+        try {
+          const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+          previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
 
-        if (previewUrl) {
-          await designService.updateDesign(designId, { preview_url: previewUrl });
-          toast.success('Design preview updated.');
+          if (previewUrl) {
+            await designService.updateDesign(designId, { preview_url: previewUrl });
+            toast.success('Design preview updated.');
+          }
+        } catch (previewError) {
+          // Handle tainted canvas error gracefully
+          if (previewError instanceof Error && previewError.message.includes('Tainted canvases may not be exported')) {
+            console.warn('Canvas contains external images, skipping preview generation due to CORS restrictions');
+            // Continue without preview - this is not a critical error
+          } else {
+            console.warn('Failed to generate preview image:', previewError);
+            // Continue without preview - this is not a critical error
+          }
         }
 
         // Save full canvas data to the backend, preserving existing name and description

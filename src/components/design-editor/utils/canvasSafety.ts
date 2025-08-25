@@ -3,6 +3,26 @@
  */
 
 /**
+ * Check if canvas context is fully ready for operations
+ */
+export function isCanvasContextReady(canvas: any): boolean {
+  try {
+    return !!(
+      canvas
+      && canvas.contextContainer
+      && typeof canvas.contextContainer.clearRect === 'function'
+      && typeof canvas.renderAll === 'function'
+      && typeof canvas.loadFromJSON === 'function'
+      && typeof canvas.toJSON === 'function'
+      && typeof canvas.getWidth === 'function'
+      && typeof canvas.getHeight === 'function'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Safely execute a canvas operation with context validation
  */
 export function safeCanvasOperation<T>(
