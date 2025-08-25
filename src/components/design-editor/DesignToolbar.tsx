@@ -29,6 +29,7 @@ import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
+import { safeSetDimensions } from './utils/canvasSafety';
 
 type DesignToolbarProps = {
   designId: string;
@@ -254,10 +255,14 @@ export function DesignToolbar({
 
       // Set canvas dimensions if available
       if (template.canvas_data.width && template.canvas_data.height) {
-        canvas.setDimensions({
+        const success = safeSetDimensions(canvas, {
           width: template.canvas_data.width,
           height: template.canvas_data.height,
         });
+
+        if (!success) {
+          console.warn('Failed to set canvas dimensions during template load - canvas not ready');
+        }
       }
 
       // Set background color

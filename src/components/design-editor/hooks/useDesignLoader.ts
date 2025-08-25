@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasContextReady } from '../utils/canvasSafety';
+import { isCanvasContextReady, safeSetDimensions } from '../utils/canvasSafety';
 
 type UseDesignLoaderProps = {
   canvas: any;
@@ -38,18 +38,26 @@ export function useDesignLoader({
         if (design) {
           // Set canvas dimensions from top-level design properties (priority)
           if (design.width && design.height) {
-            canvas.setDimensions?.({
+            const success = safeSetDimensions(canvas, {
               width: design.width,
               height: design.height,
             });
-            console.warn('Canvas dimensions set from design record:', { width: design.width, height: design.height });
+            if (success) {
+              console.warn('Canvas dimensions set from design record:', { width: design.width, height: design.height });
+            } else {
+              console.warn('Failed to set canvas dimensions from design record - canvas not ready');
+            }
           } else if (design.canvas_data?.width && design.canvas_data?.height) {
             // Fallback to canvas_data dimensions
-            canvas.setDimensions?.({
+            const success = safeSetDimensions(canvas, {
               width: design.canvas_data.width,
               height: design.canvas_data.height,
             });
-            console.warn('Canvas dimensions set from canvas_data:', { width: design.canvas_data.width, height: design.canvas_data.height });
+            if (success) {
+              console.warn('Canvas dimensions set from canvas_data:', { width: design.canvas_data.width, height: design.canvas_data.height });
+            } else {
+              console.warn('Failed to set canvas dimensions from canvas_data - canvas not ready');
+            }
           }
 
           // Set background color from top-level design properties (priority)
@@ -102,10 +110,14 @@ export function useDesignLoader({
         console.warn('No existing design found in Supabase, starting with empty canvas');
 
         // Initialize with default canvas settings
-        canvas.setDimensions?.({
+        const success = safeSetDimensions(canvas, {
           width: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.WIDTH,
           height: DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.HEIGHT,
         });
+
+        if (!success) {
+          console.warn('Failed to set default canvas dimensions - canvas not ready');
+        }
 
         canvas.setBackgroundColor?.(DESIGN_EDITOR_CONFIG.DEFAULT_CANVAS.BACKGROUND_COLOR, () => {
           canvas.renderAll?.();
