@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasSafe } from '../utils/canvasSafety';
+import { isCanvasContextReady } from '../utils/canvasSafety';
 
 // Increase Node.js event listener limit to prevent memory leak warnings
 if (typeof process !== 'undefined' && process.setMaxListeners) {
@@ -59,9 +59,9 @@ export function useFabricCanvas({
   }), []);
 
   // Check if canvas context is truly ready
-  const isContextReady = useCallback((fabricCanvas: any) => {
-    return isCanvasSafe(fabricCanvas);
-  }, []);
+  // const isContextReady = useCallback((fabricCanvas: any) => {
+  //   return isCanvasContextReady(fabricCanvas);
+  // }, []);
 
   // Wait for context to be ready with timeout
   const waitForContext = useCallback((fabricCanvas: any, maxWaitTime = 2000): Promise<boolean> => {
@@ -69,7 +69,7 @@ export function useFabricCanvas({
       const startTime = Date.now();
 
       const checkContext = () => {
-        if (isContextReady(fabricCanvas)) {
+        if (isCanvasContextReady(fabricCanvas)) {
           contextReadyRef.current = true;
           resolve(true);
           return;
@@ -88,7 +88,7 @@ export function useFabricCanvas({
 
       checkContext();
     });
-  }, [isContextReady]);
+  }, []);
 
   // Alignment guide utilities
   const initializeAlignmentGuides = (canvas: any, fabric: any) => {
@@ -444,7 +444,7 @@ export function useFabricCanvas({
           }
           try {
             // Check if canvas is safe to use before proceeding
-            if (!isCanvasSafe(fabricCanvas)) {
+            if (!isCanvasContextReady(fabricCanvas)) {
               console.warn('Canvas not safe during resize, skipping');
               return;
             }
@@ -596,7 +596,7 @@ export function useFabricCanvas({
     fabricError,
     fabric,
     guideControls,
-    // Additional safety check for context readiness
-    isContextReady: contextReadyRef.current && isCanvasReady,
+    // Additional safety check for context readiness - compute this dynamically
+    isContextReady: canvas ? isCanvasContextReady(canvas) : false,
   };
 }

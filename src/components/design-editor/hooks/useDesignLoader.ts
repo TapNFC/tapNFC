@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
+import { isCanvasContextReady } from '../utils/canvasSafety';
 
 type UseDesignLoaderProps = {
   canvas: any;
@@ -23,6 +24,9 @@ export function useDesignLoader({
     if (!canvas || !isCanvasReady || isDesignLoaded) {
       return;
     }
+
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     const loadFromSupabase = async () => {
       try {
@@ -117,15 +121,32 @@ export function useDesignLoader({
 
     const loadExistingDesign = async () => {
       try {
-        // Use the improved context readiness check from useFabricCanvas
-        if (!canvas?.isContextReady) {
-          console.warn('Canvas context not ready, delaying loadExistingDesign.');
+        // Use a more robust context readiness check
+        const isContextReady = isCanvasContextReady(canvas);
+
+        if (!isContextReady) {
+          retryCount++;
+          console.warn(`Canvas context not ready, attempt ${retryCount}/${MAX_RETRIES}, delaying loadExistingDesign.`);
+
+          if (retryCount >= MAX_RETRIES) {
+            console.warn('Maximum retries reached, proceeding with caution.');
+            await loadFromSupabase();
+            return;
+          }
+
           setTimeout(() => {
-            if (!isDesignLoaded && isCanvasReady && canvas?.isContextReady) {
-              loadExistingDesign();
-            } else if (!isDesignLoaded && isCanvasReady && canvas && !canvas.isContextReady) {
-              console.error('Canvas context still not ready after delay. Aborting load.');
-              setIsDesignLoaded(true);
+            if (!isDesignLoaded && isCanvasReady) {
+              // Check again if context is ready
+              const retryContextReady = isCanvasContextReady(canvas);
+
+              if (retryContextReady) {
+                console.warn('Canvas context now ready, proceeding with load.');
+                loadExistingDesign();
+              } else {
+                console.warn('Canvas context still not ready after delay, proceeding with caution.');
+                // Proceed anyway but log a warning
+                loadFromSupabase();
+              }
             }
           }, DESIGN_EDITOR_CONFIG.CANVAS_CONTEXT_DELAY);
           return;
