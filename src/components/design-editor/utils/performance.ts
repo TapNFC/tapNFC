@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef } from 'react';
+import { safeRenderAll } from './canvasSafety';
 
 /**
- * Debounce hook for performance optimization
+ * Debounce utility for optimizing frequent function calls
  */
 export function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
@@ -14,7 +15,6 @@ export function useDebounce<T extends (...args: any[]) => any>(
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-
       timeoutRef.current = setTimeout(() => {
         callback(...args);
       }, delay);
@@ -24,31 +24,20 @@ export function useDebounce<T extends (...args: any[]) => any>(
 }
 
 /**
- * Throttle hook for performance optimization
+ * Throttle utility for limiting function execution frequency
  */
 export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
   delay: number,
 ): T {
-  const lastRunRef = useRef<number>(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCallRef = useRef<number>(0);
 
   return useCallback(
     ((...args: Parameters<T>) => {
       const now = Date.now();
-
-      if (now - lastRunRef.current >= delay) {
-        lastRunRef.current = now;
-        callback(...args);
-      } else {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-
-        timeoutRef.current = setTimeout(() => {
-          lastRunRef.current = Date.now();
-          callback(...args);
-        }, delay - (now - lastRunRef.current));
+      if (now - lastCallRef.current >= delay) {
+        lastCallRef.current = now;
+        return callback(...args);
       }
     }) as T,
     [callback, delay],
@@ -69,7 +58,8 @@ export function useCanvasRenderScheduler(canvas: any) {
       return;
     }
     rafIdRef.current = requestAnimationFrame(() => {
-      canvas.renderAll?.();
+      // Use safeRenderAll instead of direct canvas.renderAll
+      safeRenderAll(canvas);
       rafIdRef.current = null;
     });
   }, [canvas]);
@@ -83,20 +73,95 @@ export function useCanvasStateMemo(canvasState: any) {
     if (!canvasState) {
       return null;
     }
-
-    // Create a stable reference for canvas state to prevent unnecessary re-renders
     return {
-      ...canvasState,
-      // Sort objects to ensure consistent comparison
-      objects: canvasState.objects
-        ? [...canvasState.objects].sort((a, b) => {
-            const aId = a.id || a.uuid || '';
-            const bId = b.id || b.uuid || '';
-            return aId.localeCompare(bId);
-          })
-        : [],
+      objects: canvasState.objects?.length || 0,
+      width: canvasState.width,
+      height: canvasState.height,
+      backgroundColor: canvasState.backgroundColor,
     };
   }, [canvasState]);
+}
+
+/**
+ * Optimize canvas object interactions for better performance
+ */
+export function useCanvasObjectOptimization(canvas: any) {
+  return useCallback((object: any) => {
+    if (!object || !canvas) {
+      return;
+    }
+
+    // Disable object caching during interactions for better performance
+    if (object.set) {
+      object.set({
+        objectCaching: false,
+        statefullCache: false,
+        noScaleCache: false,
+      });
+    }
+  }, [canvas]);
+}
+
+/**
+ * Memoized fabric object creation with performance optimizations
+ */
+export function useOptimizedFabricObject(
+  type: string,
+  options: any,
+  dependencies: any[],
+) {
+  return useMemo(() => {
+    if (!type || !options) {
+      return null;
+    }
+
+    // Common performance optimizations for all fabric objects
+    const optimizedOptions = {
+      ...options,
+      objectCaching: true,
+      statefullCache: true,
+      noScaleCache: false,
+      hoverCursor: 'move',
+      moveCursor: 'move',
+    };
+
+    return {
+      type,
+      options: optimizedOptions,
+    };
+  }, [type, options, ...dependencies]);
+}
+
+/**
+ * Performance-optimized text normalization for fabric objects
+ */
+export function normalizeTextObjects(canvas: any): void {
+  if (!canvas || typeof canvas.getObjects !== 'function') {
+    console.warn('Canvas not available for text normalization');
+    return;
+  }
+
+  try {
+    const objects = canvas.getObjects();
+    if (!Array.isArray(objects)) {
+      return;
+    }
+
+    objects.forEach((obj: any) => {
+      if (obj && (obj.type === 'textbox' || obj.type === 'text')) {
+        // Reset text scaling issues
+        if (typeof obj.set === 'function') {
+          obj.set({
+            scaleX: 1,
+            scaleY: 1,
+            fontSize: obj.fontSize || 20,
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error normalizing text objects:', error);
+  }
 }
 
 /**

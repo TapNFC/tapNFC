@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { safeRenderAll } from '../utils/canvasSafety';
 
 // Define types for Fabric.js gradient options, matching those in BackgroundsPanel.tsx
 type FabricColorStop = { offset: number; color: string };
@@ -81,7 +82,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         textObject.set('height', textObject.fontSize * (textObject.lineHeight || 1.2));
         canvas.add(textObject);
         canvas.setActiveObject?.(textObject);
-        canvas.renderAll?.();
+        safeRenderAll(canvas);
         toast.success(`${textType.replace('add-', '').replace('-', ' ')} added`);
       }
     } catch (error) {
@@ -260,7 +261,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
 
       canvas.add(buttonGroup);
       canvas.setActiveObject?.(buttonGroup);
-      canvas.renderAll?.();
+      safeRenderAll(canvas);
 
       toast.success('Button added to canvas! Double-click to edit URL.');
     } catch (error) {
@@ -382,7 +383,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
 
         canvas.add(shape);
         canvas.setActiveObject?.(shape);
-        canvas.renderAll?.();
+        safeRenderAll(canvas);
         toast.success(`${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} added`);
       }
     } catch (error) {
@@ -428,7 +429,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
 
     canvas.add(text);
     canvas.setActiveObject?.(text);
-    canvas.renderAll?.();
+    safeRenderAll(canvas);
 
     toast.success('Link added! Double-click to edit its URL and text.');
   }, [canvas, fabric, fabricReady]);
@@ -532,7 +533,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         buttonObject.setCoords?.(); // Important for controls
       }
 
-      canvas.renderAll?.();
+      safeRenderAll(canvas);
       toast.success('Button properties updated');
     } catch (error) {
       console.error('Error updating button properties:', error);
@@ -571,7 +572,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         linkObject.set('overline', updates.textDecoration === 'overline');
       }
 
-      canvas.renderAll?.();
+      safeRenderAll(canvas);
       toast.success('Link properties updated');
     } catch (error) {
       console.error('Error updating link properties:', error);
@@ -672,7 +673,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       // Add the image to the canvas
       canvas.add(img);
       canvas.setActiveObject(img);
-      canvas.renderAll();
+      safeRenderAll(canvas);
 
       // Center the icon on the canvas
       const canvasCenter = canvas.getCenter();
@@ -683,7 +684,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         originY: 'center',
       });
 
-      canvas.renderAll();
+      safeRenderAll(canvas);
 
       // Notify that a new element was added
       canvas.fire('object:modified', { target: img });

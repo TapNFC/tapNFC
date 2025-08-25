@@ -214,7 +214,10 @@ export function useFabricCanvas({
         }
       });
 
-      canvas.renderAll();
+      // Use safe render with inline check
+      if (canvas.contextContainer && typeof canvas.contextContainer.clearRect === 'function') {
+        canvas.renderAll();
+      }
     };
 
     const snapToGuidelines = (movingObject: any) => {
@@ -305,7 +308,10 @@ export function useFabricCanvas({
         isGuidesEnabled = enabled;
         if (!enabled) {
           clearGuidelines();
-          canvas.renderAll();
+          // Use safe render with inline check
+          if (canvas.contextContainer && typeof canvas.contextContainer.clearRect === 'function') {
+            canvas.renderAll();
+          }
         }
       },
       clearGuidelines,
@@ -471,7 +477,10 @@ export function useFabricCanvas({
               }
             }
 
-            fabricCanvas.renderAll();
+            // Use safe render with inline check
+            if (fabricCanvas.contextContainer && typeof fabricCanvas.contextContainer.clearRect === 'function') {
+              fabricCanvas.renderAll();
+            }
           } catch (error) {
             console.warn('Error during canvas resize:', error);
           }

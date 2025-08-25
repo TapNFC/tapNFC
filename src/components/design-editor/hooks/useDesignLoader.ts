@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasContextReady, safeSetBackgroundColor, safeSetDimensions } from '../utils/canvasSafety';
+import { isCanvasContextReady, safeLoadFromJSON, safeRenderAll, safeSetBackgroundColor, safeSetDimensions } from '../utils/canvasSafety';
 
 type UseDesignLoaderProps = {
   canvas: any;
@@ -26,11 +26,25 @@ export function useDesignLoader({
     }
 
     let retryCount = 0;
-    const MAX_RETRIES = 3;
 
     const loadFromSupabase = async () => {
       try {
         console.warn('Loading design from Supabase:', designId);
+
+        // Check if canvas context is ready before proceeding
+        if (!isCanvasContextReady(canvas)) {
+          console.warn('Canvas context not ready, retrying...');
+          retryCount++;
+          if (retryCount < 3) {
+            setTimeout(loadFromSupabase, 1000);
+            return;
+          } else {
+            console.error('Canvas context failed to become ready after retries');
+            toast.error('Canvas initialization failed');
+            setIsDesignLoaded(true);
+            return;
+          }
+        }
 
         // Fetch design from Supabase
         const design = await designService.getDesignById(designId);
@@ -62,16 +76,16 @@ export function useDesignLoader({
 
           // Set background color from top-level design properties (priority)
           if (design.background_color) {
-            const success = safeSetBackgroundColor(canvas, design.background_color);
-            if (success) {
+            const bgSuccess = safeSetBackgroundColor(canvas, design.background_color);
+            if (bgSuccess) {
               console.warn('Background color set from design record:', design.background_color);
             } else {
               console.warn('Failed to set background color from design record - canvas not ready');
             }
           } else if (design.canvas_data?.backgroundColor) {
-            // Fallback to canvas_data background
-            const success = safeSetBackgroundColor(canvas, design.canvas_data.backgroundColor);
-            if (success) {
+            // Fallback to canvas_data background color
+            const bgSuccess = safeSetBackgroundColor(canvas, design.canvas_data.backgroundColor);
+            if (bgSuccess) {
               console.warn('Background color set from canvas_data:', design.canvas_data.backgroundColor);
             } else {
               console.warn('Failed to set background color from canvas_data - canvas not ready');
@@ -81,31 +95,50 @@ export function useDesignLoader({
           if (design?.canvas_data?.canvasJSON) {
             const canvasDataToLoad = design.canvas_data.canvasJSON;
 
-            if (!canvasDataToLoad.objects) {
-              console.warn('Canvas data is missing objects array, creating empty array');
-              canvasDataToLoad.objects = [];
-            }
+            // Use safeLoadFromJSON instead of direct canvas.loadFromJSON
+            const success = safeLoadFromJSON(canvas, canvasDataToLoad, (_loadedCanvas, error) => {
+              if (error) {
+                console.error('Error loading design from JSON:', error);
+                toast.error('Error loading design');
+                setIsDesignLoaded(true);
+                return;
+              }
 
-            canvas.loadFromJSON?.(canvasDataToLoad, () => {
               try {
                 // Normalize text objects to ensure they don't have scaling issues
                 normalizeTextObjects(canvas);
 
-                canvas.renderAll?.();
-                setIsDesignLoaded(true);
-                console.warn('Design loaded successfully from Supabase');
+                // Use safe render all
+                const renderSuccess = safeRenderAll(canvas);
+                if (renderSuccess) {
+                  setIsDesignLoaded(true);
+                  console.warn('Design loaded successfully from Supabase');
+                } else {
+                  console.warn('Design loaded but rendering failed');
+                  setIsDesignLoaded(true);
+                }
               } catch (renderError) {
                 console.error('Error during canvas rendering after load:', renderError);
                 toast.error('Error rendering design');
                 setIsDesignLoaded(true);
               }
             });
+
+            if (!success) {
+              console.error('Failed to initiate design loading');
+              toast.error('Failed to load design');
+              setIsDesignLoaded(true);
+            }
             return;
           } else {
             // No canvas data, just render with dimensions and background
-            canvas.renderAll?.();
+            const renderSuccess = safeRenderAll(canvas);
+            if (renderSuccess) {
+              console.warn('Design loaded successfully (no canvas data)');
+            } else {
+              console.warn('Failed to render empty canvas');
+            }
             setIsDesignLoaded(true);
-            console.warn('Design loaded successfully (no canvas data)');
             return;
           }
         }
@@ -136,48 +169,11 @@ export function useDesignLoader({
       }
     };
 
-    const loadExistingDesign = async () => {
-      try {
-        // Use a more robust context readiness check
-        const isContextReady = isCanvasContextReady(canvas);
+    // Add a small delay to ensure canvas is fully initialized
+    const timeout = setTimeout(loadFromSupabase, 100);
 
-        if (!isContextReady) {
-          retryCount++;
-          console.warn(`Canvas context not ready, attempt ${retryCount}/${MAX_RETRIES}, delaying loadExistingDesign.`);
-
-          if (retryCount >= MAX_RETRIES) {
-            console.warn('Maximum retries reached, proceeding with caution.');
-            await loadFromSupabase();
-            return;
-          }
-
-          setTimeout(() => {
-            if (!isDesignLoaded && isCanvasReady) {
-              // Check again if context is ready
-              const retryContextReady = isCanvasContextReady(canvas);
-
-              if (retryContextReady) {
-                console.warn('Canvas context now ready, proceeding with load.');
-                loadExistingDesign();
-              } else {
-                console.warn('Canvas context still not ready after delay, proceeding with caution.');
-                // Proceed anyway but log a warning
-                loadFromSupabase();
-              }
-            }
-          }, DESIGN_EDITOR_CONFIG.CANVAS_CONTEXT_DELAY);
-          return;
-        }
-
-        // Load from Supabase
-        await loadFromSupabase();
-      } catch (error) {
-        console.error('Error loading existing design:', error);
-        toast.error('Error loading design');
-        setIsDesignLoaded(true);
-      }
+    return () => {
+      clearTimeout(timeout);
     };
-
-    loadExistingDesign();
   }, [canvas, isCanvasReady, designId, isDesignLoaded, setIsDesignLoaded]);
 }
