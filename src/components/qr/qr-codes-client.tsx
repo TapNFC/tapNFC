@@ -25,7 +25,7 @@ type ElegantQRCodesProps = {
 type TabType = 'all' | 'active' | 'archive';
 
 export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQRCodeForDelete, setSelectedQRCodeForDelete] = useState<QRCode | null>(null);
@@ -242,11 +242,11 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <Button size="sm" variant={viewMode === 'grid' ? 'primary' : 'ghost'} onClick={() => setViewMode('grid')} className="h-8 px-3">
-              <Grid3X3 className="size-4" />
-            </Button>
             <Button size="sm" variant={viewMode === 'list' ? 'primary' : 'ghost'} onClick={() => setViewMode('list')} className="h-8 px-3">
               <List className="size-4" />
+            </Button>
+            <Button size="sm" variant={viewMode === 'grid' ? 'primary' : 'ghost'} onClick={() => setViewMode('grid')} className="h-8 px-3">
+              <Grid3X3 className="size-4" />
             </Button>
           </div>
         </div>
