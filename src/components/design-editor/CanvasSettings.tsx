@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { designService } from '@/services/designService';
+import { safeSetDimensions } from './utils/canvasSafety';
 
 // Canvas size limits
 const MAX_WIDTH = 1024;
@@ -154,11 +155,17 @@ export function CanvasSettings({ canvas, designId }: CanvasSettingsProps) {
     setIsSaving(true);
 
     try {
-      // Update canvas dimensions
-      canvas.setDimensions?.({
+      // Update canvas dimensions using safe operation
+      const success = safeSetDimensions(canvas, {
         width: canvasWidth as number,
         height: canvasHeight as number,
       });
+
+      if (!success) {
+        toast.error('Failed to update canvas dimensions - canvas not ready');
+        return;
+      }
+
       canvas.renderAll?.();
 
       // Save the new dimensions to the database

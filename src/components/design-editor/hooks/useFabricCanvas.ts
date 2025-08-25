@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasContextReady } from '../utils/canvasSafety';
+import { isCanvasContextReady, safeSetDimensions } from '../utils/canvasSafety';
 
 // Increase Node.js event listener limit to prevent memory leak warnings
 if (typeof process !== 'undefined' && process.setMaxListeners) {
@@ -460,11 +460,15 @@ export function useFabricCanvas({
             } else {
               // Fallback to calculated dimensions only if current ones are invalid
               const { width: newWidth, height: newHeight } = calculateCanvasDimensions();
-              fabricCanvas.setDimensions({
+              const success = safeSetDimensions(fabricCanvas, {
                 width: newWidth,
                 height: newHeight,
               });
-              console.warn('Using calculated dimensions during resize (fallback):', { width: newWidth, height: newHeight });
+              if (success) {
+                console.warn('Using calculated dimensions during resize (fallback):', { width: newWidth, height: newHeight });
+              } else {
+                console.warn('Failed to set calculated dimensions during resize - canvas not ready');
+              }
             }
 
             fabricCanvas.renderAll();

@@ -84,9 +84,26 @@ export function safeClear(canvas: any): boolean {
  * Safely call canvas.setDimensions() with context validation
  */
 export function safeSetDimensions(canvas: any, dimensions: { width: number; height: number }): boolean {
+  // Validate dimensions before attempting to set them
+  if (!dimensions || typeof dimensions.width !== 'number' || typeof dimensions.height !== 'number') {
+    console.warn('Invalid dimensions provided to safeSetDimensions:', dimensions);
+    return false;
+  }
+
+  if (dimensions.width <= 0 || dimensions.height <= 0) {
+    console.warn('Dimensions must be positive numbers:', dimensions);
+    return false;
+  }
+
   return safeCanvasOperation(
     canvas,
     () => {
+      // Additional check to ensure canvas has the setDimensions method
+      if (typeof canvas.setDimensions !== 'function') {
+        console.warn('Canvas does not have setDimensions method');
+        return false;
+      }
+
       canvas.setDimensions(dimensions);
       return true;
     },
