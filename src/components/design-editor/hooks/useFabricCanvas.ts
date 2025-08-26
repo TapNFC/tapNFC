@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DESIGN_EDITOR_CONFIG } from '../constants';
-import { isCanvasContextReady } from '../utils/canvasSafety';
+import { isCanvasContextReady, safeSetDimensions } from '../utils/canvasSafety';
 
 // Increase Node.js event listener limit to prevent memory leak warnings
 if (typeof process !== 'undefined' && process.setMaxListeners) {
@@ -214,7 +214,10 @@ export function useFabricCanvas({
         }
       });
 
-      canvas.renderAll();
+      // Use safe render with inline check
+      if (canvas.contextContainer && typeof canvas.contextContainer.clearRect === 'function') {
+        canvas.renderAll();
+      }
     };
 
     const snapToGuidelines = (movingObject: any) => {
@@ -305,7 +308,10 @@ export function useFabricCanvas({
         isGuidesEnabled = enabled;
         if (!enabled) {
           clearGuidelines();
-          canvas.renderAll();
+          // Use safe render with inline check
+          if (canvas.contextContainer && typeof canvas.contextContainer.clearRect === 'function') {
+            canvas.renderAll();
+          }
         }
       },
       clearGuidelines,
@@ -460,14 +466,21 @@ export function useFabricCanvas({
             } else {
               // Fallback to calculated dimensions only if current ones are invalid
               const { width: newWidth, height: newHeight } = calculateCanvasDimensions();
-              fabricCanvas.setDimensions({
+              const success = safeSetDimensions(fabricCanvas, {
                 width: newWidth,
                 height: newHeight,
               });
-              console.warn('Using calculated dimensions during resize (fallback):', { width: newWidth, height: newHeight });
+              if (success) {
+                console.warn('Using calculated dimensions during resize (fallback):', { width: newWidth, height: newHeight });
+              } else {
+                console.warn('Failed to set calculated dimensions during resize - canvas not ready');
+              }
             }
 
-            fabricCanvas.renderAll();
+            // Use safe render with inline check
+            if (fabricCanvas.contextContainer && typeof fabricCanvas.contextContainer.clearRect === 'function') {
+              fabricCanvas.renderAll();
+            }
           } catch (error) {
             console.warn('Error during canvas resize:', error);
           }

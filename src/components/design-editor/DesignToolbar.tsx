@@ -29,6 +29,7 @@ import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
 import { SaveTemplateDialog } from './components/dialogs/SaveTemplateDialog';
 import { QrCodeButton } from './components/toolbar/QrCodeButton';
 import { ToolbarActions } from './components/toolbar/ToolbarActions';
+import { safeLoadFromJSON, safeRenderAll, safeSetBackgroundColor, safeSetDimensions } from './utils/canvasSafety';
 
 type DesignToolbarProps = {
   designId: string;
@@ -254,32 +255,51 @@ export function DesignToolbar({
 
       // Set canvas dimensions if available
       if (template.canvas_data.width && template.canvas_data.height) {
-        canvas.setDimensions({
+        const success = safeSetDimensions(canvas, {
           width: template.canvas_data.width,
           height: template.canvas_data.height,
         });
+
+        if (!success) {
+          console.warn('Failed to set canvas dimensions during template load - canvas not ready');
+        }
       }
 
       // Set background color
       if (template.canvas_data.backgroundColor) {
-        canvas.setBackgroundColor(template.canvas_data.backgroundColor, () => {
-          canvas.renderAll();
-        });
+        const success = safeSetBackgroundColor(canvas, template.canvas_data.backgroundColor);
+        if (!success) {
+          console.warn('Failed to set background color during template load - canvas not ready');
+        }
       }
 
-      // Load the canvas data
-      canvas.loadFromJSON(template.canvas_data.canvasJSON, () => {
+      // Load the canvas data safely
+      const loadSuccess = safeLoadFromJSON(canvas, template.canvas_data.canvasJSON, (_loadedCanvas, error) => {
+        if (error) {
+          console.error('Error loading template:', error);
+          toast.error('Error loading template');
+          return;
+        }
+
         // Normalize text objects to ensure they don't have scaling issues
         normalizeTextObjects(canvas);
 
-        canvas.renderAll();
-        toast.success(`Template "${template.name}" loaded successfully`);
+        const renderSuccess = safeRenderAll(canvas);
+        if (renderSuccess) {
+          toast.success(`Template "${template.name}" loaded successfully`);
+        } else {
+          toast.error('Template loaded but rendering failed');
+        }
 
         // Close the dialog
         if (setShowLoadDialog) {
           setShowLoadDialog(false);
         }
       });
+
+      if (!loadSuccess) {
+        toast.error('Failed to initiate template loading');
+      }
     } catch (error) {
       console.error('Error loading template:', error);
       toast.error('Error loading template');
@@ -338,7 +358,7 @@ export function DesignToolbar({
     if (activeObject) {
       const currentAngle = activeObject.angle || 0;
       activeObject.rotate(currentAngle - 15);
-      canvas.renderAll();
+      safeRenderAll(canvas);
     }
   };
 
@@ -351,7 +371,7 @@ export function DesignToolbar({
     if (activeObject) {
       const currentAngle = activeObject.angle || 0;
       activeObject.set('angle', currentAngle + 90);
-      canvas.renderAll();
+      safeRenderAll(canvas);
     }
   };
 

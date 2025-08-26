@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useTemplateStore } from '@/stores/templateStore';
 import { normalizeTextObjects } from '@/utils/textUtils';
+import { safeLoadFromJSON, safeRenderAll } from '../utils/canvasSafety';
 
 type UseKeyboardShortcutsOptions = {
   canvas: any;
@@ -214,34 +215,31 @@ export function useKeyboardShortcuts({
         if (templates[templateIndex]) {
           const template = templates[templateIndex];
           if (template && template.canvas_data) {
-            canvas.loadFromJSON(template.canvas_data, (loadedCanvas: any, error: any) => {
+            const success = safeLoadFromJSON(canvas, template.canvas_data, (_loadedCanvas: any, error: any) => {
               if (error) {
                 console.error('Error loading quick template:', error);
                 return;
               }
 
               try {
-                // Validate that loadedCanvas exists and has the required methods
-                if (loadedCanvas && typeof loadedCanvas.renderAll === 'function') {
-                  // Normalize text objects to ensure they don't have scaling issues
-                  normalizeTextObjects(loadedCanvas);
+                // Normalize text objects to ensure they don't have scaling issues
+                normalizeTextObjects(canvas);
 
-                  loadedCanvas.renderAll();
+                // Use safe render all
+                const renderSuccess = safeRenderAll(canvas);
+                if (renderSuccess) {
+                  console.warn('Quick template loaded:', template.name);
                 } else {
-                  // Fallback to original canvas
-                  canvas.renderAll();
+                  console.warn('Quick template loaded but rendering failed:', template.name);
                 }
-                console.warn('Quick template loaded:', template.name);
               } catch (renderError) {
                 console.error('Error rendering quick template:', renderError);
-                // Try fallback with original canvas
-                try {
-                  canvas.renderAll();
-                } catch (fallbackError) {
-                  console.error('Fallback render also failed:', fallbackError);
-                }
               }
             });
+
+            if (!success) {
+              console.error('Failed to initiate quick template loading');
+            }
           }
         }
       }
