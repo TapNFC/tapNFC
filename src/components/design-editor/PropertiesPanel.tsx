@@ -142,6 +142,60 @@ export function PropertiesPanel({
     }
 
     const numValue = Number.parseFloat(value) || 1;
+
+    // For images, check if the new size would exceed canvas boundaries
+    if (selectedObject.type === 'image' && canvas) {
+      const canvasWidth = canvas.getWidth();
+      const canvasHeight = canvas.getHeight();
+
+      if (field === 'width') {
+        const newWidth = numValue;
+        const newHeight = (selectedObject.height || 0) * (selectedObject.scaleY || 1);
+
+        // Check if new dimensions would exceed canvas
+        if (newWidth > canvasWidth || newHeight > canvasHeight) {
+          // Calculate constrained dimensions
+          const maxWidth = Math.min(newWidth, canvasWidth);
+          const maxHeight = Math.min(newHeight, canvasHeight);
+
+          // Apply the smaller constraint
+          if (maxWidth / newWidth < maxHeight / newHeight) {
+            const constrainedWidth = maxWidth;
+            const scaleX = constrainedWidth / (selectedObject.width || 1);
+            updateObjectTransform({ scaleX });
+          } else {
+            const constrainedHeight = maxHeight;
+            const scaleY = constrainedHeight / (selectedObject.height || 1);
+            updateObjectTransform({ scaleY });
+          }
+          return;
+        }
+      } else {
+        const newHeight = numValue;
+        const newWidth = (selectedObject.width || 0) * (selectedObject.scaleX || 1);
+
+        // Check if new dimensions would exceed canvas
+        if (newWidth > canvasWidth || newHeight > canvasHeight) {
+          // Calculate constrained dimensions
+          const maxWidth = Math.min(newWidth, canvasWidth);
+          const maxHeight = Math.min(newHeight, canvasHeight);
+
+          // Apply the smaller constraint
+          if (maxWidth / newWidth < maxHeight / newHeight) {
+            const constrainedWidth = maxWidth;
+            const scaleX = constrainedWidth / (selectedObject.width || 1);
+            updateObjectTransform({ scaleX });
+          } else {
+            const constrainedHeight = maxHeight;
+            const scaleY = constrainedHeight / (selectedObject.height || 1);
+            updateObjectTransform({ scaleY });
+          }
+          return;
+        }
+      }
+    }
+
+    // Apply normal scaling if no constraints needed
     if (field === 'width') {
       const scaleX = numValue / (selectedObject.width || 1);
       updateObjectTransform({ scaleX });

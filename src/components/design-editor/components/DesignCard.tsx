@@ -103,11 +103,7 @@ export function DesignCard({
           <h3 className="font-semibold text-slate-900 dark:text-white">
             {design.name}
           </h3>
-          {design.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-              {design.description}
-            </p>
-          )}
+
           {design.tags && design.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {design.tags.slice(0, 3).map(tag => (
@@ -240,11 +236,7 @@ export function DesignCard({
           <h3 className="font-semibold text-slate-900 dark:text-white">
             {design.name}
           </h3>
-          {design.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-              {design.description}
-            </p>
-          )}
+
         </div>
 
         {/* Tags */}

@@ -51,23 +51,54 @@ export function ImageUpload({ canvas }: ImageUploadProps) {
         return;
       }
 
-      fabric.Image.fromURL(imageSrc, (img: any, isError?: boolean) => {
-        if (isError || !img) {
-          console.error('Error loading image into fabric');
-          return;
+      // Create a temporary image to get dimensions
+      const tempImg = new Image();
+      tempImg.onload = () => {
+        const imgWidth = tempImg.naturalWidth;
+        const imgHeight = tempImg.naturalHeight;
+
+        // Get canvas dimensions
+        const canvasWidth = canvas.getWidth?.() || 800;
+        const canvasHeight = canvas.getHeight?.() || 600;
+
+        // Calculate scaling factor to fit image within canvas while maintaining aspect ratio
+        let scaleX = 1;
+        let scaleY = 1;
+
+        if (imgWidth > canvasWidth || imgHeight > canvasHeight) {
+          const scaleFactorX = canvasWidth / imgWidth;
+          const scaleFactorY = canvasHeight / imgHeight;
+          // Use the smaller scale factor to ensure image fits in both dimensions
+          const scaleFactor = Math.min(scaleFactorX, scaleFactorY);
+          scaleX = scaleFactor;
+          scaleY = scaleFactor;
         }
 
-        img.set?.({
-          left: 100,
-          top: 100,
-          scaleX: 0.5,
-          scaleY: 0.5,
-        });
+        fabric.Image.fromURL(imageSrc, (img: any, isError?: boolean) => {
+          if (isError || !img) {
+            console.error('Error loading image into fabric');
+            return;
+          }
 
-        canvas.add?.(img);
-        canvas.setActiveObject?.(img);
-        canvas.renderAll?.();
-      });
+          // Apply the calculated scaling
+          img.set?.({
+            left: 100,
+            top: 100,
+            scaleX,
+            scaleY,
+          });
+
+          canvas.add?.(img);
+          canvas.setActiveObject?.(img);
+          canvas.renderAll?.();
+
+          // Trigger auto-save to save the updated canvas content
+          if (canvas.fire) {
+            canvas.fire('object:added');
+          }
+        });
+      };
+      tempImg.src = imageSrc;
     };
 
     reader.readAsDataURL(file);
