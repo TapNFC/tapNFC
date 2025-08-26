@@ -7,7 +7,6 @@ import { useState } from 'react';
 import QRCodesSkeleton from '@/components/qr/QRCodesSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQRCodes } from '@/hooks/use-qrcodes';
 import { cn } from '@/lib/utils';
 import {
@@ -26,7 +25,7 @@ type TabType = 'all' | 'active' | 'archive';
 
 export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [activeTab] = useState<TabType>('all');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedQRCodeForDelete, setSelectedQRCodeForDelete] = useState<QRCode | null>(null);
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
@@ -50,8 +49,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
 
     handleEditQRCode,
     handleEditDesign,
-    archiveQRCode,
-    restoreQRCode,
+    // archiveQRCode,
+    // restoreQRCode,
     deleteQRCodePermanently,
     isOwnedByCurrentUser,
     deleteSelectedQRCodes,
@@ -131,8 +130,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
             </div>
           </div>
         </div>
-
-        {/* Tabs */}
+        {/*
+        Tabs
         <div className="mb-6">
           <Tabs value={activeTab} onValueChange={value => setActiveTab(value as TabType)} className="w-full">
             <TabsList className="grid w-full max-w-md grid-cols-3 bg-white shadow-sm dark:bg-gray-800">
@@ -147,7 +146,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
+        </div> */}
 
         {/* Bulk Actions */}
         {selectedQRCodes.length > 0 && (
@@ -278,8 +277,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                           onDownload={handleDownload}
                           onEditQRCode={handleEditQRCode}
                           onEditDesign={handleEditDesign}
-                          onArchive={archiveQRCode}
-                          onRestore={restoreQRCode}
+                          // onArchive={archiveQRCode}
+                          // onRestore={restoreQRCode}
                           onDeleteForever={handleDeleteForever}
                           isOwnedByCurrentUser={isOwnedByCurrentUser(qrCode)}
                         />
@@ -293,8 +292,8 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
                           onDownload={handleDownload}
                           onEditQRCode={handleEditQRCode}
                           onEditDesign={handleEditDesign}
-                          onArchive={archiveQRCode}
-                          onRestore={restoreQRCode}
+                          // onArchive={archiveQRCode}
+                          // onRestore={restoreQRCode}
                           onDeleteForever={handleDeleteForever}
                           isOwnedByCurrentUser={isOwnedByCurrentUser(qrCode)}
                         />

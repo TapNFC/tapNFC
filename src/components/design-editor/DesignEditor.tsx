@@ -192,6 +192,36 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         }
       };
 
+      // Special handler for image object scaling to prevent exceeding canvas boundaries
+      const handleImageScaling = (e: any) => {
+        const target = e?.target;
+        if (target && target.type === 'image' && canvas) {
+          const canvasWidth = canvas.getWidth();
+          const canvasHeight = canvas.getHeight();
+
+          // Get the scaled dimensions of the image
+          const scaledWidth = (target.width || 0) * (target.scaleX || 1);
+          const scaledHeight = (target.height || 0) * (target.scaleY || 1);
+
+          // Check if the scaled image would exceed canvas boundaries
+          if (scaledWidth > canvasWidth || scaledHeight > canvasHeight) {
+            // Calculate the maximum allowed scale to fit within canvas
+            const maxScaleX = canvasWidth / (target.width || 1);
+            const maxScaleY = canvasHeight / (target.height || 1);
+            const maxScale = Math.min(maxScaleX, maxScaleY);
+
+            // Apply the constrained scale
+            target.set({
+              scaleX: Math.min(target.scaleX || 1, maxScale),
+              scaleY: Math.min(target.scaleY || 1, maxScale),
+            });
+
+            // Update the canvas
+            safeRenderAll(canvas);
+          }
+        }
+      };
+
       // Normalize existing text objects that might have scaling applied
       const normalizeExistingTextObjects = () => {
         if (canvas) {
@@ -207,7 +237,12 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       canvas.on('object:removed', handleCanvasChange);
       canvas.on('object:modified', handleCanvasChange);
       canvas.on('object:moving', handleCanvasChange);
-      canvas.on('object:scaling', handleTextScaling); // Use text-specific handler
+      canvas.on('object:scaling', (e: any) => {
+        // Handle text scaling
+        handleTextScaling(e);
+        // Handle image scaling constraints
+        handleImageScaling(e);
+      });
       canvas.on('object:rotating', handleCanvasChange);
       canvas.on('canvas:background:changed', handleCanvasChange);
 
@@ -217,7 +252,7 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           canvas.off('object:removed', handleCanvasChange);
           canvas.off('object:modified', handleCanvasChange);
           canvas.off('object:moving', handleCanvasChange);
-          canvas.off('object:scaling', handleTextScaling); // Remove text-specific handler
+          canvas.off('object:scaling'); // Remove scaling handler
           canvas.off('object:rotating', handleCanvasChange);
           canvas.off('canvas:background:changed', handleCanvasChange);
         }

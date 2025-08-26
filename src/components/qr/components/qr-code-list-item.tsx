@@ -23,10 +23,9 @@ export const QRCodeListItem = ({
   onDownload,
   onEditQRCode,
   onEditDesign,
-
+  onDeleteForever,
   // onArchive,
   // onRestore,
-  // onDeleteForever,
   isOwnedByCurrentUser,
 }: {
   qrCode: QRCode;
@@ -36,10 +35,9 @@ export const QRCodeListItem = ({
   onDownload: (qrCode: QRCode) => void;
   onEditQRCode: (qrCode: QRCode) => void;
   onEditDesign: (qrCode: QRCode) => void;
-
-  onArchive: (qrCode: QRCode) => void;
-  onRestore: (qrCode: QRCode) => void;
   onDeleteForever: (qrCode: QRCode) => void;
+  // onArchive: (qrCode: QRCode) => void;
+  // onRestore: (qrCode: QRCode) => void;
   isOwnedByCurrentUser: boolean;
 }) => {
   const { toast } = useToast();
@@ -227,7 +225,8 @@ export const QRCodeListItem = ({
                     <DropdownMenuItem onClick={() => onEditQRCode(qrCode)}>Edit QR Code</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEditDesign(qrCode)}>Edit Design</DropdownMenuItem>
 
-                    {/* {
+                    {/* Archive functionality commented out - keeping for future use
+                    {
                       !qrCode.isArchived
                         ? (
                             <DropdownMenuItem
@@ -249,6 +248,14 @@ export const QRCodeListItem = ({
                             </>
                           )
                     } */}
+
+                    {/* Delete Forever option - always available */}
+                    <DropdownMenuItem
+                      onClick={() => onDeleteForever(qrCode)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Delete Forever
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

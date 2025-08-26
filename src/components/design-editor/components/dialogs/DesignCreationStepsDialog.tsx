@@ -198,15 +198,6 @@ export function DesignCreationStepsDialog({
                   </div>
                 </form>
               </Form>
-
-              {/* Step indicator */}
-              <div className="mt-8 flex justify-center">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-full bg-blue-500 text-white">
-                    1
-                  </div>
-                </div>
-              </div>
             </div>
           </DialogContent>
         </Dialog>

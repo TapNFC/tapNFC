@@ -70,7 +70,7 @@ export function QrCodeButton({ designId, locale = 'en', disabled = false, canvas
         // Save full canvas data to the backend, preserving existing name and description
         await designService.updateDesign(designId, {
           name: existingDesign?.name || `Design ${designId}`,
-          description: existingDesign?.description || 'Design ready for QR code generation',
+          description: existingDesign?.description || '',
           canvas_data: canvasData,
           width: Math.round(canvas.getWidth?.() || 800), // Save canvas width at design level, rounded to integer
           height: Math.round(canvas.getHeight?.() || 600), // Save canvas height at design level, rounded to integer
