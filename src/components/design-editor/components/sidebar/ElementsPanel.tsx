@@ -3,7 +3,6 @@
 import {
   Circle,
   Diamond,
-  Link,
   Minus,
   Square,
   Triangle,
@@ -21,7 +20,7 @@ import { SocialIconsPanel } from './SocialIconsPanel';
 type ElementsPanelProps = {
   onAddShape: (shapeType: string) => void;
   onAddLink: () => void;
-  onAddSocialIcon: (iconPath: string, iconName: string) => void;
+  onAddSocialIcon: (iconPath: string, iconName: string, svgCode?: string) => void;
 };
 
 const shapes = [
@@ -35,46 +34,9 @@ const shapes = [
   { id: 'line', icon: Minus, color: 'bg-gray-500', name: 'Line' },
 ];
 
-const links = [
-  { id: 'default', icon: Link, color: 'bg-indigo-500' },
-];
-
-export function ElementsPanel({ onAddShape, onAddLink, onAddSocialIcon }: ElementsPanelProps) {
+export function ElementsPanel({ onAddShape, onAddSocialIcon }: ElementsPanelProps) {
   return (
     <div className="space-y-8">
-      {/* Interactive Elements */}
-      <SidebarSection title="Interactive">
-        <div className="space-y-2">
-
-          {links.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Button
-                key={link.id}
-                variant="outline"
-                className="h-10 w-full justify-start gap-3 rounded border-2 border-gray-200 bg-white transition-all duration-300 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
-                onClick={() => onAddLink()}
-              >
-                <div className={`rounded-md p-1 ${link.color} bg-opacity-10`}>
-                  <Icon className={`size-4 ${link.color.replace('bg-', 'text-')}`} />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Add Link</span>
-              </Button>
-            );
-          })}
-
-          {/* Helpful tip */}
-          <div className="mt-3 rounded-lg border border-blue-200/50 bg-blue-50/80 p-3">
-            <p className="text-xs text-blue-700">
-              💡
-              {' '}
-              <strong>Tip:</strong>
-              {' '}
-              Double-click any link to edit its URL directly!
-            </p>
-          </div>
-        </div>
-      </SidebarSection>
 
       {/* Social Icons */}
       <SocialIconsPanel onAddSocialIcon={onAddSocialIcon} />

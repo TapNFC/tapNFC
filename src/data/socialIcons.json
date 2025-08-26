@@ -1,0 +1,194 @@
+[
+  {
+    "id": "facebook",
+    "name": "Facebook",
+    "path": "/assets/images/social-icons/facebook.png",
+    "svgCode": ""
+  },
+  {
+    "id": "instagram",
+    "name": "Instagram",
+    "path": "/assets/images/social-icons/instagram.png",
+    "svgCode": ""
+  },
+  {
+    "id": "tiktok",
+    "name": "TikTok",
+    "path": "/assets/images/social-icons/tiktok.png",
+    "svgCode": ""
+  },
+  {
+    "id": "youtube",
+    "name": "YouTube",
+    "path": "/assets/images/social-icons/youtube.png",
+    "svgCode": ""
+  },
+  {
+    "id": "social",
+    "name": "Social",
+    "path": "/assets/images/social-icons/social.png",
+    "svgCode": ""
+  },
+  {
+    "id": "messenger",
+    "name": "Messenger",
+    "path": "/assets/images/social-icons/messenger.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "x",
+    "name": "X (Twitter)",
+    "path": "/assets/images/social-icons/x.png",
+    "svgCode": ""
+  },
+  {
+    "id": "snapchat",
+    "name": "Snapchat",
+    "path": "/assets/images/social-icons/snapchat.png",
+    "svgCode": ""
+  },
+  {
+    "id": "linkedin",
+    "name": "LinkedIn",
+    "path": "/assets/images/social-icons/linkedin.png",
+    "svgCode": ""
+  },
+  {
+    "id": "pinterest",
+    "name": "Pinterest",
+    "path": "/assets/images/social-icons/pinterest.png",
+    "svgCode": ""
+  },
+  {
+    "id": "spotify",
+    "name": "Spotify",
+    "path": "/assets/images/social-icons/spotify.png",
+    "svgCode": ""
+  },
+  {
+    "id": "soundcloud",
+    "name": "Soundcloud",
+    "path": "/assets/images/social-icons/soundcloud.png",
+    "svgCode": ""
+  },
+  {
+    "id": "apple",
+    "name": "Apple",
+    "path": "/assets/images/social-icons/apple.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "paypal",
+    "name": "Paypal",
+    "path": "/assets/images/social-icons/paypal.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "venmo",
+    "name": "Venmo",
+    "path": "/assets/images/social-icons/venmo.png",
+    "svgCode": ""
+  },
+  {
+    "id": "telegram",
+    "name": "Telegram",
+    "path": "/assets/images/social-icons/telegram.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "path": "/assets/images/social-icons/discord.png",
+    "svgCode": ""
+  },
+  {
+    "id": "reddit",
+    "name": "Reddit",
+    "path": "/assets/images/social-icons/reddit.png",
+    "svgCode": ""
+  },
+  {
+    "id": "apple-music",
+    "name": "Apple Music",
+    "path": "/assets/images/social-icons/apple-music.png",
+    "svgCode": ""
+  },
+  {
+    "id": "we-chat",
+    "name": "We Chat",
+    "path": "/assets/images/social-icons/wechat.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "google",
+    "name": "Google",
+    "path": "/assets/images/social-icons/google.png",
+    "svgCode": "<svg xmlns=\"http://www.w3.org/2000/svg\" x=\"0px\" y=\"0px\" width=\"16\" height=\"16\" viewBox=\"0 0 48 48\"><path fill=\"#FFC107\" d=\"M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z\"></path><path fill=\"#FF3D00\" d=\"M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z\"></path><path fill=\"#4CAF50\" d=\"M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z\"></path><path fill=\"#1976D2\" d=\"M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z\"></path></svg>"
+  },
+  {
+    "id": "trustpilot",
+    "name": "Trustpilot",
+    "path": "/assets/images/social-icons/trustpilot.png",
+    "svgCode": ""
+  },
+  {
+    "id": "yelp",
+    "name": "Yelp",
+    "path": "/assets/images/social-icons/yelp.png",
+    "svgCode": ""
+  },
+  {
+    "id": "tripadvisor",
+    "name": "Tripadvisor",
+    "path": "/assets/images/social-icons/tripadvisor.png",
+    "svgCode": ""
+  },
+  {
+    "id": "wifi",
+    "name": "WiFi",
+    "path": "/assets/images/social-icons/wifi.png",
+    "svgCode": ""
+  },
+  {
+    "id": "apple-phone",
+    "name": "Apple Phone",
+    "path": "/assets/images/social-icons/apple-phone.png",
+    "svgCode": ""
+  },
+  {
+    "id": "apple-email",
+    "name": "Apple Email",
+    "path": "/assets/images/social-icons/apple-email.png",
+    "svgCode": ""
+  },
+  {
+    "id": "home",
+    "name": "Home",
+    "path": "/assets/images/social-icons/home.png",
+    "svgCode": ""
+  },
+  {
+    "id": "car",
+    "name": "Car",
+    "path": "/assets/images/social-icons/car.png",
+    "svgCode": ""
+  },
+  {
+    "id": "zelle",
+    "name": "Zelle",
+    "path": "/assets/images/social-icons/zelle.png",
+    "svgCode": "<svg xmlns=\"http://www.w3.org/2000/svg\" x=\"0px\" y=\"0px\" width=\"480\" height=\"480\" viewBox=\"0 0 48 48\"><path fill=\"#a0f\" d=\"M35,42H13c-3.866,0-7-3.134-7-7V13c0-3.866,3.134-7,7-7h22c3.866,0,7,3.134,7,7v22 C42,38.866,38.866,42,35,42z\"></path><path fill=\"#fff\" d=\"M17.5,18.5h14c0.552,0,1-0.448,1-1V15c0-0.552-0.448-1-1-1h-14c-0.552,0-1,0.448-1,1v2.5C16.5,18.052,16.948,18.5,17.5,18.5z\"></path><path fill=\"#fff\" d=\"M17,34.5h14.5c0.552,0,1-0.448,1-1V31c0-0.552-0.448-1-1-1H17c-0.552,0-1,0.448-1,1v2.5C16,34.052,16.448,34.5,17,34.5z\"></path><path fill=\"#fff\" d=\"M22.25,11v6c0,0.276,0.224,0.5,0.5,0.5h3.5c0.276,0,0.5-0.224,0.5-0.5v-6c0-0.276-0.224-0.5-0.5-0.5h-3.5C22.474,10.5,22.25,10.724,22.25,11z\"></path><path fill=\"#fff\" d=\"M22.25,32v6c0,0.276,0.224,0.5,0.5,0.5h3.5c0.276,0,0.5-0.224,0.5-0.5v-6c0-0.276-0.224-0.5-0.5-0.5h-3.5C22.474,31.5,22.25,31.724,22.25,32z\"></path><path fill=\"#fff\" d=\"M16.578,30.938H22l10.294-12.839c0.178-0.222,0.019-0.552-0.266-0.552H26.5L16.275,30.298C16.065,30.553,16.247,30.938,16.578,30.938z\"></path></svg>"
+  },
+  {
+    "id": "cash-app",
+    "name": "Cash App",
+    "path": "/assets/images/social-icons/cash-app.png",
+    "svgCode": ""
+  },
+  {
+    "id": "google-maps",
+    "name": "Google Maps",
+    "path": "/assets/images/social-icons/google-maps.png",
+    "svgCode": ""
+  }
+]

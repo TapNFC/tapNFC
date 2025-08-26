@@ -581,12 +581,103 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
   }, [canvas]);
 
   // Add social icon to canvas
-  const handleAddSocialIcon = useCallback((iconPath: string, iconName: string) => {
+  const handleAddSocialIcon = useCallback((iconPath: string, iconName: string, svgCode?: string) => {
     if (!canvas || !fabric || !fabricReady) {
       console.warn('Canvas or Fabric not ready');
       return;
     }
 
+    // If SVG code is provided, create SVG object instead of image
+    if (svgCode) {
+      fabric.loadSVGFromString(svgCode, (objects: any) => {
+        if (objects && objects.length > 0) {
+          // Create a group from SVG objects
+          const svgGroup = new fabric.Group(objects, {
+            left: 100,
+            top: 100,
+            scaleX: 1,
+            scaleY: 1,
+            cornerSize: 12,
+            cornerStyle: 'circle',
+            cornerColor: '#2563eb',
+            cornerStrokeColor: '#ffffff',
+            transparentCorners: false,
+            borderColor: '#2563eb',
+            borderScaleFactor: 2,
+            name: iconName,
+            elementType: 'socialIcon', // Custom property for identification
+            url: '',
+            hoverCursor: 'pointer', // Show pointer cursor on hover
+            svgCode, // Store SVG code for color editing
+            isSvgIcon: true, // Flag to identify SVG icons
+          });
+
+          // Add click handler for the SVG social icon
+          svgGroup.on('mousedown', function (this: any, e: any) {
+            // Only handle left-click
+            if (e.e.button !== 0) {
+              return;
+            }
+
+            // If the icon has a URL and it's not being edited (not selected)
+            if (this.url && !canvas.getActiveObject()) {
+              // Prevent default to avoid selecting the object
+              e.e.preventDefault();
+              e.e.stopPropagation();
+
+              // Handle URL navigation (same logic as image icons)
+              if (this.url.includes('.pdf') || this.url.includes('file-storage/files/')) {
+                toast.success(`Opening PDF: ${this.name || 'document'}`);
+              } else if (this.name === 'Apple Phone' && this.url) {
+                toast.success(`Calling: ${this.url}`);
+                window.location.href = `tel:${this.url}`;
+                return;
+              } else if (this.name === 'Apple Email' && this.url) {
+                toast.success(`Opening email: ${this.url}`);
+                window.location.href = `mailto:${this.url}`;
+                return;
+              } else {
+                toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
+              }
+
+              // Create a temporary anchor element to use native browser navigation
+              const tempLink = document.createElement('a');
+              tempLink.href = this.url;
+              tempLink.target = '_blank';
+              tempLink.rel = 'noopener noreferrer';
+              document.body.appendChild(tempLink);
+              tempLink.click();
+              document.body.removeChild(tempLink);
+            }
+          });
+
+          // Add the SVG group to the canvas
+          canvas.add(svgGroup);
+          canvas.setActiveObject(svgGroup);
+          safeRenderAll(canvas);
+
+          // Center the icon on the canvas
+          const canvasCenter = canvas.getCenter();
+          svgGroup.set({
+            left: canvasCenter.left,
+            top: canvasCenter.top,
+            originX: 'center',
+            originY: 'center',
+          });
+
+          safeRenderAll(canvas);
+
+          // Notify that a new element was added
+          canvas.fire('object:modified', { target: svgGroup });
+
+          // Show a hint about single-clicking
+          toast.info('Click the icon to edit its URL and name. SVG icons support color editing!');
+        }
+      });
+      return;
+    }
+
+    // Fallback to image-based icon
     fabric.Image.fromURL(iconPath, (img: any) => {
       // Set a default size for social icons
       const iconSize = 50;

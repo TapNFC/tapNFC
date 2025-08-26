@@ -11,6 +11,7 @@ import {
   MemoizedTextToolbar,
 } from './components/OptimizedComponents';
 import { SocialIconEditPopup } from './components/SocialIconEditPopup';
+import { SvgColorPicker } from './components/SvgColorPicker';
 import { TextContextualToolbar } from './components/TextContextualToolbar';
 import { TextUrlEditPopup } from './components/TextUrlEditPopup';
 import { DESIGN_EDITOR_CONFIG } from './constants';
@@ -66,10 +67,14 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
   const {
     socialIconContextualToolbar,
     socialIconEditPopup,
+    svgColorPicker,
     handleActionsClick,
+    handleColorEditClick,
     handleUpdateSocialIcon,
+    handleSvgColorChange,
     handleCloseSocialIconEdit,
     handleCloseContextualToolbar: handleCloseSocialIconContextualToolbar,
+    handleCloseSvgColorPicker,
   } = useSocialIconEditor({ canvas, designId });
 
   // Add the text URL editor hook
@@ -451,7 +456,9 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         <MemoizedSocialIconContextualToolbar
           isVisible={socialIconContextualToolbar.isVisible}
           position={socialIconContextualToolbar.position}
+          iconObject={socialIconContextualToolbar.iconObject}
           onActionsClick={handleActionsClick}
+          onColorEditClick={handleColorEditClick}
           onClose={handleCloseSocialIconContextualToolbar}
         />
       )}
@@ -465,6 +472,16 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           designId={designId}
           onUpdateIcon={handleUpdateSocialIcon}
           onClose={handleCloseSocialIconEdit}
+        />
+      )}
+
+      {/* Add the SVG color picker */}
+      {svgColorPicker.isVisible && (
+        <SvgColorPicker
+          isVisible={svgColorPicker.isVisible}
+          svgCode={svgColorPicker.svgCode}
+          onClose={handleCloseSvgColorPicker}
+          onColorChange={handleSvgColorChange}
         />
       )}
 

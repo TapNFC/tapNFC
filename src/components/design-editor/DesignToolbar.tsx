@@ -171,7 +171,7 @@ export function DesignToolbar({
       }
 
       // Get canvas JSON data
-      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'elementType', 'buttonData', 'linkData', 'url', 'name']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
 
       // Get canvas dimensions and background
       const width = canvas.getWidth();
