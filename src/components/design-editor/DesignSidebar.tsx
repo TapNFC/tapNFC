@@ -3,7 +3,6 @@
 import {
   ChevronRight,
   Image,
-  Layout,
   Palette,
   Settings,
   Shapes,
@@ -18,7 +17,7 @@ import { ElementsPanel } from './components/sidebar/ElementsPanel';
 import { SidebarSection } from './components/sidebar/SidebarSection';
 import { useFabricOperations } from './hooks/useFabricOperations';
 import { ImageUpload } from './ImageUpload';
-import { TemplateGallery } from './TemplateGallery';
+
 import './sidebar-animations.css';
 
 // Import fabric properly with error handling
@@ -63,17 +62,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
 
   // Memoize the static sidebar sections array to prevent recreation on every render
   const sidebarSections = useMemo(() => [
-    {
-      id: 'design',
-      label: 'Design',
-      icon: Layout,
-      gradient: 'from-violet-500 to-purple-600',
-      description: 'Templates & layouts',
-      items: [
-        { id: 'templates', label: 'Templates', icon: Layout, description: 'Pre-made designs' },
-        { id: 'layouts', label: 'Layouts', icon: Layout, description: 'Grid layouts' },
-      ],
-    },
     {
       id: 'backgrounds',
       label: 'Background',
@@ -193,8 +181,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
       handleAddText(itemId);
     } else if (sectionId === 'elements' && itemId === 'shapes') {
       // Keep the shapes panel open for interaction
-    } else if (sectionId === 'design' && itemId === 'templates') {
-      // Keep templates panel open
     } else if (sectionId === 'backgrounds') {
       // Keep backgrounds panel open
     } else if (sectionId === 'images') {
@@ -245,22 +231,6 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
         {/* Detail Panel Content */}
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-blue-50/20">
           {/* Special content sections */}
-          {activeSection === 'design' && (
-            <div
-              className="space-y-6 transition-all  delay-200 duration-300 ease-out"
-              style={{
-                animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
-              }}
-            >
-              {/* Templates panel for design section */}
-              <div className="rounded-2xl border border-white/30 bg-white/70 p-6 shadow-lg shadow-blue-100/20 backdrop-blur-sm">
-                <SidebarSection title="Templates">
-                  <TemplateGallery canvas={canvas} />
-                </SidebarSection>
-              </div>
-            </div>
-          )}
-
           {activeSection === 'backgrounds' && (
             <div
               className="space-y-6 transition-all  delay-200 duration-300 ease-out"

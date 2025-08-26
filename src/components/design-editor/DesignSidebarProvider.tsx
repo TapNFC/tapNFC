@@ -2,7 +2,6 @@
 
 import {
   Image,
-  Layout,
   Settings,
   Shapes,
   Sparkles,
@@ -22,7 +21,6 @@ import { ShapesPanel } from './components/sidebar/ShapesPanel';
 import { SidebarSection } from './components/sidebar/SidebarSection';
 import { useFabricOperations } from './hooks/useFabricOperations';
 import { ImageUpload } from './ImageUpload';
-import { TemplateGallery } from './TemplateGallery';
 
 // Dynamic fabric loading with error handling
 let fabric: any = null;
@@ -47,17 +45,6 @@ type DesignSidebarProviderProps = {
 };
 
 const sidebarSections = [
-  {
-    id: 'design',
-    label: 'Design',
-    icon: Layout,
-    description: 'Templates & layouts',
-    items: [
-      { id: 'templates', label: 'Templates', icon: Layout, description: 'Pre-made designs' },
-      { id: 'layouts', label: 'Layouts', icon: Layout, description: 'Grid layouts' },
-      { id: 'backgrounds', label: 'Backgrounds', icon: Layout, description: 'Colors & patterns' },
-    ],
-  },
   {
     id: 'elements',
     label: 'Elements',
@@ -116,7 +103,7 @@ const sidebarSections = [
 ];
 
 export function DesignSidebarProvider({ canvas, children }: DesignSidebarProviderProps) {
-  const [activeSection, setActiveSection] = useState<string>('design');
+  const [activeSection, setActiveSection] = useState<string>('elements');
   const [fabricReady, setFabricReady] = useState(false);
   const fabricInitialized = useRef(false);
 
@@ -151,10 +138,6 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
       handleAddText(itemId);
     } else if (sectionId === 'elements' && itemId === 'shapes') {
       setActiveSection('shapes');
-    } else if (sectionId === 'design' && itemId === 'templates') {
-      setActiveSection('templates');
-    } else if (sectionId === 'design' && itemId === 'backgrounds') {
-      setActiveSection('backgrounds');
     } else if (sectionId === 'images') {
       setActiveSection('images');
     } else if (sectionId === 'settings') {
@@ -174,14 +157,6 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
         {activeSection === 'shapes' && (
           <div className="p-4">
             <ShapesPanel onAddShape={handleAddShape} />
-          </div>
-        )}
-
-        {activeSection === 'templates' && (
-          <div className="p-4">
-            <SidebarSection title="Templates">
-              <TemplateGallery canvas={canvas} />
-            </SidebarSection>
           </div>
         )}
 
@@ -208,7 +183,7 @@ export function DesignSidebarProvider({ canvas, children }: DesignSidebarProvide
         )}
 
         {/* Default section content */}
-        {section && !['shapes', 'templates', 'backgrounds', 'images', 'settings'].includes(activeSection) && (
+        {section && !['shapes', 'backgrounds', 'images', 'settings'].includes(activeSection) && (
           <div className="p-4">
             <div className="mb-6">
               <h3 className="mb-2 text-lg font-semibold text-primary">{section.label}</h3>
