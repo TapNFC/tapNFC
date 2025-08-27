@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Palette } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -8,14 +8,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 type SocialIconContextualToolbarProps = {
   isVisible: boolean;
   position: { x: number; y: number };
+  iconObject: any;
   onActionsClick: () => void;
+  onColorEditClick: () => void;
   onClose: () => void;
 };
 
 export function SocialIconContextualToolbar({
   isVisible,
   position,
+  iconObject,
   onActionsClick,
+  onColorEditClick,
   onClose,
 }: SocialIconContextualToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -72,7 +76,7 @@ export function SocialIconContextualToolbar({
   }
 
   // Calculate toolbar position with boundary checking
-  const toolbarWidth = 48; // Width of the toolbar
+  const toolbarWidth = iconObject?.isSvgIcon ? 96 : 48; // Width of the toolbar (wider for SVG icons)
   const toolbarHeight = 40; // Height of the toolbar
   const padding = 16;
 
@@ -99,6 +103,26 @@ export function SocialIconContextualToolbar({
       }}
     >
       <TooltipProvider>
+        {/* Color editing button for SVG icons */}
+        {iconObject?.isSvgIcon && (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={onColorEditClick}
+                variant="ghost"
+                size="sm"
+                className="size-8 rounded-lg p-0 text-gray-600 hover:bg-green-50 hover:text-green-600"
+              >
+                <Palette className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-800 text-white">
+              <p>Edit colors</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Actions button */}
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <Button

@@ -702,6 +702,124 @@ export function RealTimePreview({
         );
       }
 
+      // Handle SVG Icons with svgCode
+      if (obj.svgCode && obj.isSvgIcon) {
+        // Calculate the actual position accounting for origin (same as social icons)
+        // Use base width/height without scaling for positioning calculations
+        const baseWidth = obj.width || 0;
+        const baseHeight = obj.height || 0;
+        let actualLeft = left;
+        let actualTop = top;
+
+        // Check if the object has originX/originY settings (common for social icons)
+        if (obj.originX === 'center') {
+          actualLeft = left - (baseWidth / 2);
+        } else if (obj.originX === 'right') {
+          actualLeft = left - baseWidth;
+        }
+
+        if (obj.originY === 'center') {
+          actualTop = top - (baseHeight / 2);
+        } else if (obj.originY === 'bottom') {
+          actualTop = top - baseHeight;
+        }
+
+        // Also handle cases where the image might be positioned from center by default
+        // Fabric.js sometimes centers images by default
+        if (!obj.originX && !obj.originY) {
+          // Check if this looks like a centered object by examining the position
+          const canvasWidth = canvasState?.width || 800;
+          const canvasHeight = canvasState?.height || 600;
+
+          // If the object appears to be positioned from center (common with social icons)
+          if (Math.abs(left - canvasWidth / 2) < canvasWidth / 3 && Math.abs(top - canvasHeight / 2) < canvasHeight / 3) {
+            actualLeft = left - (baseWidth / 2);
+            actualTop = top - (baseHeight / 2);
+          }
+        }
+
+        // If SVG icon has a URL, make it interactive
+        if (obj.url || obj.URL) {
+          return (
+            <button
+              key={`canvas-svg-icon-${obj.id || index}`}
+              type="button"
+              onClick={() => handleElementClick(obj)}
+              style={{
+                position: 'absolute',
+                left: `${actualLeft - (obj.width / 2)}px`,
+                top: `${actualTop - (obj.height / 2)}px`,
+                width: `${obj.width}px`,
+                height: `${obj.height}px`,
+                transform: `rotate(${angle}deg) scale(${obj.scaleX || 1}, ${obj.scaleY || 1})`,
+                transformOrigin: obj.originX === 'center' && obj.originY === 'center'
+                  ? 'center center'
+                  : obj.originX === 'center'
+                    ? 'center top'
+                    : obj.originY === 'center'
+                      ? 'left center'
+                      : 'left top',
+                opacity: obj.opacity !== undefined ? obj.opacity : 1,
+                zIndex: index + 1,
+                cursor: 'pointer',
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
+              <div
+                dangerouslySetInnerHTML={{ __html: obj.svgCode }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                }}
+              />
+            </button>
+          );
+        }
+
+        // Non-interactive SVG icon
+        return (
+          <div
+            key={`canvas-svg-icon-${obj.id || index}`}
+            style={{
+              position: 'absolute',
+              left: `${actualLeft - (obj.width / 2)}px`,
+              top: `${actualTop - (obj.height / 2)}px`,
+              width: `${obj.width}px`,
+              height: `${obj.height}px`,
+              transform: `rotate(${angle}deg) scale(${obj.scaleX || 1}, ${obj.scaleY || 1})`,
+              transformOrigin: obj.originX === 'center' && obj.originY === 'center'
+                ? 'center center'
+                : obj.originX === 'center'
+                  ? 'center top'
+                  : obj.originY === 'center'
+                    ? 'left center'
+                    : 'left top',
+              opacity: obj.opacity !== undefined ? obj.opacity : 1,
+              zIndex: index + 1,
+            }}
+          >
+            <div
+              dangerouslySetInnerHTML={{ __html: obj.svgCode }}
+              style={{
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        );
+      }
+
       // Handle Group elements (basic rendering)
       if (obj.type === 'group' && obj.objects) {
         // For groups, the group itself has left, top, width, height, scaleX, scaleY, angle.

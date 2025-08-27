@@ -155,8 +155,8 @@ export function DesignSidebar({ canvas, collapsed, designId, locale }: Omit<Desi
     handleBackgroundChange(background);
   }, [handleBackgroundChange]);
 
-  const memoizedHandleAddSocialIcon = useCallback((iconPath: string, iconName: string) => {
-    handleAddSocialIcon(iconPath, iconName);
+  const memoizedHandleAddSocialIcon = useCallback((iconPath: string, iconName: string, svgCode?: string) => {
+    handleAddSocialIcon(iconPath, iconName, svgCode);
   }, [handleAddSocialIcon]);
 
   const handleSectionClick = useCallback((sectionId: string) => {

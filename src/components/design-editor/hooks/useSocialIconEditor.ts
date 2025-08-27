@@ -1,4 +1,6 @@
+import { fabric } from 'fabric';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type SocialIconContextualToolbarState = {
   isVisible: boolean;
@@ -20,12 +22,16 @@ type UseSocialIconEditorProps = {
 type UseSocialIconEditorReturn = {
   socialIconContextualToolbar: SocialIconContextualToolbarState;
   socialIconEditPopup: SocialIconEditPopupState;
+  svgColorPicker: { isVisible: boolean; svgCode: string };
   handleSocialIconSingleClick: (iconObject: any, event: any) => void;
   handleSocialIconDoubleClick: (iconObject: any, event: any) => void;
   handleActionsClick: () => void;
+  handleColorEditClick: () => void;
   handleUpdateSocialIcon: (updates: { url?: string }) => void;
+  handleSvgColorChange: (newSvgCode: string) => void;
   handleCloseSocialIconEdit: () => void;
   handleCloseContextualToolbar: () => void;
+  handleCloseSvgColorPicker: () => void;
 };
 
 export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSocialIconEditorReturn {
@@ -39,6 +45,11 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     isVisible: false,
     iconObject: null,
     position: { x: 0, y: 0 },
+  });
+
+  const [svgColorPicker, setSvgColorPicker] = useState<{ isVisible: boolean; svgCode: string }>({
+    isVisible: false,
+    svgCode: '',
   });
 
   const handleSocialIconSingleClick = useCallback((iconObject: any, event: any) => {
@@ -135,6 +146,74 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     });
   }, [socialIconContextualToolbar]);
 
+  const handleColorEditClick = useCallback(() => {
+    if (!socialIconContextualToolbar.iconObject?.svgCode) {
+      return;
+    }
+
+    // Show SVG color picker
+    setSvgColorPicker({
+      isVisible: true,
+      svgCode: socialIconContextualToolbar.iconObject.svgCode,
+    });
+  }, [socialIconContextualToolbar.iconObject]);
+
+  const handleSvgColorChange = useCallback((newSvgCode: string) => {
+    if (!canvas) {
+      toast.error('Canvas not available');
+      return;
+    }
+
+    // Try to get the icon object from the contextual toolbar first
+    let iconObject = socialIconContextualToolbar.iconObject;
+
+    // If not available in toolbar, try to get the currently active object from canvas
+    if (!iconObject) {
+      iconObject = canvas.getActiveObject();
+    }
+
+    // If still no icon object, try to find any SVG social icon on the canvas
+    if (!iconObject || iconObject.elementType !== 'socialIcon' || !iconObject.isSvgIcon) {
+      const objects = canvas.getObjects();
+      iconObject = objects.find((obj: any) => obj.elementType === 'socialIcon' && obj.isSvgIcon);
+    }
+
+    if (!iconObject || iconObject.elementType !== 'socialIcon' || !iconObject.isSvgIcon) {
+      toast.error('No SVG social icon found. Please select an SVG icon first.');
+      return;
+    }
+
+    toast.success('Updating SVG colors...');
+
+    // Update the SVG code
+    iconObject.set?.({ svgCode: newSvgCode });
+
+    // Instead of recreating the SVG, update the fill colors of existing paths
+    if (iconObject.type === 'group' && iconObject._objects) {
+      // Get the new SVG objects to extract color information
+      fabric.loadSVGFromString(newSvgCode, (newObjects: any, _options: any) => {
+        if (newObjects && newObjects.length > 0) {
+          // Update fill colors of existing paths in the group
+          iconObject._objects.forEach((pathObj: any, index: number) => {
+            if (pathObj.type === 'path' && newObjects[index] && newObjects[index].fill) {
+              pathObj.set('fill', newObjects[index].fill);
+            }
+          });
+
+          // Force the canvas to re-render with updated colors
+          iconObject.setCoords();
+          canvas.renderAll();
+
+          toast.success('SVG colors updated successfully!');
+        }
+      });
+    } else {
+      // Fallback: if it's not a group, just update the svgCode property
+      canvas.renderAll();
+      toast.success('SVG colors updated successfully!');
+    }
+  }, [socialIconContextualToolbar.iconObject, canvas]);
+
   const handleUpdateSocialIcon = useCallback((updates: { url?: string }) => {
     if (!socialIconEditPopup.iconObject || !canvas || !updates) {
       return;
@@ -163,6 +242,13 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
       isVisible: false,
       iconObject: null,
       position: { x: 0, y: 0 },
+    });
+  }, []);
+
+  const handleCloseSvgColorPicker = useCallback(() => {
+    setSvgColorPicker({
+      isVisible: false,
+      svgCode: '',
     });
   }, []);
 
@@ -226,11 +312,15 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
   return {
     socialIconContextualToolbar,
     socialIconEditPopup,
+    svgColorPicker,
     handleSocialIconSingleClick,
     handleSocialIconDoubleClick,
     handleActionsClick,
+    handleColorEditClick,
     handleUpdateSocialIcon,
+    handleSvgColorChange,
     handleCloseSocialIconEdit,
     handleCloseContextualToolbar,
+    handleCloseSvgColorPicker,
   };
 }
