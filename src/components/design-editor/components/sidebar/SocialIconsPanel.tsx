@@ -18,8 +18,8 @@ const socialIcons = socialIconsData;
 
 export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
   // Separate icons into two categories
-  const regularIcons = socialIcons.filter(icon => !icon.svgCode);
-  const svgIcons = socialIcons.filter(icon => icon.svgCode);
+  const regularIcons = socialIcons.filter((icon: any) => !icon.svgCode);
+  const svgIcons = socialIcons.filter((icon: any) => icon.svgCode);
 
   const renderIconButton = (icon: any) => (
     <Tooltip key={icon.id} delayDuration={300}>
@@ -36,6 +36,7 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
                   <div
                     className="flex size-full items-center justify-center p-1"
                     dangerouslySetInnerHTML={{ __html: icon.svgCode }}
+                    style={{ scale: '2' }}
                   />
                 )
               : (
@@ -60,17 +61,6 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Regular Icons Section */}
-      <SidebarSection title="Social Icons">
-        <div className="mb-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">Standard Icons</h4>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <TooltipProvider>
-            {regularIcons.map(renderIconButton)}
-          </TooltipProvider>
-        </div>
-      </SidebarSection>
 
       {/* SVG Icons Section */}
       {svgIcons.length > 0 && (
@@ -85,6 +75,18 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
           </div>
         </SidebarSection>
       )}
+      {/* Regular Icons Section */}
+      <SidebarSection title="Social Icons">
+        <div className="mb-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">Standard Icons</h4>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <TooltipProvider>
+            {regularIcons.map(renderIconButton)}
+          </TooltipProvider>
+        </div>
+      </SidebarSection>
+
     </div>
   );
 }

@@ -47,14 +47,6 @@ export function SvgColorPicker({
     onClose();
   };
 
-  const handleResetColors = () => {
-    const initialColorMap: Record<string, string> = {};
-    colors.forEach((color) => {
-      initialColorMap[color] = color;
-    });
-    setColorMap(initialColorMap);
-  };
-
   if (!isVisible) {
     return null;
   }
@@ -111,15 +103,8 @@ export function SvgColorPicker({
 
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            onClick={handleResetColors}
-            className="flex-1"
-          >
-            Reset
-          </Button>
-          <Button
             onClick={handleApplyColors}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="w-full bg-blue-600 hover:bg-blue-700"
           >
             Apply Colors
           </Button>

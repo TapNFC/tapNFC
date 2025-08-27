@@ -595,8 +595,8 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           const svgGroup = new fabric.Group(objects, {
             left: 100,
             top: 100,
-            scaleX: 1,
-            scaleY: 1,
+            scaleX: 3.85,
+            scaleY: 3.85,
             cornerSize: 12,
             cornerStyle: 'circle',
             cornerColor: '#2563eb',
