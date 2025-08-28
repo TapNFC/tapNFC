@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
+import { designService } from '@/services/designService';
+import { storageService } from '@/services/storageService';
 import { isTextObject, normalizeTextObjects } from '@/utils/textUtils';
 import { CanvasContainer } from './components/CanvasContainer';
 import {
@@ -276,6 +279,108 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
       }
     }
   }, [isCanvasReady, isContextReady, canvas, designId]);
+
+  // Handle browser back button to save design before leaving
+  useEffect(() => {
+    const handleBeforeUnload = async (_event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && canvas) {
+        try {
+          // Save design data before leaving
+          const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+
+          if (canvasData) {
+            // Add canvas dimensions and background
+            canvasData.width = canvas.getWidth?.();
+            canvasData.height = canvas.getHeight?.();
+            canvasData.background = canvas.backgroundColor || '#ffffff';
+
+            // Save to backend
+            await designService.updateDesign(designId, {
+              canvas_data: canvasData,
+              width: Math.round(canvas.getWidth?.() || 800),
+              height: Math.round(canvas.getHeight?.() || 600),
+              background_color: typeof canvas.backgroundColor === 'string' ? canvas.backgroundColor : '#ffffff',
+            });
+          }
+        } catch (error) {
+          console.error('Failed to save design on page unload:', error);
+        }
+      }
+    };
+
+    const handlePopState = async (_event: PopStateEvent) => {
+      if (hasUnsavedChanges && canvas) {
+        // Prevent immediate navigation
+        _event.preventDefault();
+
+        try {
+          // 1. Get existing design to find old preview_url
+          const existingDesign = await designService.getDesignById(designId);
+          if (existingDesign?.preview_url) {
+            await storageService.deleteDesignPreview(existingDesign.preview_url);
+          }
+
+          const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+
+          if (canvasData) {
+            // Add canvas dimensions and background
+            canvasData.width = canvas.getWidth?.();
+            canvasData.height = canvas.getHeight?.();
+            canvasData.background = canvas.backgroundColor || '#ffffff';
+
+            // Try to generate preview image, but handle tainted canvas gracefully
+            let previewUrl: string | null = null;
+            try {
+              const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+              previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+
+              if (previewUrl) {
+                await designService.updateDesign(designId, { preview_url: previewUrl });
+                toast.success('Design preview updated.');
+              }
+            } catch (previewError) {
+              // Handle tainted canvas error gracefully
+              if (previewError instanceof Error && previewError.message.includes('Tainted canvases may not be exported')) {
+                console.warn('Canvas contains external images, skipping preview generation due to CORS restrictions');
+              } else {
+                console.warn('Failed to generate preview image:', previewError);
+              }
+            }
+
+            // Save full canvas data to the backend
+            await designService.updateDesign(designId, {
+              name: existingDesign?.name || `Design ${designId}`,
+              description: existingDesign?.description || '',
+              canvas_data: canvasData,
+              width: Math.round(canvas.getWidth?.() || 800),
+              height: Math.round(canvas.getHeight?.() || 600),
+              background_color: typeof canvas.backgroundColor === 'string' ? canvas.backgroundColor : '#ffffff',
+            });
+            toast.success('Design saved successfully.');
+
+            // Now manually navigate back after saving is complete
+            setTimeout(() => {
+              window.history.back();
+            }, 100); // Small delay to ensure toast is visible
+          }
+        } catch (error) {
+          console.error('Failed to save design on browser back:', error);
+          // Even if save fails, allow navigation back
+          setTimeout(() => {
+            window.history.back();
+          }, 100);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, canvas, designId]);
 
   // Zoom constants
   const ZOOM_STEP = 1.2;
