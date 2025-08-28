@@ -18,17 +18,16 @@ const socialIcons = socialIconsData;
 
 export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
   // Separate icons into two categories
-  const regularIcons = socialIcons.filter((icon: any) => !icon.svgCode);
   const svgIcons = socialIcons.filter((icon: any) => icon.svgCode);
 
-  const renderIconButton = (icon: any) => (
-    <Tooltip key={icon.id} delayDuration={300}>
+  const renderIconButton = (icon: any, usePath: boolean = false) => (
+    <Tooltip key={`${icon.id}-${usePath ? 'path' : 'svg'}`} delayDuration={300}>
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
           className="h-16 flex-col gap-1 rounded-xl border-2 border-gray-200 bg-white p-1 shadow-sm transition-all duration-300 hover:scale-105 hover:border-gray-300 hover:shadow-lg active:scale-95"
-          onClick={() => onAddSocialIcon(icon.path, icon.name, icon.svgCode)}
+          onClick={() => onAddSocialIcon(icon.path, icon.name, usePath ? undefined : icon.svgCode)}
         >
           <div className="relative size-10 overflow-hidden rounded-md">
             {icon.svgCode
@@ -52,7 +51,7 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
       </TooltipTrigger>
       <TooltipContent side="bottom" className="bg-gray-800 text-white">
         <p>{icon.name}</p>
-        {icon.svgCode && (
+        {icon.svgCode && !usePath && (
           <p className="mt-1 text-xs text-gray-300">SVG Icon (Editable colors)</p>
         )}
       </TooltipContent>
@@ -70,7 +69,7 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <TooltipProvider>
-              {svgIcons.map(renderIconButton)}
+              {svgIcons.map(icon => renderIconButton(icon, false))}
             </TooltipProvider>
           </div>
         </SidebarSection>
@@ -82,7 +81,7 @@ export function SocialIconsPanel({ onAddSocialIcon }: SocialIconsPanelProps) {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <TooltipProvider>
-            {regularIcons.map(renderIconButton)}
+            {socialIcons.map(icon => renderIconButton(icon, true))}
           </TooltipProvider>
         </div>
       </SidebarSection>
