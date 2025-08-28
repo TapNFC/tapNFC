@@ -210,6 +210,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
           case 'pdf':
             // For PDFs, return the URL as is (should be a direct link to the file)
             return url;
+          case 'vcard':
+            // For vCards, return the URL as is (should be a direct link to the file)
+            return url;
           case 'url':
           default:
             // For URLs, add https:// if not present
@@ -227,6 +230,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
         return url;
       } else if (url.includes('.pdf') || url.includes('file-storage/files/')) {
         // Detect PDF files
+        return url;
+      } else if (url.includes('.vcf') || url.includes('file-storage/vcards/')) {
+        // Detect vCard files
         return url;
       } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
         return `https://${url}`;

@@ -732,9 +732,15 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
           // Check if this is an email icon (Apple Email)
           const isEmailIcon = this.name === 'Apple Email';
 
+          // Check if this is a contact icon
+          const isContactIcon = this.name === 'Contact';
+
           if (isPdfEnabledIcon && (this.url.includes('.pdf') || this.url.includes('file-storage/files/'))) {
             // For PDF files, open in new tab
             toast.success(`Opening PDF: ${this.name || 'document'}`);
+          } else if (isContactIcon && (this.url.includes('.vcf') || this.url.includes('file-storage/vcards/'))) {
+            // For vCard files, open in new tab
+            toast.success(`Opening vCard: ${this.name || 'contact'}`);
           } else if (isPhoneIcon && this.url) {
             // For phone numbers, initiate call
             toast.success(`Calling: ${this.url}`);
