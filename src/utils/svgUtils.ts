@@ -3,12 +3,13 @@
  */
 
 /**
- * Extract all fill colors from SVG code
+ * Extract all fill colors from SVG code with their positions
  * @param svgCode - The SVG code as a string
- * @returns Array of unique fill colors found in the SVG
+ * @returns Array of objects containing color value and position information
  */
-export function extractSvgFillColors(svgCode: string): string[] {
-  const colors: string[] = [];
+export function extractSvgFillColors(svgCode: string): Array<{ color: string; index: number; originalIndex: number }> {
+  const colors: Array<{ color: string; index: number; originalIndex: number }> = [];
+  let index = 0;
 
   // Regular expression to match fill attributes with various color formats
   // This handles: fill="#FFC107", fill="red", fill="rgb(255,0,0)", etc.
@@ -17,10 +18,15 @@ export function extractSvgFillColors(svgCode: string): string[] {
 
   while (match !== null) {
     const color = match[1];
-    // Skip transparent, none, and empty values
-    if (color && color !== 'transparent' && color !== 'none' && color !== '' && !colors.includes(color)) {
-      colors.push(color);
+    // Skip transparent, none, and empty values, but allow duplicates
+    if (color && color !== 'transparent' && color !== 'none' && color !== '') {
+      colors.push({
+        color,
+        index: colors.length, // Sequential index for the UI
+        originalIndex: index, // Original position in the SVG
+      });
     }
+    index++;
     match = fillRegex.exec(svgCode);
   }
 
@@ -28,19 +34,38 @@ export function extractSvgFillColors(svgCode: string): string[] {
 }
 
 /**
- * Replace fill colors in SVG code
+ * Replace fill colors in SVG code by position
  * @param svgCode - The original SVG code
- * @param colorMap - Map of old colors to new colors
+ * @param colorMap - Map of position indices to new colors
  * @returns Modified SVG code with new colors
  */
-export function replaceSvgFillColors(svgCode: string, colorMap: Record<string, string>): string {
+export function replaceSvgFillColors(svgCode: string, colorMap: Record<number, string>): string {
   let modifiedSvg = svgCode;
+  let currentIndex = 0;
 
-  Object.entries(colorMap).forEach(([oldColor, newColor]) => {
-    // Use a more robust regex that handles quotes properly
-    const regex = new RegExp(`fill=["']${oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'g');
-    modifiedSvg = modifiedSvg.replace(regex, `fill="${newColor}"`);
-  });
+  // Find all fill attributes and replace them based on their position
+  const fillRegex = /fill=["']([^"']+)["']/g;
+  let match = fillRegex.exec(modifiedSvg);
+
+  while (match !== null) {
+    const color = match[1];
+    // Skip transparent, none, and empty values
+    if (color && color !== 'transparent' && color !== 'none' && color !== '') {
+      // Check if we have a new color for this position
+      if (colorMap[currentIndex] !== undefined) {
+        const newColor = colorMap[currentIndex];
+        // Replace this specific instance of the color
+        const beforeMatch = modifiedSvg.substring(0, match.index);
+        const afterMatch = modifiedSvg.substring(match.index + match[0].length);
+        modifiedSvg = `${beforeMatch}fill="${newColor}"${afterMatch}`;
+
+        // Adjust the regex index since we modified the string
+        fillRegex.lastIndex = match.index + `fill="${newColor}"`.length;
+      }
+      currentIndex++;
+    }
+    match = fillRegex.exec(modifiedSvg);
+  }
 
   return modifiedSvg;
 }
