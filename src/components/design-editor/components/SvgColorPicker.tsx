@@ -19,25 +19,25 @@ export function SvgColorPicker({
   onClose,
   onColorChange,
 }: SvgColorPickerProps) {
-  const [colors, setColors] = useState<string[]>([]);
-  const [colorMap, setColorMap] = useState<Record<string, string>>({});
+  const [colors, setColors] = useState<Array<{ color: string; index: number; originalIndex: number }>>([]);
+  const [colorMap, setColorMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (svgCode && isVisible) {
       const extractedColors = extractSvgFillColors(svgCode);
       setColors(extractedColors);
 
-      // Initialize color map with original colors
-      const initialColorMap: Record<string, string> = {};
-      extractedColors.forEach((color) => {
-        initialColorMap[color] = color;
+      // Initialize color map with original colors by position
+      const initialColorMap: Record<number, string> = {};
+      extractedColors.forEach((colorObj) => {
+        initialColorMap[colorObj.index] = colorObj.color;
       });
       setColorMap(initialColorMap);
     }
   }, [svgCode, isVisible]);
 
-  const handleColorChange = (oldColor: string, newColor: string) => {
-    const updatedColorMap = { ...colorMap, [oldColor]: newColor };
+  const handleColorChange = (index: number, newColor: string) => {
+    const updatedColorMap = { ...colorMap, [index]: newColor };
     setColorMap(updatedColorMap);
   };
 
@@ -72,11 +72,11 @@ export function SvgColorPicker({
           </p>
 
           {colors.map((color, index) => (
-            <div key={color} className="mb-3 flex items-center gap-3">
+            <div key={color.index} className="mb-3 flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div
                   className="size-6 rounded border border-gray-300"
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: color.color }}
                 />
                 <Label className="text-sm font-medium text-gray-700">
                   Color
@@ -86,14 +86,14 @@ export function SvgColorPicker({
               </div>
               <Input
                 type="color"
-                value={colorMap[color] || color}
-                onChange={e => handleColorChange(color, e.target.value)}
+                value={colorMap[color.index] || color.color}
+                onChange={e => handleColorChange(color.index, e.target.value)}
                 className="h-8 w-16 p-1"
               />
               <Input
                 type="text"
-                value={colorMap[color] || color}
-                onChange={e => handleColorChange(color, e.target.value)}
+                value={colorMap[color.index] || color.color}
+                onChange={e => handleColorChange(color.index, e.target.value)}
                 placeholder="#000000"
                 className="h-8 flex-1 text-sm"
               />
