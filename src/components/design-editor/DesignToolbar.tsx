@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { designService } from '@/services/designService';
+import { storageService } from '@/services/storageService';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeTextObjects } from '@/utils/textUtils';
 import { LoadTemplateDialog } from './components/dialogs/LoadTemplateDialog';
@@ -231,6 +232,71 @@ export function DesignToolbar({
     }
   };
 
+  const handleProceedToQrCode = async () => {
+    if (!canvas) {
+      toast.error('Canvas is not ready');
+      return;
+    }
+
+    try {
+      // 1. Get existing design to find old preview_url
+      const existingDesign = await designService.getDesignById(designId);
+      if (existingDesign?.preview_url) {
+        await storageService.deleteDesignPreview(existingDesign.preview_url);
+      }
+
+      const canvasData = canvas.toJSON?.(['elementType', 'buttonData', 'linkData', 'shapeData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+
+      if (!canvasData) {
+        toast.error('Failed to get canvas data. Cannot proceed.');
+        return;
+      }
+
+      // Add canvas dimensions and background to the saved data
+      canvasData.width = canvas.getWidth?.();
+      canvasData.height = canvas.getHeight?.();
+      canvasData.background = canvas.backgroundColor || '#ffffff';
+
+      // Try to generate preview image, but handle tainted canvas gracefully
+      let previewUrl: string | null = null;
+      try {
+        const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
+        previewUrl = await storageService.uploadDesignPreview(designId, dataUrl);
+
+        if (previewUrl) {
+          await designService.updateDesign(designId, { preview_url: previewUrl });
+          toast.success('Design preview updated.');
+        }
+      } catch (previewError) {
+        // Handle tainted canvas error gracefully
+        if (previewError instanceof Error && previewError.message.includes('Tainted canvases may not be exported')) {
+          console.warn('Canvas contains external images, skipping preview generation due to CORS restrictions');
+          // Continue without preview - this is not a critical error
+        } else {
+          console.warn('Failed to generate preview image:', previewError);
+          // Continue without preview - this is not a critical error
+        }
+      }
+
+      // Save full canvas data to the backend, preserving existing name and description
+      await designService.updateDesign(designId, {
+        name: existingDesign?.name || `Design ${designId}`,
+        description: existingDesign?.description || '',
+        canvas_data: canvasData,
+        width: Math.round(canvas.getWidth?.() || 800), // Save canvas width at design level, rounded to integer
+        height: Math.round(canvas.getHeight?.() || 600), // Save canvas height at design level, rounded to integer
+        background_color: typeof canvas.backgroundColor === 'string' ? canvas.backgroundColor : '#ffffff', // Save background color at design level
+      });
+      toast.success('Design saved successfully.');
+
+      // Navigate to dashboard after saving
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Failed to save design data:', error);
+      toast.error('Failed to save design data. Please try again.');
+    }
+  };
+
   const handleLoadTemplate = async (templateId: string) => {
     if (!canvas) {
       toast.error('Canvas is not ready');
@@ -394,9 +460,9 @@ export function DesignToolbar({
           <div className="flex items-center space-x-3">
             <button
               type="button"
-              onClick={() => router.push('/dashboard')}
+              onClick={handleProceedToQrCode}
               className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
-              title="Go to Dashboard"
+              title="Save and Go to Dashboard"
             >
               <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
                 <Sparkles className="size-5 text-white" />
