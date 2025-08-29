@@ -747,8 +747,8 @@ export function RealTimePreview({
               onClick={() => handleElementClick(obj)}
               style={{
                 position: 'absolute',
-                left: `${actualLeft - (obj.width / 2)}px`,
-                top: `${actualTop - (obj.height / 2)}px`,
+                left: `${actualLeft - (obj.width / 2) - 10}px`,
+                top: `${actualTop - (obj.height / 2) - 10}px`,
                 width: `${obj.width}px`,
                 height: `${obj.height}px`,
                 transform: `rotate(${angle}deg) scale(${obj.scaleX || 1}, ${obj.scaleY || 1})`,
@@ -792,8 +792,8 @@ export function RealTimePreview({
             key={`canvas-svg-icon-${obj.id || index}`}
             style={{
               position: 'absolute',
-              left: `${actualLeft - (obj.width / 2)}px`,
-              top: `${actualTop - (obj.height / 2)}px`,
+              left: `${actualLeft - (obj.width / 2) - 10}px`,
+              top: `${actualTop - (obj.height / 2) - 10}px`,
               width: `${obj.width}px`,
               height: `${obj.height}px`,
               transform: `rotate(${angle}deg) scale(${obj.scaleX || 1}, ${obj.scaleY || 1})`,
