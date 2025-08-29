@@ -108,7 +108,38 @@ export function useKeyboardShortcuts({
           // Ctrl+C: Copy
           const activeObj = canvas.getActiveObject();
           if (activeObj) {
+            // Create a deep clone that preserves all custom properties
             activeObj.clone((cloned: any) => {
+              // Preserve all custom properties for icons and other elements
+              if (activeObj.elementType) {
+                cloned.elementType = activeObj.elementType;
+              }
+              if (activeObj.svgCode) {
+                cloned.svgCode = activeObj.svgCode;
+              }
+              if (activeObj.isSvgIcon) {
+                cloned.isSvgIcon = activeObj.isSvgIcon;
+              }
+              if (activeObj.url) {
+                cloned.url = activeObj.url;
+              }
+              if (activeObj.name) {
+                cloned.name = activeObj.name;
+              }
+              if (activeObj.hoverCursor) {
+                cloned.hoverCursor = activeObj.hoverCursor;
+              }
+              if (activeObj.buttonData) {
+                cloned.buttonData = activeObj.buttonData;
+              }
+              if (activeObj.linkData) {
+                cloned.linkData = activeObj.linkData;
+              }
+              if (activeObj.elementType === 'socialIcon') {
+                // Ensure social icon properties are preserved
+                cloned.elementType = 'socialIcon';
+                cloned.hoverCursor = 'pointer';
+              }
               canvas._clipboard = cloned;
             });
           }
@@ -121,11 +152,41 @@ export function useKeyboardShortcuts({
           if (canvas._clipboard) {
             canvas._clipboard.clone((clonedObj: any) => {
               canvas.discardActiveObject();
+
+              // Preserve all custom properties from the clipboard
+              if (canvas._clipboard.elementType) {
+                clonedObj.elementType = canvas._clipboard.elementType;
+              }
+              if (canvas._clipboard.svgCode) {
+                clonedObj.svgCode = canvas._clipboard.svgCode;
+              }
+              if (canvas._clipboard.isSvgIcon) {
+                clonedObj.isSvgIcon = canvas._clipboard.isSvgIcon;
+              }
+              if (canvas._clipboard.url) {
+                clonedObj.url = canvas._clipboard.url;
+              }
+              if (canvas._clipboard.name) {
+                clonedObj.name = canvas._clipboard.name;
+              }
+              if (canvas._clipboard.hoverCursor) {
+                clonedObj.hoverCursor = canvas._clipboard.hoverCursor;
+              }
+              if (canvas._clipboard.buttonData) {
+                clonedObj.buttonData = canvas._clipboard.buttonData;
+              }
+              if (canvas._clipboard.linkData) {
+                clonedObj.linkData = canvas._clipboard.linkData;
+              }
+
+              // Set position and ensure the object is interactive
               clonedObj.set({
                 left: clonedObj.left + 10,
                 top: clonedObj.top + 10,
                 evented: true,
+                selectable: true,
               });
+
               if (clonedObj.type === 'activeSelection') {
                 clonedObj.canvas = canvas;
                 clonedObj.forEachObject((obj: any) => {
@@ -135,8 +196,12 @@ export function useKeyboardShortcuts({
               } else {
                 canvas.add(clonedObj);
               }
+
+              // Update clipboard position for next paste
               canvas._clipboard.top += 10;
               canvas._clipboard.left += 10;
+
+              // Select the newly pasted object
               canvas.setActiveObject(clonedObj);
               canvas.requestRenderAll();
             });

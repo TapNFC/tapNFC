@@ -237,9 +237,42 @@ export function PropertiesPanel({
 
     try {
       selectedObject.clone((cloned: any) => {
+        // Preserve all custom properties for icons and other elements
+        if (selectedObject.elementType) {
+          cloned.elementType = selectedObject.elementType;
+        }
+        if (selectedObject.svgCode) {
+          cloned.svgCode = selectedObject.svgCode;
+        }
+        if (selectedObject.isSvgIcon) {
+          cloned.isSvgIcon = selectedObject.isSvgIcon;
+        }
+        if (selectedObject.url) {
+          cloned.url = selectedObject.url;
+        }
+        if (selectedObject.name) {
+          cloned.name = selectedObject.name;
+        }
+        if (selectedObject.hoverCursor) {
+          cloned.hoverCursor = selectedObject.hoverCursor;
+        }
+        if (selectedObject.buttonData) {
+          cloned.buttonData = selectedObject.buttonData;
+        }
+        if (selectedObject.linkData) {
+          cloned.linkData = selectedObject.linkData;
+        }
+        if (selectedObject.elementType === 'socialIcon') {
+          // Ensure social icon properties are preserved
+          cloned.elementType = 'socialIcon';
+          cloned.hoverCursor = 'pointer';
+        }
+
         cloned.set({
           left: cloned.left + 20,
           top: cloned.top + 20,
+          evented: true,
+          selectable: true,
         });
         canvas.add(cloned);
         canvas.setActiveObject(cloned);
