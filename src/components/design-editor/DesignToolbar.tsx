@@ -579,7 +579,7 @@ export function DesignToolbar({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/dashboard/settings')}>
                   <User className="mr-2 size-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
