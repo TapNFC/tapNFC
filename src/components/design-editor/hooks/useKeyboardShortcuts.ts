@@ -13,6 +13,7 @@ type UseKeyboardShortcutsOptions = {
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  disableShortcuts?: boolean;
 };
 
 export function useKeyboardShortcuts({
@@ -25,10 +26,16 @@ export function useKeyboardShortcuts({
   onRedo,
   canUndo = false,
   canRedo = false,
+  disableShortcuts = false,
 }: UseKeyboardShortcutsOptions) {
   const { templates } = useTemplateStore();
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // If shortcuts are disabled, don't handle any keyboard events
+    if (disableShortcuts) {
+      return;
+    }
+
     if (!canvas) {
       return;
     }
@@ -264,7 +271,7 @@ export function useKeyboardShortcuts({
     } catch (error) {
       console.error('Error in keyboard shortcut handler:', error);
     }
-  }, [canvas, fabric, selectedObject, templates, onShowSaveDialog, onShowLoadDialog, onUndo, onRedo, canUndo, canRedo]);
+  }, [canvas, fabric, selectedObject, templates, onShowSaveDialog, onShowLoadDialog, onUndo, onRedo, canUndo, canRedo, disableShortcuts]);
 
   // Add keyboard event listeners
   useEffect(() => {
