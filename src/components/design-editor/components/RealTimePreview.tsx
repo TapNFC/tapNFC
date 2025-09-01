@@ -641,9 +641,7 @@ export function RealTimePreview({
                 width: `${width}px`,
                 height: `${height}px`,
                 transform: `rotate(${angle}deg)`,
-                transformOrigin: obj.originX === 'center' && obj.originY === 'center'
-                  ? 'center center'
-                  : 'left top',
+                transformOrigin: 'left top',
                 opacity: obj.opacity !== undefined ? obj.opacity : 1,
                 zIndex: index + 1,
                 cursor: 'pointer',
@@ -651,6 +649,7 @@ export function RealTimePreview({
                 border: 'none',
                 padding: 0,
                 margin: 0,
+                overflow: 'hidden',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = '0.8';
@@ -667,9 +666,12 @@ export function RealTimePreview({
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover',
+                  objectFit: 'fill',
                   boxSizing: 'border-box',
                   pointerEvents: 'none',
+                  display: 'block',
+                  maxWidth: 'none',
+                  maxHeight: 'none',
                 }}
               />
             </button>
@@ -690,13 +692,14 @@ export function RealTimePreview({
               width: `${width}px`,
               height: `${height}px`,
               transform: `rotate(${angle}deg)`,
-              transformOrigin: obj.originX === 'center' && obj.originY === 'center'
-                ? 'center center'
-                : 'left top',
+              transformOrigin: 'left top',
               opacity: obj.opacity !== undefined ? obj.opacity : 1,
               zIndex: index + 1,
-              objectFit: (obj.cropX === undefined && obj.cropY === undefined) ? 'fill' : 'cover',
+              objectFit: 'fill',
               boxSizing: 'border-box',
+              // display: 'block',
+              maxWidth: 'none',
+              maxHeight: 'none',
             }}
           />
         );
@@ -933,7 +936,7 @@ export function RealTimePreview({
         />
       );
     });
-  }, [canvasState]);
+  }, [canvasState, handleElementClick]);
 
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(() => {
