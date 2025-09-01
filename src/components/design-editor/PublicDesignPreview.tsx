@@ -1090,9 +1090,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                 width: `${width}px`,
                 height: `${height}px`,
                 transform: `rotate(${angle}deg)`,
-                transformOrigin: obj.originX === 'center' && obj.originY === 'center'
-                  ? 'center center'
-                  : 'left top',
+                transformOrigin: 'left top',
                 opacity: obj.opacity !== undefined ? obj.opacity : 1,
                 zIndex: index + 1,
                 cursor: 'pointer',
@@ -1100,6 +1098,7 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                 border: 'none',
                 padding: 0,
                 margin: 0,
+                overflow: 'hidden',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = '0.8';
@@ -1117,6 +1116,9 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
                   objectFit: 'fill',
                   boxSizing: 'border-box',
                   pointerEvents: 'none',
+                  display: 'block',
+                  maxWidth: 'none',
+                  maxHeight: 'none',
                 }}
               />
             </button>
@@ -1135,13 +1137,14 @@ export function PublicDesignPreview({ designId, designSlug, initialData, forceRe
               width: `${width}px`,
               height: `${height}px`,
               transform: `rotate(${angle}deg)`,
-              transformOrigin: obj.originX === 'center' && obj.originY === 'center'
-                ? 'center center'
-                : 'left top',
+              transformOrigin: 'left top',
               opacity: obj.opacity !== undefined ? obj.opacity : 1,
               zIndex: index + 1,
               objectFit: 'fill',
               boxSizing: 'border-box',
+              // display: 'block',
+              maxWidth: 'none',
+              maxHeight: 'none',
             }}
           />
         );
