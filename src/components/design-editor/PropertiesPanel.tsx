@@ -103,6 +103,12 @@ export function PropertiesPanel({
 
     try {
       selectedObject.set(property, value);
+
+      // Ensure strokeUniform is true when strokeWidth is updated
+      if (property === 'strokeWidth') {
+        selectedObject.set('strokeUniform', true);
+      }
+
       scheduleRender();
 
       // Update local state

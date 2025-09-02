@@ -128,6 +128,24 @@ export function safeLoadFromJSON(
           throw new Error('Canvas context became unavailable before loading');
         }
 
+        // Create a reviver function to ensure strokeUniform is set on all objects
+        const strokeUniformReviver = (_property: string, value: any) => {
+          // If this is an object with strokeWidth, ensure strokeUniform is true
+          if (value && typeof value === 'object' && value.strokeWidth !== undefined) {
+            value.strokeUniform = true;
+          }
+          return value;
+        };
+
+        // Combine the custom reviver with our strokeUniform reviver
+        const combinedReviver = (property: string, value: any) => {
+          let result = strokeUniformReviver(property, value);
+          if (reviver) {
+            result = reviver(property, result);
+          }
+          return result;
+        };
+
         canvas.loadFromJSON(jsonData, (loadedCanvas?: any, error?: any) => {
           if (error) {
             console.error('Error in loadFromJSON callback:', error);
@@ -149,7 +167,7 @@ export function safeLoadFromJSON(
           if (callback) {
             callback(loadedCanvas, error);
           }
-        }, reviver);
+        }, combinedReviver);
 
         return true;
       } catch (error) {

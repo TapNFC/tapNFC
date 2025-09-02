@@ -198,6 +198,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         ry: borderRadius,
         originX: 'center',
         originY: 'center',
+        strokeUniform: true, // Keep stroke width constant when scaling
       });
 
       // Position text in the center of the button background
@@ -283,12 +284,14 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         fill: '#3b82f6', // Default fill blue-500
         stroke: '#1e40af', // Default stroke blue-700
         strokeWidth: 2,
+        strokeUniform: true, // Keep stroke width constant when scaling
       };
 
       const outlinedCommonProps = {
         ...commonProps,
         fill: 'transparent',
         stroke: '#4f46e5', // Default stroke indigo-600 for outlined
+        strokeUniform: true, // Keep stroke width constant when scaling
       };
 
       switch (shapeType) {
@@ -300,6 +303,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             rx: 0, // Set to 0 for sharp corners
             ry: 0, // Set to 0 for sharp corners
             strokeWidth: 1, // Set to 1px border
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'outlined-rectangle':
@@ -310,18 +314,21 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             rx: 0, // Set to 0 for sharp corners
             ry: 0, // Set to 0 for sharp corners
             strokeWidth: 1, // Set to 1px border
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'circle':
           shape = new fabric.Circle({
             ...commonProps,
             radius: 40,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'outlined-circle':
           shape = new fabric.Circle({
             ...outlinedCommonProps,
             radius: 40,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'triangle':
@@ -329,6 +336,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...commonProps,
             width: 80,
             height: 70,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'diamond':
@@ -339,6 +347,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             width: 70,
             height: 70,
             angle: 45,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           // To make it look more like a diamond, you might want to adjust stroke join, etc.
           // Or define points for a fabric.Polygon
@@ -349,6 +358,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             top: 50,
             stroke: commonProps.fill, // Use fill color for line stroke as per design
             strokeWidth: 4,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         case 'star':
@@ -369,6 +379,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             ...commonProps,
             left: 150,
             top: 150,
+            strokeUniform: true, // Keep stroke width constant when scaling
           });
           break;
         default:
