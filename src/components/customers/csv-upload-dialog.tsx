@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useCustomers } from '@/hooks/useCustomers';
+import { useCustomersWithQuery } from '@/hooks/useCustomersWithQuery';
 import { cn } from '@/lib/utils';
 
 type CSVUploadDialogProps = {
@@ -90,7 +90,7 @@ type ValidationError = {
 };
 
 export function CSVUploadDialog({ open, onOpenChange, onUpload }: CSVUploadDialogProps) {
-  const { customers: existingCustomers } = useCustomers();
+  const { customers: existingCustomers } = useCustomersWithQuery();
   const [uploadedData, setUploadedData] = useState<CSVCustomer[]>([]);
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
