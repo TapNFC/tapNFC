@@ -1,5 +1,6 @@
 import type { Design, UpdateDesignInput } from '@/types/design';
-import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { designService } from '@/services/designService';
 
@@ -14,16 +15,19 @@ export function useDesigns({
   searchQuery,
   tag,
 }: UseDesignsProps) {
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState(initialCategory);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchDesigns = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  // Fetch designs using React Query
+  const {
+    data: designs = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchDesigns,
+  } = useQuery({
+    queryKey: ['designs', category, searchQuery, tag],
+    queryFn: async (): Promise<Design[]> => {
       let fetchedDesigns: Design[] = [];
 
       if (tag) {
@@ -61,101 +65,108 @@ export function useDesigns({
         }
       }
 
-      setDesigns(fetchedDesigns);
-    } catch (err) {
-      setError('Failed to fetch designs');
-      console.error('Error fetching designs:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [category, searchQuery, tag]);
+      return fetchedDesigns;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-  // Create a new design
-  const createDesign = async (design: Partial<Design>): Promise<Design | null> => {
-    try {
-      const newDesign = await designService.createDesign(design);
+  // Create design mutation
+  const createDesignMutation = useMutation({
+    mutationFn: async (design: Partial<Design>) => {
+      return await designService.createDesign(design);
+    },
+    onSuccess: (newDesign) => {
       if (newDesign) {
-        setDesigns(prev => [newDesign, ...prev]);
+        queryClient.invalidateQueries({ queryKey: ['designs'] });
         toast({
           title: 'Design created',
           description: `"${newDesign.name}" has been created successfully.`,
         });
-        return newDesign;
       }
-      return null;
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('Error creating design:', err);
       toast({
         title: 'Error',
         description: 'Failed to create design. Please try again.',
         variant: 'error',
       });
-      return null;
-    }
-  };
+    },
+  });
 
-  // Update an existing design
-  const updateDesign = async (id: string, updates: UpdateDesignInput): Promise<Design | null> => {
-    try {
-      const updatedDesign = await designService.updateDesign(id, updates);
+  // Update design mutation
+  const updateDesignMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: UpdateDesignInput }) => {
+      return await designService.updateDesign(id, updates);
+    },
+    onSuccess: (updatedDesign) => {
       if (updatedDesign) {
-        setDesigns(prev =>
-          prev.map(design => design.id === id ? updatedDesign : design),
-        );
+        queryClient.invalidateQueries({ queryKey: ['designs'] });
         toast({
           title: 'Design updated',
           description: `"${updatedDesign.name}" has been updated successfully.`,
         });
-        return updatedDesign;
       }
-      return null;
-    } catch (err) {
-      console.error(`Error updating design ${id}:`, err);
+    },
+    onError: (err) => {
+      console.error('Error updating design:', err);
       toast({
         title: 'Error',
         description: 'Failed to update design. Please try again.',
         variant: 'error',
       });
-      return null;
-    }
-  };
+    },
+  });
 
-  // Delete a design
-  const deleteDesign = async (id: string, designName: string): Promise<boolean> => {
-    try {
+  // Delete design mutation
+  const deleteDesignMutation = useMutation({
+    mutationFn: async ({ id, designName }: { id: string; designName: string }) => {
       const success = await designService.deleteDesign(id);
+      return { success, designName };
+    },
+    onSuccess: ({ success, designName }) => {
       if (success) {
-        setDesigns(prev => prev.filter(design => design.id !== id));
+        queryClient.invalidateQueries({ queryKey: ['designs'] });
         toast({
           title: 'Design deleted',
           description: `"${designName}" has been deleted successfully.`,
         });
-        return true;
       }
-      return false;
-    } catch (err) {
-      console.error(`Error deleting design ${id}:`, err);
+    },
+    onError: (err) => {
+      console.error('Error deleting design:', err);
       toast({
         title: 'Error',
         description: 'Failed to delete design. Please try again.',
         variant: 'error',
       });
-      return false;
-    }
+    },
+  });
+
+  // Wrapper functions to maintain the same interface
+  const createDesign = async (design: Partial<Design>): Promise<Design | null> => {
+    return await createDesignMutation.mutateAsync(design);
   };
 
-  // Search designs - This is now handled by the main fetchDesigns effect
-  // but can be kept for explicit search actions if needed elsewhere.
+  const updateDesign = async (id: string, updates: UpdateDesignInput): Promise<Design | null> => {
+    return await updateDesignMutation.mutateAsync({ id, updates });
+  };
+
+  const deleteDesign = async (id: string, designName: string): Promise<boolean> => {
+    const result = await deleteDesignMutation.mutateAsync({ id, designName });
+    return result.success;
+  };
+
+  // Search designs
   const searchDesigns = async (query: string): Promise<Design[]> => {
     if (!query.trim()) {
-      await fetchDesigns();
+      await refetchDesigns();
       return designs;
     }
 
-    setLoading(true);
     try {
       const results = await designService.searchDesigns(query);
-      setDesigns(results);
       return results;
     } catch (err) {
       console.error('Error searching designs:', err);
@@ -165,8 +176,6 @@ export function useDesigns({
         variant: 'error',
       });
       return [];
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -191,27 +200,22 @@ export function useDesigns({
     }
   };
 
-  // Change the category and fetch designs
+  // Change the category
   const changeCategory = (newCategory: string) => {
     setCategory(newCategory);
   };
 
-  // Fetch designs on mount and when category/search/tag changes
-  useEffect(() => {
-    fetchDesigns();
-  }, [fetchDesigns]);
-
   return {
     designs,
     loading,
-    error,
+    error: queryError?.message || null,
     category,
     changeCategory,
     createDesign,
     updateDesign,
     deleteDesign,
-    searchDesigns, // Keep exposing for explicit searches if needed
+    searchDesigns,
     uploadPreviewImage,
-    refreshDesigns: fetchDesigns,
+    refreshDesigns: refetchDesigns,
   };
 }
