@@ -1,7 +1,7 @@
 import type { Design, UpdateDesignInput } from '@/types/design';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { designService } from '@/services/designService';
 
 type UseDesignsProps = {
@@ -16,7 +16,6 @@ export function useDesigns({
   tag,
 }: UseDesignsProps) {
   const [category, setCategory] = useState(initialCategory);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch designs using React Query
@@ -76,22 +75,27 @@ export function useDesigns({
     mutationFn: async (design: Partial<Design>) => {
       return await designService.createDesign(design);
     },
+    onMutate: (design) => {
+      // Show loading toast for copy operations (when name contains "Copy")
+      if (design.name?.includes('Copy')) {
+        toast.loading('Design duplicating...', {
+          id: 'duplicate-design',
+        });
+      }
+    },
     onSuccess: (newDesign) => {
       if (newDesign) {
         queryClient.invalidateQueries({ queryKey: ['designs'] });
-        toast({
-          title: 'Design created',
-          description: `"${newDesign.name}" has been created successfully.`,
-        });
+        // Dismiss the loading toast and show success
+        toast.dismiss('duplicate-design');
+        toast.success(newDesign.name?.includes('Copy') ? 'Design copied successfully' : 'Design created');
       }
     },
     onError: (err) => {
       console.error('Error creating design:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to create design. Please try again.',
-        variant: 'error',
-      });
+      // Dismiss the loading toast and show error
+      toast.dismiss('duplicate-design');
+      toast.error('Failed to copy design. Please try again.');
     },
   });
 
@@ -103,19 +107,12 @@ export function useDesigns({
     onSuccess: (updatedDesign) => {
       if (updatedDesign) {
         queryClient.invalidateQueries({ queryKey: ['designs'] });
-        toast({
-          title: 'Design updated',
-          description: `"${updatedDesign.name}" has been updated successfully.`,
-        });
+        toast.success(`"${updatedDesign.name}" has been updated successfully.`);
       }
     },
     onError: (err) => {
       console.error('Error updating design:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to update design. Please try again.',
-        variant: 'error',
-      });
+      toast.error('Failed to update design. Please try again.');
     },
   });
 
@@ -128,19 +125,12 @@ export function useDesigns({
     onSuccess: ({ success, designName }) => {
       if (success) {
         queryClient.invalidateQueries({ queryKey: ['designs'] });
-        toast({
-          title: 'Design deleted',
-          description: `"${designName}" has been deleted successfully.`,
-        });
+        toast.success(`"${designName}" has been deleted successfully.`);
       }
     },
     onError: (err) => {
       console.error('Error deleting design:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete design. Please try again.',
-        variant: 'error',
-      });
+      toast.error('Failed to delete design. Please try again.');
     },
   });
 
@@ -170,11 +160,7 @@ export function useDesigns({
       return results;
     } catch (err) {
       console.error('Error searching designs:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to search designs. Please try again.',
-        variant: 'error',
-      });
+      toast.error('Failed to search designs. Please try again.');
       return [];
     }
   };
@@ -191,11 +177,7 @@ export function useDesigns({
       return null;
     } catch (err) {
       console.error('Error uploading preview image:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to upload preview image. Please try again.',
-        variant: 'error',
-      });
+      toast.error('Failed to upload preview image. Please try again.');
       return null;
     }
   };
