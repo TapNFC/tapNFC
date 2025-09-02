@@ -3,38 +3,18 @@
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion';
 import { Eye, Palette, Plus, QrCode, Sparkles, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { ModernQuickActions } from '@/components/dashboard/modern-quick-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getCustomers } from '@/services/customerService';
-import { designService } from '@/services/designService';
-import { createClient } from '@/utils/supabase/client';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUserData } from '@/hooks/useUserData';
 
 function DashboardHeader() {
-  const [userName, setUserName] = useState<string>('User');
-
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const name = user.user_metadata?.full_name
-            || user.user_metadata?.name
-            || user.email?.split('@')[0]
-            || 'User';
-          setUserName(name);
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-
-    getUser();
-  }, []);
+  const { data: userData } = useUserData();
+  const userName = userData?.name || 'User';
 
   return (
     <motion.div
@@ -89,15 +69,7 @@ function DashboardHeader() {
 }
 
 function ModernOverviewCards() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    totalQrCodes: 0,
-    activeTemplates: 0,
-    totalCustomers: 0,
-    totalScans: 0,
-    totalDesigns: 0,
-  });
+  const { data: stats, isLoading, error } = useDashboardData();
 
   // Motion values for smooth count-up animation
   const totalDesignsMotion = useMotionValue(0);
@@ -111,146 +83,9 @@ function ModernOverviewCards() {
   const totalCustomersDisplay = useTransform(totalCustomersMotion, value => Math.round(value));
   const totalScansDisplay = useTransform(totalScansMotion, value => Math.round(value));
 
-  // Separate effect for immediate scan-batches call
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchScansImmediately = async () => {
-      try {
-        // Get QR codes first to fetch scans immediately
-        const qrDesignsAll = await designService.getUserQrCodes(true);
-        const qrDesigns = qrDesignsAll.filter(d => !(d.is_archived ?? false));
-
-        if (qrDesigns.length > 0 && isMounted) {
-          try {
-            const batchResponse = await fetch('/api/qr-codes/scans-batch', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                qrCodeIds: qrDesigns.map(d => d.id),
-              }),
-            });
-
-            if (batchResponse.ok) {
-              const batchData = await batchResponse.json();
-              if (batchData.success && batchData.data) {
-                const totalScans = batchData.data.reduce((sum: number, item: any) => sum + item.scanCount, 0);
-                if (isMounted) {
-                  setStats(prev => ({ ...prev, totalScans }));
-                }
-              }
-            } else {
-              console.warn('Batch scan API failed, falling back to individual calls');
-              // Fallback to individual calls if batch fails
-              const scanResults = await Promise.all(
-                qrDesigns.map(async (d) => {
-                  try {
-                    const res = await fetch(`/api/qr-codes/${d.id}`);
-                    if (!res.ok) {
-                      return 0;
-                    }
-                    const data = await res.json();
-                    return typeof data?.scans === 'number' ? data.scans : 0;
-                  } catch {
-                    return 0;
-                  }
-                }),
-              );
-              const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
-              if (isMounted) {
-                setStats(prev => ({ ...prev, totalScans }));
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching batch scan data:', error);
-            // Fallback to individual calls on error
-            const scanResults = await Promise.all(
-              qrDesigns.map(async (d) => {
-                try {
-                  const res = await fetch(`/api/qr-codes/${d.id}`);
-                  if (!res.ok) {
-                    return 0;
-                  }
-                  const data = await res.json();
-                  return typeof data?.scans === 'number' ? data.scans : 0;
-                } catch {
-                  return 0;
-                }
-              }),
-            );
-            const totalScans = scanResults.reduce((sum, n) => sum + n, 0);
-            if (isMounted) {
-              setStats(prev => ({ ...prev, totalScans }));
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in immediate scan fetch:', error);
-      }
-    };
-
-    fetchScansImmediately();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchStats = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Load user QR codes, all user designs, public templates, and customers concurrently
-        const [qrDesignsAll, allUserDesigns, publicTemplates, customers] = await Promise.all([
-          designService.getUserQrCodes(true),
-          designService.getUserDesigns(),
-          designService.getPublicDesigns(),
-          getCustomers().catch(() => []),
-        ]);
-
-        // Exclude archived (treat null as not archived)
-        const qrDesigns = qrDesignsAll.filter(d => !(d.is_archived ?? false));
-        const totalQrCodes = qrDesigns.length;
-
-        // Total designs (all user designs, exclude archived)
-        const totalDesigns = allUserDesigns.filter(d => !(d.is_archived ?? false)).length;
-
-        // Total templates from Templates page logic (public templates), exclude archived
-        const activeTemplates = publicTemplates.filter(d => d.is_template && !(d.is_archived ?? false)).length;
-
-        if (isMounted) {
-          // Set initial counts immediately
-          setStats(prev => ({
-            ...prev,
-            totalQrCodes,
-            activeTemplates,
-            totalCustomers: customers.length,
-            totalDesigns,
-          }));
-        }
-      } catch (e: any) {
-        if (isMounted) {
-          setError(e?.message ?? 'Failed to load stats');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchStats();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   // Animate stats when they change
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && stats) {
       // Animate each stat from 0 to its final value over 2 seconds
       const duration = 2; // 2 seconds
 
@@ -335,7 +170,7 @@ function ModernOverviewCards() {
                   </>
                 )}
             {!isLoading && error && (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{error}</p>
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{error.message}</p>
             )}
           </div>
         </motion.div>

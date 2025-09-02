@@ -80,7 +80,7 @@ export function LoadTemplateDialog({ open, onOpenChange, onLoad }: LoadTemplateD
               ? (
                   <div className="py-8 text-center text-gray-500">
                     <p className="text-red-500">{error}</p>
-                    <Button onClick={refreshDesigns} className="mt-4">Try Again</Button>
+                    <Button onClick={() => refreshDesigns()} className="mt-4">Try Again</Button>
                   </div>
                 )
               : designs.length === 0

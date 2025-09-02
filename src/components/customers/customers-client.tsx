@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useCustomers } from '@/hooks/useCustomers';
+import { useCustomersWithQuery } from '@/hooks/useCustomersWithQuery';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'list';
@@ -43,7 +43,7 @@ export function CustomersClient() {
     updateCustomer,
     deleteCustomer,
     addMultipleCustomers,
-  } = useCustomers();
+  } = useCustomersWithQuery();
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,7 +152,7 @@ export function CustomersClient() {
       <div className="flex h-64 w-full items-center justify-center">
         <div className="text-center text-red-500">
           <p>Error loading customers:</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm">{error?.message || 'An error occurred'}</p>
         </div>
       </div>
     );

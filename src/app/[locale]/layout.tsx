@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Inter, Lato, Montserrat, Open_Sans, Pinyon_Script, Poppins, Roboto } from 'next/font/google';
 import { notFound } from 'next/navigation';
+import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from '@/components/ui/sonner';
 import arcjet, { detectBot, request } from '@/libs/Arcjet';
 import { Env } from '@/libs/Env';
@@ -138,13 +139,15 @@ export default async function RootLayout(props: {
   return (
     <html lang={locale} className={`${poppins.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${montserrat.variable} ${pinyonScript.variable}`}>
       <body suppressHydrationWarning>
-        <NextIntlClientProvider
-          locale={locale}
-          messages={messages}
-        >
-          {props.children}
-          <Toaster />
-        </NextIntlClientProvider>
+        <QueryProvider>
+          <NextIntlClientProvider
+            locale={locale}
+            messages={messages}
+          >
+            {props.children}
+            <Toaster />
+          </NextIntlClientProvider>
+        </QueryProvider>
       </body>
     </html>
   );

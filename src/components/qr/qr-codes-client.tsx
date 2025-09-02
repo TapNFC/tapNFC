@@ -7,7 +7,7 @@ import { useState } from 'react';
 import QRCodesSkeleton from '@/components/qr/QRCodesSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useQRCodes } from '@/hooks/use-qrcodes';
+import { useQRCodesWithQuery } from '@/hooks/useQRCodesWithQuery';
 import { cn } from '@/lib/utils';
 import {
   DeleteQRCodeDialog,
@@ -56,7 +56,7 @@ export default function ElegantQRCodes({ locale = 'en' }: ElegantQRCodesProps) {
     deleteSelectedQRCodes,
     // archiveSelectedQRCodes,
     // clearSelection,
-  } = useQRCodes();
+  } = useQRCodesWithQuery(locale);
 
   const handleCreateQRCode = () => {
     router.push(`/${locale}/design`);

@@ -4,21 +4,23 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Key, Loader2, Mail, Save, Send, User } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/utils/supabase/client';
+import { useSettingsQuery } from '@/hooks/useSettingsQuery';
 
 type SettingsClientProps = {
   user: SupabaseUser;
 };
 
 export function SettingsClient({ user }: SettingsClientProps) {
-  const supabase = createClient();
-  const [isSaving, setIsSaving] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const {
+    updateProfile,
+    changePassword,
+    isUpdatingProfile,
+    isChangingPassword,
+  } = useSettingsQuery();
   const [settings, setSettings] = useState({
     name: user?.user_metadata?.full_name || '',
     email: user?.email || '',
@@ -66,41 +68,23 @@ export function SettingsClient({ user }: SettingsClientProps) {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { full_name: settings.name },
+    updateProfile({
+      name: settings.name,
+      email: settings.email,
     });
-    if (error) {
-      toast.error('Failed to update settings. Please try again.');
-    } else {
-      toast.success('Settings saved!');
-    }
-    setIsSaving(false);
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match.');
-      return;
-    }
-    setIsChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
+    changePassword({
+      newPassword,
+      confirmPassword,
     });
 
-    if (error) {
-      toast.error('Failed to change password. Please try again.');
-    } else {
-      toast.success('Password changed successfully.');
+    // Clear passwords on success (handled by mutation)
+    if (newPassword === confirmPassword && newPassword.length >= 6) {
       setNewPassword('');
       setConfirmPassword('');
     }
-    setIsChangingPassword(false);
   };
 
   return (
@@ -147,17 +131,17 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 </h3>
                 <Button
                   onClick={handleSave}
-                  disabled={!isChanged || isSaving}
+                  disabled={!isChanged || isUpdatingProfile}
                   className="bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:from-purple-600 hover:to-pink-700 hover:shadow-xl hover:shadow-purple-500/30"
                 >
-                  {isSaving
+                  {isUpdatingProfile
                     ? (
                         <Loader2 className="mr-2 size-4 animate-spin" />
                       )
                     : (
                         <Save className="mr-2 size-4" />
                       )}
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
               <div className="space-y-6">
