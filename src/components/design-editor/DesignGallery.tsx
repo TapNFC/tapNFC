@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDesigns } from '@/hooks/useDesigns';
-import { designService } from '@/services/designService';
 import { createClient } from '@/utils/supabase/client';
 import { DesignCard } from './components/DesignCard';
 import { DesignGallerySkeleton } from './components/DesignGallerySkeleton';
@@ -30,13 +29,13 @@ type DesignGalleryProps = {
   locale: string;
 };
 
-export function DesignGallery({ view, search, category, tag, locale }: DesignGalleryProps) {
+export function DesignGallery({ view, search, category, tag: _tag, locale }: DesignGalleryProps) {
   const {
     designs,
     loading,
     error,
     deleteDesign,
-    searchDesigns,
+    searchDesigns: _searchDesigns,
     refreshDesigns,
     updateDesign,
     createDesign,
@@ -54,52 +53,11 @@ export function DesignGallery({ view, search, category, tag, locale }: DesignGal
     fetchUserId();
   }, []);
 
-  // Search designs when search query changes
-  useEffect(() => {
-    if (search) {
-      searchDesigns(search);
-    }
-  }, [search, searchDesigns]);
+  // The useDesigns hook automatically handles search, category, and tag changes
+  // through React Query's queryKey dependencies
 
-  // Refresh designs when category changes
-  useEffect(() => {
-    refreshDesigns();
-  }, [category, refreshDesigns]);
-
-  // Add tag parameter to props and fetch designs by tag if provided
-  useEffect(() => {
-    async function fetchDesigns() {
-      // This local state will be removed, but for now it stays to avoid breaking changes
-      const setLoading = (_loading: boolean) => {};
-      const setDesigns = (_designs: Design[]) => {};
-      const setError = (_error: string | null) => {};
-
-      setLoading(true);
-      try {
-        let fetchedDesigns: Design[] = [];
-
-        // If tag is provided, fetch designs by tag
-        if (tag && tag.trim() !== '') {
-          fetchedDesigns = await designService.getDesignsByTag(tag);
-        } else if (search) {
-          fetchedDesigns = await designService.searchDesigns(search);
-        } else if (category === 'Templates') {
-          fetchedDesigns = await designService.getPublicDesigns();
-        } else {
-          fetchedDesigns = await designService.getUserDesigns();
-        }
-
-        setDesigns(fetchedDesigns);
-      } catch (error) {
-        console.error('Error fetching designs:', error);
-        setError('Failed to load designs');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchDesigns();
-  }, [search, category, tag]);
+  // The useDesigns hook already handles fetching based on category, search, and tag
+  // No need for additional manual fetching logic
 
   const handleDuplicate = useCallback(async (design: Design) => {
     if (!currentUserId) {
