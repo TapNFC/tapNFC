@@ -8,6 +8,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -117,9 +118,8 @@ export function ModernQuickActions({ className }: ModernQuickActionsProps) {
         {/* Actions Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {quickActions.map((action, index) => (
-            <motion.a
+            <motion.div
               key={action.id}
-              href={action.href}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -130,61 +130,65 @@ export function ModernQuickActions({ className }: ModernQuickActionsProps) {
                 y: -2,
                 transition: { duration: 0.2 },
               }}
-              className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-slate-300 dark:border-slate-700/60 dark:hover:border-slate-600"
             >
-              {/* Background gradient */}
-              <div className={cn(
-                'absolute inset-0 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity duration-200',
-                action.gradient,
-              )}
-              />
+              <Link
+                href={action.href}
+                className="group relative block cursor-pointer overflow-hidden rounded-xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-slate-300 dark:border-slate-700/60 dark:hover:border-slate-600"
+              >
+                {/* Background gradient */}
+                <div className={cn(
+                  'absolute inset-0 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity duration-200',
+                  action.gradient,
+                )}
+                />
 
-              {/* Content */}
-              <div className="relative">
-                <div className="mb-3 flex items-start justify-between">
-                  <div className={cn(
-                    'p-2 rounded-lg bg-gradient-to-br shadow-sm',
-                    action.gradient,
-                  )}
-                  >
-                    <div className="text-white">
-                      {action.icon}
+                {/* Content */}
+                <div className="relative">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div className={cn(
+                      'p-2 rounded-lg bg-gradient-to-br shadow-sm',
+                      action.gradient,
+                    )}
+                    >
+                      <div className="text-white">
+                        {action.icon}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                      {action.isPopular && (
+                        <Badge variant="secondary" className="bg-gradient-to-r from-amber-500 to-orange-500 text-xs text-white">
+                          Popular
+                        </Badge>
+                      )}
+                      {action.isNew && (
+                        <Badge variant="secondary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-xs text-white">
+                          New
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1">
-                    {action.isPopular && (
-                      <Badge variant="secondary" className="bg-gradient-to-r from-amber-500 to-orange-500 text-xs text-white">
-                        Popular
-                      </Badge>
-                    )}
-                    {action.isNew && (
-                      <Badge variant="secondary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-xs text-white">
-                        New
-                      </Badge>
-                    )}
+                  <div>
+                    <h4 className="mb-1 text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary dark:text-white">
+                      {action.title}
+                    </h4>
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      {action.description}
+                    </p>
                   </div>
-                </div>
 
-                <div>
-                  <h4 className="mb-1 text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary dark:text-white">
-                    {action.title}
-                  </h4>
-                  <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                    {action.description}
-                  </p>
+                  {/* Hover arrow */}
+                  <motion.div
+                    className="absolute right-4 top-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    initial={{ x: -10 }}
+                    whileHover={{ x: 0 }}
+                  >
+                    <ArrowRight className="size-4 text-slate-400 group-hover:text-primary" />
+                  </motion.div>
                 </div>
-
-                {/* Hover arrow */}
-                <motion.div
-                  className="absolute right-4 top-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                  initial={{ x: -10 }}
-                  whileHover={{ x: 0 }}
-                >
-                  <ArrowRight className="size-4 text-slate-400 group-hover:text-primary" />
-                </motion.div>
-              </div>
-            </motion.a>
+              </Link>
+            </motion.div>
           ))}
         </div>
 

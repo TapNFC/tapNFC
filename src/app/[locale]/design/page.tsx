@@ -1,10 +1,14 @@
+import type { Metadata } from 'next';
 import type { DesignPageWithSearchParams, UserProfile } from '@/types/design';
 import { Suspense } from 'react';
 import { DesignGallerySkeleton } from '@/components/design-editor/components/DesignGallerySkeleton';
-import { DesignPageHeader } from '@/components/design-editor/components/DesignPageHeader';
-import { DesignGallery } from '@/components/design-editor/DesignGallery';
-import { ModernHeader } from '@/components/layout/modern-header';
+import { DesignClient } from '@/components/design-editor/design-client';
 import { createAppServerClient } from '@/utils/supabase/server-app';
+
+export const metadata: Metadata = {
+  title: 'Design Gallery',
+  description: 'Browse and manage your design templates',
+};
 
 // Helper function to get user profile data
 async function getUserProfile(): Promise<UserProfile | undefined> {
@@ -30,43 +34,12 @@ export default async function DesignPage({ params, searchParams }: DesignPageWit
   const userProfile = await getUserProfile();
 
   return (
-    <div className="min-h-screen bg-transparent">
-      {/* Header with User Info */}
-      <ModernHeader
-        className="relative z-20"
-        user={userProfile}
+    <Suspense fallback={<DesignGallerySkeleton view={view} />}>
+      <DesignClient
+        userProfile={userProfile}
+        searchParams={{ view, search, category, tag }}
+        locale={locale}
       />
-
-      {/* Header */}
-      <DesignPageHeader locale={locale} />
-
-      {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-6 pt-2 sm:px-6 lg:px-8">
-        {/* Filters and Search */}
-        {/* <DesignFilters
-          view={view}
-          search={search}
-          category={category}
-        /> */}
-
-        {/* Design Gallery */}
-        <Suspense fallback={<DesignGallerySkeleton view={view} />}>
-          <DesignGallery
-            view={view}
-            search={search}
-            category={category}
-            tag={tag}
-            locale={locale}
-          />
-        </Suspense>
-      </div>
-    </div>
+    </Suspense>
   );
-}
-
-export async function generateMetadata() {
-  return {
-    title: 'Design Gallery',
-    description: 'Browse and manage your design templates',
-  };
 }
