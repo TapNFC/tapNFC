@@ -26,7 +26,7 @@ export default withSentryConfig(
         remotePatterns: [
           {
             protocol: 'https',
-            hostname: 'wjdlnxhhcxiseutevgbk.supabase.co',
+            hostname: 'qzxqdypqlpwsccjbcezu.supabase.co',
           },
           {
             protocol: 'http',
