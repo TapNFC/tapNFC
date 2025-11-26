@@ -5,12 +5,12 @@ import {
   Grid3x3,
   LogOut,
   Settings,
-  Sparkles,
   User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -461,19 +461,21 @@ export function DesignToolbar({
             <button
               type="button"
               onClick={handleProceedToQrCode}
-              className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
+              className="flex cursor-pointer items-center transition-transform duration-200 hover:scale-105"
               title="Save and Go to Dashboard"
             >
-              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
-                <Sparkles className="size-5 text-white" />
+              <div className="hidden size-10 sm:flex">
+                <BrandLogo
+                  imageSize={40}
+                  className="size-full"
+                />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                  QR Studio
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Professional
-                </p>
+              <div className="flex size-9 sm:hidden">
+                <BrandLogo
+                  showText={false}
+                  imageSize={36}
+                  className="size-full"
+                />
               </div>
             </button>
           </div>

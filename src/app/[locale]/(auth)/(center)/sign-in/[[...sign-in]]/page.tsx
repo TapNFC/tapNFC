@@ -2,11 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { KeyRound, QrCode, ShieldCheck } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { SignInForm } from '@/components/SignInForm';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -140,27 +141,18 @@ export default function SignIn() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mb-8 flex flex-col items-center text-center"
         >
-          <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-blue-dark shadow-lg">
-            <QrCode className="size-8 text-white" />
+          <div className="size-40">
+            <BrandLogo
+              direction="vertical"
+              showText={false}
+              imageSize={160}
+              priority
+              className="size-full"
+            />
           </div>
-          <div className="mb-2 flex items-center gap-2">
-            {isInviteFlow && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                <ShieldCheck className="size-3" />
-                <span>Invitation</span>
-              </span>
-            )}
-          </div>
-          <h1 className="bg-gradient-to-r from-primary to-primary-blue-dark bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+          <span className="sr-only">
             {isInviteFlow ? 'Accept Invite' : 'QR Studio'}
-          </h1>
-          <p className="mt-1 max-w-sm text-balance text-gray-600 dark:text-gray-400">
-            {isInviteFlow
-              ? initializingInvite
-                ? 'Preparing your account...'
-                : 'Set a secure password to finish setting up your account.'
-              : 'Professional QR Code Management'}
-          </p>
+          </span>
         </motion.div>
 
         {/* Card container */}

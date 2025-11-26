@@ -6,10 +6,10 @@ import {
   LogOut,
   QrCode,
   Settings,
-  Sparkles,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,21 +106,20 @@ export function ModernHeader({ className, user }: ModernHeaderProps) {
           <button
             type="button"
             onClick={() => router.push('/dashboard')}
-            className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
+            className="flex cursor-pointer items-center transition-transform duration-200 hover:scale-105"
             title="Go to Dashboard"
           >
-            <div className="flex items-center space-x-3">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
-                <Sparkles className="size-5 text-white" />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                  QR Studio
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Professional
-                </p>
-              </div>
+            <div className="hidden items-center sm:flex">
+              <BrandLogo
+                imageSize={56}
+                className="items-center"
+              />
+            </div>
+            <div className="flex items-center sm:hidden">
+              <BrandLogo
+                showText={false}
+                imageSize={40}
+              />
             </div>
           </button>
         )}

@@ -8,12 +8,12 @@ import {
   Palette,
   QrCode,
   Settings,
-  Sparkles,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -121,43 +121,52 @@ export function ModernSidebar({ className }: ModernSidebarProps) {
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200/60 p-6 dark:border-slate-700/60">
-          <AnimatePresence mode="wait">
-            {!isCollapsed && (
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard')}
-                className="flex cursor-pointer items-center space-x-3 transition-transform duration-200 hover:scale-105"
-                title="Go to Dashboard"
-              >
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center space-x-3"
-                >
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-blue-dark">
-                    <Sparkles className="size-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                      QR Studio
-                    </h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Professional
-                    </p>
-                  </div>
-                </motion.div>
-              </button>
-            )}
-          </AnimatePresence>
+        <div className="relative border-b border-slate-200/60 px-4 py-5 dark:border-slate-700/60">
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="flex w-full cursor-pointer items-center justify-center transition-transform duration-200 hover:scale-[1.02]"
+            title="Go to Dashboard"
+          >
+            <AnimatePresence initial={false} mode="wait">
+              {isCollapsed
+                ? (
+                    <motion.div
+                      key="compact-logo"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="size-12"
+                    >
+                      <BrandLogo
+                        showText={false}
+                        imageSize={48}
+                        className="size-full justify-center"
+                      />
+                    </motion.div>
+                  )
+                : (
+                    <motion.div
+                      key="full-logo"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="h-16 w-full"
+                    >
+                      <BrandLogo
+                        imageSize={64}
+                        className="size-full justify-center"
+                      />
+                    </motion.div>
+                  )}
+            </AnimatePresence>
+          </button>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleCollapse}
-            className="size-8 rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="absolute right-4 top-1/2 size-8 -translate-y-1/2 rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             {isCollapsed
               ? (
