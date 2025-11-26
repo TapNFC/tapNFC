@@ -1,0 +1,82 @@
+/* eslint-disable jsonc/sort-keys */
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "target": "es2017",
+    "outDir": "out",
+    "sourceMap": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "jsx": "preserve",
+    "noEmit": true,
+    "isolatedModules": true,
+    "incremental": true,
+
+    // Load types
+    "types": ["vitest/globals"],
+
+    // Path aliases
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/public/*": ["./public/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/stores/*": ["./src/stores/*"],
+      "@/validations/*": ["./src/validations/*"],
+      "@/qr/*": ["./src/components/qr/*"],
+      "@/customers/*": ["./src/components/customers/*"],
+      "@/dashboard/*": ["./src/components/dashboard/*"],
+      "@/templates/*": ["./src/templates/*"]
+    },
+
+    // Editor support
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "exclude": [
+    "./out/**/*",
+    ".vscode/node_modules/**/*",
+    "**/*.spec.ts",
+    "**/*.e2e.ts",
+    "node_modules"
+  ],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".storybook/*.ts",
+    ".next/types/**/*.ts",
+    "**/*.mts"
+  ]
+}

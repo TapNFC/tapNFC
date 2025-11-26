@@ -1,0 +1,140 @@
+[
+  {
+    "id": "facebook",
+    "name": "Facebook",
+    "path": "/assets/images/social-icons/FacebookIcon.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "instagram",
+    "name": "Instagram",
+    "path": "/assets/images/social-icons/Instagram73.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "tiktok",
+    "name": "TikTok",
+    "path": "/assets/images/social-icons/Tiktok64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "youtube",
+    "name": "YouTube",
+    "path": "/assets/images/social-icons/YouTube64.22.svg",
+    "svgCode": ""
+
+  },
+  {
+    "id": "whatsapp",
+    "name": "Whatsapp",
+    "path": "/assets/images/social-icons/WhatsApp.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "messenger",
+    "name": "Messenger",
+    "path": "/assets/images/social-icons/FacebookMessenger.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "snapchat",
+    "name": "Snapchat",
+    "path": "/assets/images/social-icons/Snapchat.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "linkedin",
+    "name": "LinkedIn",
+    "path": "/assets/images/social-icons/LinkedIn64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "pinterest",
+    "name": "Pinterest",
+    "path": "/assets/images/social-icons/PinInterest73.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "spotify",
+    "name": "Spotify",
+    "path": "/assets/images/social-icons/Spotify64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "soundcloud",
+    "name": "Soundcloud",
+    "path": "/assets/images/social-icons/SoundCloud64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "paypal",
+    "name": "Paypal",
+    "path": "/assets/images/social-icons/Paypal64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "venmo",
+    "name": "Venmo",
+    "path": "/assets/images/social-icons/venmo.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "telegram",
+    "name": "Telegram",
+    "path": "/assets/images/social-icons/Telegram73.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "path": "/assets/images/social-icons/Discord64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "apple-music",
+    "name": "Apple Music",
+    "path": "/assets/images/social-icons/AppleMusic.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "we-chat",
+    "name": "We Chat",
+    "path": "/assets/images/social-icons/WeChat.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "google",
+    "name": "Google",
+    "path": "/assets/images/social-icons/GoogleIcon.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "yelp",
+    "name": "Yelp",
+    "path": "/assets/images/social-icons/Yelp64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "tripadvisor",
+    "name": "Tripadvisor",
+    "path": "/assets/images/social-icons/TripAdvisor64.22.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "cash-app",
+    "name": "Cash App",
+    "path": "/assets/images/social-icons/CashApp.svg",
+    "svgCode": ""
+  },
+  {
+    "id": "google-maps",
+    "name": "Google Maps",
+    "path": "/assets/images/social-icons/GoogleMapsWhiteBackground.svg"
+  },
+  {
+    "id": "google-maps-small-pin",
+    "name": "Google Maps Small Pin",
+    "path": "/assets/images/social-icons/googlemapssmallpin.svg",
+    "svgCode": ""
+  }
+]
