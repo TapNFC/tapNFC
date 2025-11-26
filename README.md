@@ -61,7 +61,7 @@ Use this app to design branded QR experiences and manage them at scale:
 - Share public previews, capture scans, and view analytics
 - Keep customers organized and link designs to brand assets
 
-This project embraces React Server Components and SSR data fetching for performance and security while using client components for rich interactivity.
+This project is embraces React Server Components and SSR data fetching for performance and security while using client components for rich interactivity.
 
 ---
 
