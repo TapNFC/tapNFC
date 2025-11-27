@@ -12,7 +12,7 @@ export const Footer: React.FC<FooterProps> = ({ locale }) => {
   const pathname = usePathname();
 
   // Hide footer on design editor routes like /[locale]/design/[id] and /design/[id] (no-locale)
-  if (pathname && (pathname.startsWith(`/${locale}/design`) || pathname.startsWith('/design'))) {
+  if (!pathname || !pathname.includes('/dashboard')) {
     return null;
   }
 
