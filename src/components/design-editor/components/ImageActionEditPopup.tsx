@@ -15,23 +15,23 @@ import { VCardForm } from './VCardForm';
 
 type UrlType = 'url' | 'email' | 'phone' | 'pdf' | 'vcard';
 
-type SocialIconEditPopupProps = {
+type ImageActionEditPopupProps = {
   isVisible: boolean;
-  iconObject: any;
+  imageObject: any;
   position: { x: number; y: number };
   designId: string;
-  onUpdateIcon: (updates: { url?: string; urlType?: UrlType }) => void;
+  onUpdateImage: (updates: { url?: string; urlType?: UrlType }) => void;
   onClose: () => void;
 };
 
-export function SocialIconEditPopup({
+export function ImageActionEditPopup({
   isVisible,
-  iconObject,
+  imageObject,
   position,
   designId,
-  onUpdateIcon,
+  onUpdateImage,
   onClose,
-}: SocialIconEditPopupProps) {
+}: ImageActionEditPopupProps) {
   const [url, setUrl] = useState('');
   const [urlType, setUrlType] = useState<UrlType>('url');
   const [savedValues, setSavedValues] = useState<Record<UrlType, string>>({
@@ -50,10 +50,10 @@ export function SocialIconEditPopup({
   const popupRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize form values when the popup becomes visible or iconObject changes
+  // Initialize form values
   useEffect(() => {
-    if (isVisible && iconObject) {
-      const existingUrl = iconObject.url || '';
+    if (isVisible && imageObject) {
+      const existingUrl = imageObject.url || '';
       let detectedUrlType: UrlType = 'url';
       let cleanValue = '';
 
@@ -74,15 +74,11 @@ export function SocialIconEditPopup({
           detectedUrlType = 'url';
           cleanValue = existingUrl;
         }
-      } else if (iconObject?.name === 'Apple Phone') {
-        detectedUrlType = 'phone';
-      } else if (iconObject?.name === 'Apple Email') {
-        detectedUrlType = 'email';
       }
 
-      const finalUrlType = (iconObject.urlType
-        && ['url', 'email', 'phone', 'pdf', 'vcard'].includes(iconObject.urlType)
-        ? iconObject.urlType
+      const finalUrlType = (imageObject.urlType
+        && ['url', 'email', 'phone', 'pdf', 'vcard'].includes(imageObject.urlType)
+        ? imageObject.urlType
         : detectedUrlType) as UrlType;
       setUrlType(() => finalUrlType);
 
@@ -120,14 +116,13 @@ export function SocialIconEditPopup({
       setSelectedFile(() => null);
       setShowVCardForm(() => false);
     }
-  }, [isVisible, iconObject]);
+  }, [isVisible, imageObject]);
 
-  // Capture all keyboard events in the popup to prevent them from reaching the canvas
+  // Capture keyboard inside popup
   useEffect(() => {
     const captureKeyboardEvents = (e: KeyboardEvent) => {
       if (isVisible && popupRef.current?.contains(e.target as Node)) {
         e.stopPropagation();
-
         if ((e.key === 'Delete' || e.key === 'Backspace')
           && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
           e.preventDefault();
@@ -189,7 +184,7 @@ export function SocialIconEditPopup({
 
       await fileStorageService.deleteFile(url);
 
-      onUpdateIcon({ url: '', urlType: 'url' });
+      onUpdateImage({ url: '', urlType: 'url' });
       setUrl('');
       setUrlType('url');
       setSelectedFile(null);
@@ -216,7 +211,7 @@ export function SocialIconEditPopup({
 
       await fileStorageService.deleteFile(url);
 
-      onUpdateIcon({ url: '', urlType: 'url' });
+      onUpdateImage({ url: '', urlType: 'url' });
       setUrl('');
       setUrlType('url');
       setVCardData(null);
@@ -237,9 +232,7 @@ export function SocialIconEditPopup({
       setError('');
 
       const { generateVCard } = await import('@/utils/vCardGenerator');
-
       const vCardContent = generateVCard({ ...data });
-
       const publicUrl = await fileStorageService.uploadVCardFile(vCardContent, designId);
 
       setUrl(publicUrl);
@@ -247,7 +240,7 @@ export function SocialIconEditPopup({
       toast.success('vCard created successfully!');
 
       const formattedUrl = formatUrl(publicUrl, 'vcard');
-      onUpdateIcon({ url: formattedUrl, urlType: 'vcard' });
+      onUpdateImage({ url: formattedUrl, urlType: 'vcard' });
       setSavedValues(prev => ({ ...prev, vcard: publicUrl }));
 
       setShowVCardForm(false);
@@ -263,17 +256,17 @@ export function SocialIconEditPopup({
   const handleSave = async () => {
     try {
       if (
-        iconObject?.url
+        imageObject?.url
         && (
-          iconObject.url.includes('.pdf')
-          || iconObject.url.includes('file-storage/files/')
-          || iconObject.url.includes('.vcf')
-          || iconObject.url.includes('file-storage/vcards/')
+          imageObject.url.includes('.pdf')
+          || imageObject.url.includes('file-storage/files/')
+          || imageObject.url.includes('.vcf')
+          || imageObject.url.includes('file-storage/vcards/')
         )
-        && iconObject.url !== url
+        && imageObject.url !== url
       ) {
         try {
-          await fileStorageService.deleteFile(iconObject.url);
+          await fileStorageService.deleteFile(imageObject.url);
         } catch (deleteError: any) {
           console.warn('Failed to delete previous file:', deleteError.message);
         }
@@ -300,7 +293,7 @@ export function SocialIconEditPopup({
         toast.success('PDF uploaded successfully!');
 
         const formattedUrl = formatUrl(publicUrl, urlType);
-        onUpdateIcon({ url: formattedUrl, urlType });
+        onUpdateImage({ url: formattedUrl, urlType });
         setSavedValues(prev => ({ ...prev, [urlType]: publicUrl }));
 
         onClose();
@@ -319,7 +312,7 @@ export function SocialIconEditPopup({
       }
 
       const formattedUrl = formatUrl(url, urlType);
-      onUpdateIcon({ url: formattedUrl, urlType });
+      onUpdateImage({ url: formattedUrl, urlType });
       setSavedValues(prev => ({ ...prev, [urlType]: url }));
       onClose();
     } catch (error: any) {
@@ -332,7 +325,6 @@ export function SocialIconEditPopup({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
-
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
@@ -380,7 +372,7 @@ export function SocialIconEditPopup({
   }
 
   const popupWidth = 320;
-  const popupHeight = urlType === 'pdf' ? 240 : 240; // match text modal sizing
+  const popupHeight = urlType === 'pdf' ? 320 : 240;
   const padding = 16;
 
   const calculatedLeft = Math.max(
@@ -393,7 +385,7 @@ export function SocialIconEditPopup({
 
   const calculatedTop = Math.max(
     padding,
-    position.y - popupHeight - 20, // align vertical offset with text modal
+    position.y - popupHeight - 20,
   );
 
   return (
@@ -412,9 +404,9 @@ export function SocialIconEditPopup({
             <Link className="size-4 text-purple-600" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-900">Edit Icon Action</span>
+            <span className="text-sm font-semibold text-gray-900">Edit Image Action</span>
             <span className="text-xs text-gray-500">
-              {iconObject?.name || 'Icon'}
+              {imageObject?.name || 'Image'}
             </span>
           </div>
         </div>
@@ -580,7 +572,7 @@ export function SocialIconEditPopup({
               )
             : (
                 <div>
-                  <Label htmlFor="icon-action-value" className="mb-1 block text-xs font-medium text-gray-700">
+                  <Label htmlFor="image-action-value" className="mb-1 block text-xs font-medium text-gray-700">
                     {urlType === 'email'
                       ? 'Email Address'
                       : urlType === 'phone'
@@ -588,7 +580,7 @@ export function SocialIconEditPopup({
                         : 'Destination'}
                   </Label>
                   <Input
-                    id="icon-action-value"
+                    id="image-action-value"
                     type={urlType === 'email' ? 'email' : urlType === 'phone' ? 'tel' : 'url'}
                     value={url}
                     onChange={e => setUrl(e.target.value)}

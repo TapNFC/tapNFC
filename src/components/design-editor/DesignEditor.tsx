@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useCanvasAutoSave } from '@/hooks/useCanvasAutoSave';
 import { isTextObject, normalizeTextObjects } from '@/utils/textUtils';
 import { CanvasContainer } from './components/CanvasContainer';
+import { ImageActionEditPopup } from './components/ImageActionEditPopup';
+import { ImageContextualToolbar } from './components/ImageContextualToolbar';
 import {
   MemoizedLinkEditPopup,
   MemoizedRealTimePreview,
@@ -21,6 +23,7 @@ import { useCanvasEvents } from './hooks/useCanvasEvents';
 import { useDesignEditorState } from './hooks/useDesignEditorState';
 import { useDesignLoader } from './hooks/useDesignLoader';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
+import { useImageActionEditor } from './hooks/useImageActionEditor';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLinkEditor } from './hooks/useLinkEditor';
 import { useSocialIconEditor } from './hooks/useSocialIconEditor';
@@ -76,6 +79,16 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
     handleCloseContextualToolbar: handleCloseSocialIconContextualToolbar,
     handleCloseSvgColorPicker,
   } = useSocialIconEditor({ canvas, designId });
+
+  // Image action editor hook
+  const {
+    imageActionPopup,
+    imageContextualToolbar,
+    handleActionsClick: handleImageActionsClick,
+    handleUpdateImageAction,
+    handleCloseImageActionPopup,
+    handleCloseImageContextualToolbar,
+  } = useImageActionEditor({ canvas });
 
   // Add the text URL editor hook
   const {
@@ -464,6 +477,17 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
         />
       )}
 
+      {/* Image contextual toolbar */}
+      {imageContextualToolbar && (
+        <ImageContextualToolbar
+          isVisible={imageContextualToolbar.isVisible}
+          position={imageContextualToolbar.position}
+          imageObject={imageContextualToolbar.imageObject}
+          onActionsClick={handleImageActionsClick}
+          onClose={handleCloseImageContextualToolbar}
+        />
+      )}
+
       {/* Add the social icon edit popup */}
       {socialIconEditPopup && socialIconEditPopup.isVisible && (
         <SocialIconEditPopup
@@ -473,6 +497,18 @@ export function DesignEditor({ designId, locale = 'en' }: DesignEditorProps) {
           designId={designId}
           onUpdateIcon={handleUpdateSocialIcon}
           onClose={handleCloseSocialIconEdit}
+        />
+      )}
+
+      {/* Image action edit popup */}
+      {imageActionPopup && imageActionPopup.isVisible && (
+        <ImageActionEditPopup
+          isVisible={imageActionPopup.isVisible}
+          imageObject={imageActionPopup.imageObject}
+          position={imageActionPopup.position}
+          designId={designId}
+          onUpdateImage={handleUpdateImageAction}
+          onClose={handleCloseImageActionPopup}
         />
       )}
 

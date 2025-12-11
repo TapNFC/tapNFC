@@ -27,7 +27,7 @@ type UseSocialIconEditorReturn = {
   handleSocialIconDoubleClick: (iconObject: any, event: any) => void;
   handleActionsClick: () => void;
   handleColorEditClick: () => void;
-  handleUpdateSocialIcon: (updates: { url?: string }) => void;
+  handleUpdateSocialIcon: (updates: { url?: string; urlType?: string }) => void;
   handleSvgColorChange: (newSvgCode: string) => void;
   handleCloseSocialIconEdit: () => void;
   handleCloseContextualToolbar: () => void;
@@ -214,7 +214,7 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     }
   }, [socialIconContextualToolbar.iconObject, canvas]);
 
-  const handleUpdateSocialIcon = useCallback((updates: { url?: string }) => {
+  const handleUpdateSocialIcon = useCallback((updates: { url?: string; urlType?: string }) => {
     if (!socialIconEditPopup.iconObject || !canvas || !updates) {
       return;
     }
@@ -225,8 +225,12 @@ export function useSocialIconEditor({ canvas }: UseSocialIconEditorProps): UseSo
     if (updates.url !== undefined) {
       iconObject.set?.({ url: updates.url });
     }
+    if (updates.urlType !== undefined) {
+      iconObject.set?.({ urlType: updates.urlType });
+    }
 
     canvas.renderAll?.();
+    canvas.fire?.('object:modified', { target: iconObject });
   }, [socialIconEditPopup.iconObject, canvas]);
 
   const handleCloseSocialIconEdit = useCallback(() => {

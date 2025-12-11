@@ -109,6 +109,7 @@ export function useTextUrlEditor({ canvas }: UseTextUrlEditorProps): UseTextUrlE
     }
 
     canvas.renderAll?.();
+    canvas.fire?.('object:modified', { target: textObject });
   }, [textUrlEditPopup.textObject, canvas]);
 
   const handleCloseTextUrlEdit = useCallback(() => {
