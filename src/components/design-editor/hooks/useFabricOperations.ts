@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { handleUrlClick } from '@/utils/urlUtils';
 import { safeRenderAll } from '../utils/canvasSafety';
 
 // Define types for Fabric.js gradient options, matching those in BackgroundsPanel.tsx
@@ -10,10 +11,10 @@ type FabricGradientOptionForOps = {
 };
 
 // Type for the background input parameter, accommodating strings (solid colors) and gradient objects
-type BackgroundInput =
-  | string
-  | { type: 'gradient'; value: FabricGradientOptionForOps }
-  | { type: string; value: string }; // For other potential object-based backgrounds (original structure)
+type BackgroundInput
+  = | string
+    | { type: 'gradient'; value: FabricGradientOptionForOps }
+    | { type: string; value: string }; // For other potential object-based backgrounds (original structure)
 
 type UseFabricOperationsOptions = {
   canvas: any;
@@ -598,6 +599,25 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
       return;
     }
 
+    const handleIconAction = (target: any) => {
+      if (!target?.url) {
+        return;
+      }
+      const actionType = target.urlType || undefined;
+      const actionLabel = actionType === 'email'
+        ? 'email'
+        : actionType === 'phone'
+          ? 'phone number'
+          : actionType === 'pdf'
+            ? 'PDF'
+            : actionType === 'vcard'
+              ? 'vCard'
+              : 'link';
+
+      toast.success(`Opening ${actionLabel} for ${target.name || 'icon'}`);
+      handleUrlClick(target.url, actionType, target.name);
+    };
+
     // If SVG code is provided, create SVG object instead of image
     if (svgCode) {
       fabric.loadSVGFromString(svgCode, (objects: any) => {
@@ -618,6 +638,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
             name: iconName,
             elementType: 'socialIcon', // Custom property for identification
             url: '',
+            urlType: 'url',
             hoverCursor: 'pointer', // Show pointer cursor on hover
             svgCode, // Store SVG code for color editing
             isSvgIcon: true, // Flag to identify SVG icons
@@ -625,40 +646,15 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
 
           // Add click handler for the SVG social icon
           svgGroup.on('mousedown', function (this: any, e: any) {
-            // Only handle left-click
             if (e.e.button !== 0) {
               return;
             }
 
-            // If the icon has a URL and it's not being edited (not selected)
             if (this.url && !canvas.getActiveObject()) {
-              // Prevent default to avoid selecting the object
               e.e.preventDefault();
               e.e.stopPropagation();
 
-              // Handle URL navigation (same logic as image icons)
-              if (this.url.includes('.pdf') || this.url.includes('file-storage/files/')) {
-                toast.success(`Opening PDF: ${this.name || 'document'}`);
-              } else if (this.name === 'Apple Phone' && this.url) {
-                toast.success(`Calling: ${this.url}`);
-                window.location.href = `tel:${this.url}`;
-                return;
-              } else if (this.name === 'Apple Email' && this.url) {
-                toast.success(`Opening email: ${this.url}`);
-                window.location.href = `mailto:${this.url}`;
-                return;
-              } else {
-                toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
-              }
-
-              // Create a temporary anchor element to use native browser navigation
-              const tempLink = document.createElement('a');
-              tempLink.href = this.url;
-              tempLink.target = '_blank';
-              tempLink.rel = 'noopener noreferrer';
-              document.body.appendChild(tempLink);
-              tempLink.click();
-              document.body.removeChild(tempLink);
+              handleIconAction(this);
             }
           });
 
@@ -712,6 +708,7 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
         elementType: 'socialIcon', // Custom property for identification
         // Make sure we set a default URL property - can be updated later
         url: '',
+        urlType: 'url',
         hoverCursor: 'pointer', // Show pointer cursor on hover
       });
 
@@ -723,58 +720,14 @@ export function useFabricOperations({ canvas, fabric, fabricReady }: UseFabricOp
 
       // Add click handler for the social icon
       img.on('mousedown', function (this: any, e: any) {
-        // Only handle left-click
         if (e.e.button !== 0) {
           return;
         }
 
-        // If the icon has a URL and it's not being edited (not selected)
         if (this.url && !canvas.getActiveObject()) {
-          // Prevent default to avoid selecting the object
           e.e.preventDefault();
           e.e.stopPropagation();
-
-          // Check if this is a PDF-enabled icon (wifi or home)
-          const isPdfEnabledIcon = this.name === 'WiFi' || this.name === 'Home';
-
-          // Check if this is a phone icon (Apple Phone)
-          const isPhoneIcon = this.name === 'Apple Phone';
-
-          // Check if this is an email icon (Apple Email)
-          const isEmailIcon = this.name === 'Apple Email';
-
-          // Check if this is a contact icon
-          const isContactIcon = this.name === 'Contact';
-
-          if (isPdfEnabledIcon && (this.url.includes('.pdf') || this.url.includes('file-storage/files/'))) {
-            // For PDF files, open in new tab
-            toast.success(`Opening PDF: ${this.name || 'document'}`);
-          } else if (isContactIcon && (this.url.includes('.vcf') || this.url.includes('file-storage/vcards/'))) {
-            // For vCard files, open in new tab
-            toast.success(`Opening vCard: ${this.name || 'contact'}`);
-          } else if (isPhoneIcon && this.url) {
-            // For phone numbers, initiate call
-            toast.success(`Calling: ${this.url}`);
-            window.location.href = `tel:${this.url}`;
-            return;
-          } else if (isEmailIcon && this.url) {
-            // For email addresses, open email client
-            toast.success(`Opening email: ${this.url}`);
-            window.location.href = `mailto:${this.url}`;
-            return;
-          } else {
-            // For regular URLs, show the social media message
-            toast.success(`Opening ${this.name || 'social media'} link: ${this.url}`);
-          }
-
-          // Create a temporary anchor element to use native browser navigation
-          const tempLink = document.createElement('a');
-          tempLink.href = this.url;
-          tempLink.target = '_blank';
-          tempLink.rel = 'noopener noreferrer';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          document.body.removeChild(tempLink);
+          handleIconAction(this);
         }
       });
 

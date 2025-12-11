@@ -67,7 +67,7 @@ export function useCanvasAutoSave({
 
     try {
       // Serialize the entire canvas state, including the background
-      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'urlType', 'name', 'svgCode', 'isSvgIcon']);
 
       // Get existing design to update or check if it's new
       const existingDesign = await designService.getDesignById(designId);
@@ -155,7 +155,7 @@ export function useCanvasAutoSave({
 
         // Add to history if it's the first save or if there are unsaved changes
         if (isFirstSaveRef.current || hasUnsavedChanges) {
-          const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+          const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'urlType', 'name', 'svgCode', 'isSvgIcon']);
 
           // If we've gone back in history and made changes, remove future states
           if (historyPositionRef.current < historyRef.current.length - 1) {
@@ -198,7 +198,7 @@ export function useCanvasAutoSave({
     }
 
     try {
-      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+      const canvasJSON = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'urlType', 'name', 'svgCode', 'isSvgIcon']);
 
       const result = {
         canvasData: canvasJSON,
@@ -288,7 +288,7 @@ export function useCanvasAutoSave({
             canvas.renderAll();
 
             // Initialize history with current state
-            const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+            const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'urlType', 'name', 'svgCode', 'isSvgIcon']);
             historyRef.current = [initialState];
             historyPositionRef.current = 0;
             setCanUndo(false);
@@ -300,7 +300,7 @@ export function useCanvasAutoSave({
           });
         } else {
           // Initialize history with empty canvas
-          const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'name', 'svgCode', 'isSvgIcon']);
+          const initialState = canvas.toJSON(['id', 'selectable', 'lockMovementX', 'lockMovementY', 'editable', 'hasControls', 'linkUrl', 'background', 'elementType', 'buttonData', 'linkData', 'url', 'urlType', 'name', 'svgCode', 'isSvgIcon']);
           historyRef.current = [initialState];
           historyPositionRef.current = 0;
           setCanUndo(false);
