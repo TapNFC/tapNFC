@@ -1,3 +1,4 @@
+import type { CookieOptions } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
@@ -18,7 +19,7 @@ export function createMiddlewareClient(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options) {
+        set(name: string, value: string, options: CookieOptions) {
           // If the cookie is updated, update the response headers
           request.cookies.set({
             name,
@@ -36,7 +37,7 @@ export function createMiddlewareClient(request: NextRequest) {
             ...options,
           });
         },
-        remove(name: string, options) {
+        remove(name: string, options: CookieOptions) {
           // If the cookie is removed, update the response headers
           request.cookies.delete(name);
           response = NextResponse.next({
