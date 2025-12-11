@@ -50,12 +50,24 @@ export function useImageActionEditor({ canvas }: UseImageActionEditorProps): Use
       return;
     }
 
-    const rect = canvasElement.getBoundingClientRect();
+    const canvasRect = canvasElement.getBoundingClientRect();
     const zoom = canvas.getZoom?.() || 1;
 
+    // Use bounding rect to account for scale/origin; fallback to width/height
+    const bounds = imageObject.getBoundingRect?.(true, true) || {
+      left: imageObject.left || 0,
+      top: imageObject.top || 0,
+      width: (imageObject.width || 0) * (imageObject.scaleX || 1),
+      height: (imageObject.height || 0) * (imageObject.scaleY || 1),
+    };
+
+    const centerX = bounds.left + bounds.width / 2;
+    const topY = bounds.top;
+
     const position = {
-      x: rect.left + ((imageObject.left || 0) + (imageObject.width || 0) / 2) * zoom,
-      y: rect.top - 30 + (imageObject.top || 0) * zoom,
+      x: canvasRect.left + centerX * zoom,
+      // place toolbar a bit higher above the element
+      y: canvasRect.top + (topY * zoom) - 30,
     };
 
     setImageContextualToolbar({
