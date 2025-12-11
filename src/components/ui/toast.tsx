@@ -9,7 +9,11 @@ import { cn } from '@/lib/utils';
 
 const ToastProvider = ToastPrimitives.Provider;
 
-const ToastViewport = ({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Viewport> | null> }) => (
+type ToastViewportProps
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Viewport> | null> };
+
+const ToastViewport = ({ ref, className, ...props }: ToastViewportProps) => (
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
@@ -42,8 +46,12 @@ const toastVariants = cva(
   },
 );
 
-const Toast = ({ ref, className, variant, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-  VariantProps<typeof toastVariants> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Root> | null> }) => {
+type ToastPropsInternal
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root>
+    & VariantProps<typeof toastVariants>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Root> | null> };
+
+const Toast = ({ ref, className, variant, ...props }: ToastPropsInternal) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
@@ -54,7 +62,11 @@ const Toast = ({ ref, className, variant, ...props }: React.ComponentPropsWithou
 };
 Toast.displayName = ToastPrimitives.Root.displayName;
 
-const ToastAction = ({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Action> | null> }) => (
+type ToastActionProps
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Action> | null> };
+
+const ToastAction = ({ ref, className, ...props }: ToastActionProps) => (
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
@@ -66,7 +78,11 @@ const ToastAction = ({ ref, className, ...props }: React.ComponentPropsWithoutRe
 );
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
-const ToastClose = ({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Close> | null> }) => (
+type ToastCloseProps
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Close> | null> };
+
+const ToastClose = ({ ref, className, ...props }: ToastCloseProps) => (
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
@@ -81,7 +97,11 @@ const ToastClose = ({ ref, className, ...props }: React.ComponentPropsWithoutRef
 );
 ToastClose.displayName = ToastPrimitives.Close.displayName;
 
-const ToastTitle = ({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Title> | null> }) => (
+type ToastTitleProps
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Title> | null> };
+
+const ToastTitle = ({ ref, className, ...props }: ToastTitleProps) => (
   <ToastPrimitives.Title
     ref={ref}
     className={cn('text-sm font-semibold', className)}
@@ -90,7 +110,11 @@ const ToastTitle = ({ ref, className, ...props }: React.ComponentPropsWithoutRef
 );
 ToastTitle.displayName = ToastPrimitives.Title.displayName;
 
-const ToastDescription = ({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description> & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Description> | null> }) => (
+type ToastDescriptionProps
+  = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
+    & { ref?: React.RefObject<React.ElementRef<typeof ToastPrimitives.Description> | null> };
+
+const ToastDescription = ({ ref, className, ...props }: ToastDescriptionProps) => (
   <ToastPrimitives.Description
     ref={ref}
     className={cn('text-sm opacity-90', className)}
@@ -140,8 +164,8 @@ function genId() {
 
 type ActionType = typeof actionTypes;
 
-type Action =
-  | {
+type Action
+  = | {
     type: ActionType['ADD_TOAST'];
     toast: ToasterToast;
   }
